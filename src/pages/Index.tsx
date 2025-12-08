@@ -4,8 +4,11 @@ import { HeroSection } from "@/components/HeroSection";
 import { SimulationForm } from "@/components/SimulationForm";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
+import { ScenarioManager } from "@/components/ScenarioManager";
+import { ExcelUploader } from "@/components/ExcelUploader";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
+import { SimulationScenario } from "@/lib/scenarioManager";
 import { Sparkles, BarChart2, Activity } from "lucide-react";
 
 type TabType = 'simulation' | 'sensitivity';
@@ -59,6 +62,47 @@ const Index = () => {
     setDistParams(defaultDistParams.triangular);
     setIterations(10000);
   }, []);
+
+  const handleLoadScenario = useCallback((scenario: SimulationScenario) => {
+    setDistributionType(scenario.distributionType);
+    setDistParams(scenario.params);
+    setIterations(scenario.iterations);
+    
+    if (scenario.results && scenario.results.length > 0) {
+      setSimulationData(scenario.results);
+      setStats(calculateStatistics(scenario.results));
+    }
+  }, []);
+
+  const handleExcelDataImport = useCallback((columnName: string, columnStats: { min: number; max: number; mean: number }) => {
+    // Set to triangular distribution with imported stats
+    setDistributionType('triangular');
+    setDistParams({
+      min: columnStats.min,
+      mode: columnStats.mean,
+      max: columnStats.max,
+    });
+  }, []);
+
+  const currentScenario = {
+    distributionType,
+    params: distParams,
+    iterations,
+    results: simulationData.length > 0 ? simulationData : undefined,
+    stats: simulationData.length > 0 ? stats : undefined,
+  };
+
+  const simulationStatsForExport = simulationData.length > 0 ? {
+    "Giá trị nhỏ nhất": stats.min,
+    "Giá trị lớn nhất": stats.max,
+    "Trung bình": stats.mean,
+    "Độ lệch chuẩn": stats.stdDev,
+    "P5": stats.percentile5,
+    "P25": stats.percentile25,
+    "Trung vị (P50)": stats.percentile50,
+    "P75": stats.percentile75,
+    "P95": stats.percentile95,
+  } : undefined;
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,17 +176,28 @@ const Index = () => {
               </div>
 
               <div className="grid lg:grid-cols-[380px_1fr] gap-6">
-                <SimulationForm
-                  distributionType={distributionType}
-                  onDistributionTypeChange={handleDistributionTypeChange}
-                  params={distParams}
-                  onParamsChange={setDistParams}
-                  iterations={iterations}
-                  onIterationsChange={setIterations}
-                  onRunSimulation={handleRunSimulation}
-                  onReset={handleReset}
-                  isRunning={isRunning}
-                />
+                <div className="space-y-0">
+                  <ScenarioManager
+                    currentScenario={currentScenario}
+                    onLoadScenario={handleLoadScenario}
+                  />
+                  <ExcelUploader
+                    onDataImport={handleExcelDataImport}
+                    simulationResults={simulationData}
+                    simulationStats={simulationStatsForExport}
+                  />
+                  <SimulationForm
+                    distributionType={distributionType}
+                    onDistributionTypeChange={handleDistributionTypeChange}
+                    params={distParams}
+                    onParamsChange={setDistParams}
+                    iterations={iterations}
+                    onIterationsChange={setIterations}
+                    onRunSimulation={handleRunSimulation}
+                    onReset={handleReset}
+                    isRunning={isRunning}
+                  />
+                </div>
                 <ResultsPanel data={simulationData} stats={stats} />
               </div>
             </>
