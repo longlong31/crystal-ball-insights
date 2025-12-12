@@ -112,7 +112,7 @@ const ProjectAnalysis = () => {
                   </Button>
                 </div>
               </div>
-              <ProjectResultsDisplay results={results} loading={isCalculating} />
+              <ProjectResultsDisplay results={results} params={params} loading={isCalculating} />
             </div>
           )}
 

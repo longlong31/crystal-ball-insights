@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ProjectParams } from "@/lib/projectModel";
 import { defaultRiskVariables, ResultVariable } from "@/lib/sensitivityAnalysisAdvanced";
+import { exportMonteCarloResults, MonteCarloExportData } from "@/lib/excelParser";
 import {
   MonteCarloConfig,
   MonteCarloResult,
@@ -34,7 +35,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { Play, RotateCcw, Settings, BarChart2, TrendingUp, Target, Zap } from "lucide-react";
+import { Play, RotateCcw, Settings, BarChart2, TrendingUp, Target, Zap, Download } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProjectMonteCarloPanelProps {
   params: ProjectParams;
@@ -101,6 +103,31 @@ export function ProjectMonteCarloPanel({ params }: ProjectMonteCarloPanelProps) 
     setProgress(0);
     setConfig(createDefaultMonteCarloConfig(defaultRiskVariables));
   }, []);
+
+  const handleExportMonteCarlo = useCallback(() => {
+    if (!result) return;
+    
+    const resultData = result.results[selectedResult];
+    if (!resultData) return;
+
+    const exportData: MonteCarloExportData = {
+      iterations: config.iterations,
+      resultVariable: resultVariableLabels[selectedResult],
+      statistics: {
+        min: resultData.statistics.min,
+        max: resultData.statistics.max,
+        mean: resultData.statistics.mean,
+        stdDev: resultData.statistics.stdDev,
+        median: resultData.statistics.median,
+        percentile5: resultData.statistics.percentile5,
+        percentile95: resultData.statistics.percentile95,
+      },
+      values: resultData.values,
+    };
+
+    exportMonteCarloResults(exportData, `monte-carlo-${selectedResult}.xlsx`);
+    toast.success("Đã xuất kết quả Monte Carlo thành công!");
+  }, [result, config.iterations, selectedResult]);
 
   const updateVariable = (index: number, updates: Partial<MonteCarloVariable>) => {
     setConfig((prev) => ({
@@ -283,18 +310,24 @@ export function ProjectMonteCarloPanel({ params }: ProjectMonteCarloPanelProps) 
                   <BarChart2 className="w-5 h-5 text-primary" />
                   Kết quả mô phỏng
                 </CardTitle>
-                <Select value={selectedResult} onValueChange={(v) => setSelectedResult(v as ResultVariable)}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {config.resultVariables.map((rv) => (
-                      <SelectItem key={rv} value={rv}>
-                        {resultVariableLabels[rv]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-3">
+                  <Select value={selectedResult} onValueChange={(v) => setSelectedResult(v as ResultVariable)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {config.resultVariables.map((rv) => (
+                        <SelectItem key={rv} value={rv}>
+                          {resultVariableLabels[rv]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={handleExportMonteCarlo}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Xuất Excel
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>

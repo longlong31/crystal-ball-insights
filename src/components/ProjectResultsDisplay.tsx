@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
 import { SimulationCard } from "./SimulationCard";
-import { ProjectResults } from "@/lib/projectModel";
+import { ProjectResults, ProjectParams } from "@/lib/projectModel";
+import { exportProjectResults, ProjectExportData } from "@/lib/excelParser";
+import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
   TrendingDown,
@@ -9,10 +11,13 @@ import {
   Percent,
   ArrowUp,
   ArrowDown,
+  Download,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProjectResultsDisplayProps {
   results: ProjectResults | null;
+  params?: ProjectParams;
   loading?: boolean;
 }
 
@@ -55,7 +60,7 @@ const MetricCard = ({ title, value, subtitle, icon, trend, highlighted }: Metric
   </motion.div>
 );
 
-export const ProjectResultsDisplay = ({ results, loading }: ProjectResultsDisplayProps) => {
+export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResultsDisplayProps) => {
   if (loading) {
     return (
       <SimulationCard>
@@ -87,13 +92,49 @@ export const ProjectResultsDisplay = ({ results, loading }: ProjectResultsDispla
     return `${(num * 100).toFixed(2)}%`;
   };
 
+  const handleExport = () => {
+    if (!results || !params) return;
+
+    const exportData: ProjectExportData = {
+      projectName: params.projectName,
+      npvTIPV: results.npvTIPV,
+      irrTIPV: results.irrTIPV,
+      dppTIPV: results.dppTIPV,
+      dscrAverage: results.dscrAverage,
+      npvEPV: results.npvEPV,
+      irrEPV: results.irrEPV,
+      dppEPV: results.dppEPV,
+      waccAverage: results.waccAverage,
+      yearlyData: results.yearlyData.map((y) => ({
+        year: y.year,
+        revenue: y.revenue,
+        ncfTIPV: y.ncfTIPV,
+        ncfEPV: y.ncfEPV,
+        cumulativePV_TIPV: y.cumulativePV_TIPV,
+        cumulativePV_EPV: y.cumulativePV_EPV,
+        dscr: y.dscr,
+      })),
+    };
+
+    exportProjectResults(exportData, `${params.projectName}-analysis.xlsx`);
+    toast.success("Đã xuất file Excel thành công!");
+  };
+
   return (
     <SimulationCard>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Kết quả phân tích dự án</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold">Kết quả phân tích dự án</h3>
+          </div>
+          {params && (
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download className="w-4 h-4 mr-2" />
+              Xuất Excel
+            </Button>
+          )}
         </div>
 
         {/* TIPV Results */}
