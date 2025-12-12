@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { ProjectParamsForm } from "@/components/ProjectParamsForm";
 import { ProjectResultsDisplay } from "@/components/ProjectResultsDisplay";
 import { AdvancedSensitivityPanel } from "@/components/AdvancedSensitivityPanel";
+import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, BarChart2, Play, RotateCcw } from "lucide-react";
+import { Sparkles, Calculator, Activity, BarChart2, Play, RotateCcw, Dice5 } from "lucide-react";
 
-type TabType = "calculate" | "sensitivity";
+type TabType = "calculate" | "sensitivity" | "montecarlo";
 
 const ProjectAnalysis = () => {
   const [activeTab, setActiveTab] = useState<TabType>("calculate");
@@ -37,11 +38,18 @@ const ProjectAnalysis = () => {
           <div className="flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-primary" />
             <span className="text-xl font-bold">Crystal Ball</span>
-            <span className="text-sm text-muted-foreground ml-2">| Phân tích dự án đầu tư</span>
           </div>
-          <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← Quay lại
-          </a>
+          <nav className="hidden md:flex items-center gap-6">
+            <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Mô phỏng cơ bản
+            </a>
+            <a href="/project" className="text-sm text-foreground font-medium transition-colors">
+              Phân tích dự án
+            </a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Tài liệu
+            </a>
+          </nav>
         </div>
       </header>
 
@@ -54,7 +62,7 @@ const ProjectAnalysis = () => {
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex items-center justify-center gap-4 mb-8 flex-wrap">
             <button
               onClick={() => setActiveTab("calculate")}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
@@ -77,6 +85,17 @@ const ProjectAnalysis = () => {
               <Activity className="w-4 h-4" />
               Phân tích độ nhạy
             </button>
+            <button
+              onClick={() => setActiveTab("montecarlo")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "montecarlo"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <Dice5 className="w-4 h-4" />
+              Monte Carlo
+            </button>
           </div>
 
           {activeTab === "calculate" && (
@@ -98,6 +117,18 @@ const ProjectAnalysis = () => {
           )}
 
           {activeTab === "sensitivity" && <AdvancedSensitivityPanel params={params} />}
+
+          {activeTab === "montecarlo" && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-3">Mô phỏng Monte Carlo cho dự án</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Mô phỏng hàng nghìn kịch bản để đánh giá phân phối xác suất của các chỉ số tài chính
+                </p>
+              </div>
+              <ProjectMonteCarloPanel params={params} />
+            </>
+          )}
         </motion.div>
       </main>
     </div>

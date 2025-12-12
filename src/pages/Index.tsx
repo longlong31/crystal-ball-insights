@@ -114,11 +114,11 @@ const Index = () => {
             <span className="text-xl font-bold">Crystal Ball</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Hướng dẫn
+            <a href="/" className="text-sm text-foreground font-medium transition-colors">
+              Mô phỏng cơ bản
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Ví dụ
+            <a href="/project" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Phân tích dự án
             </a>
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Tài liệu
