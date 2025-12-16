@@ -3,6 +3,7 @@ import { SimulationCard } from "./SimulationCard";
 import { ProjectResults, ProjectParams } from "@/lib/projectModel";
 import { exportProjectResults, ProjectExportData } from "@/lib/excelParser";
 import { CashFlowChart } from "./CashFlowChart";
+import { CashFlowTable } from "./CashFlowTable";
 import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
@@ -14,6 +15,7 @@ import {
   ArrowDown,
   Download,
   BarChart3,
+  Table2 as TableIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -213,6 +215,15 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
             <h4 className="text-sm font-medium">Biểu đồ dòng tiền theo năm</h4>
           </div>
           <CashFlowChart yearlyData={results.yearlyData} />
+        </div>
+
+        {/* Cash Flow Table */}
+        <div className="pt-4 border-t border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <TableIcon className="w-4 h-4 text-primary" />
+            <h4 className="text-sm font-medium">Bảng chi tiết dòng tiền theo năm</h4>
+          </div>
+          <CashFlowTable yearlyData={results.yearlyData} />
         </div>
 
         {/* Additional Info */}
