@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { SimulationCard } from "./SimulationCard";
 import { ProjectResults, ProjectParams } from "@/lib/projectModel";
 import { exportProjectResults, ProjectExportData } from "@/lib/excelParser";
+import { CashFlowChart } from "./CashFlowChart";
 import { Button } from "@/components/ui/button";
 import { 
   TrendingUp, 
@@ -12,6 +13,7 @@ import {
   ArrowUp,
   ArrowDown,
   Download,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -202,6 +204,15 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
               icon={<Clock className="w-4 h-4" />}
             />
           </div>
+        </div>
+
+        {/* Cash Flow Chart */}
+        <div className="pt-4 border-t border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 className="w-4 h-4 text-primary" />
+            <h4 className="text-sm font-medium">Biểu đồ dòng tiền theo năm</h4>
+          </div>
+          <CashFlowChart yearlyData={results.yearlyData} />
         </div>
 
         {/* Additional Info */}
