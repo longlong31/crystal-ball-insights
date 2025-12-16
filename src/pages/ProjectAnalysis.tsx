@@ -5,11 +5,12 @@ import { ProjectParamsForm } from "@/components/ProjectParamsForm";
 import { ProjectResultsDisplay } from "@/components/ProjectResultsDisplay";
 import { AdvancedSensitivityPanel } from "@/components/AdvancedSensitivityPanel";
 import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
+import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, BarChart2, Play, RotateCcw, Dice5 } from "lucide-react";
+import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare } from "lucide-react";
 
-type TabType = "calculate" | "sensitivity" | "montecarlo";
+type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare";
 
 const ProjectAnalysis = () => {
   const [activeTab, setActiveTab] = useState<TabType>("calculate");
@@ -96,6 +97,17 @@ const ProjectAnalysis = () => {
               <Dice5 className="w-4 h-4" />
               Monte Carlo
             </button>
+            <button
+              onClick={() => setActiveTab("compare")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "compare"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <GitCompare className="w-4 h-4" />
+              So sánh dự án
+            </button>
           </div>
 
           {activeTab === "calculate" && (
@@ -127,6 +139,18 @@ const ProjectAnalysis = () => {
                 </p>
               </div>
               <ProjectMonteCarloPanel params={params} />
+            </>
+          )}
+
+          {activeTab === "compare" && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-3">So sánh nhiều dự án</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Thêm và so sánh các phương án đầu tư khác nhau để chọn dự án tối ưu
+                </p>
+              </div>
+              <ProjectComparison currentParams={params} />
             </>
           )}
         </motion.div>
