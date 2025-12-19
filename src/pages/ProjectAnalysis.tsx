@@ -7,6 +7,7 @@ import { AdvancedSensitivityPanel } from "@/components/AdvancedSensitivityPanel"
 import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
 import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
+import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
 import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare } from "lucide-react";
@@ -114,6 +115,7 @@ const ProjectAnalysis = () => {
           {activeTab === "calculate" && (
             <div className="grid lg:grid-cols-[400px_1fr] gap-6">
               <div className="space-y-4">
+                <ProjectExcelImporter onImport={setParams} currentParams={params} />
                 <ProjectScenarioManager currentParams={params} onLoadScenario={setParams} />
                 <ProjectParamsForm params={params} onParamsChange={setParams} />
                 <div className="flex gap-3">
