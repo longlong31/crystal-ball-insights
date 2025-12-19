@@ -271,3 +271,232 @@ export const exportFullProjectAnalysis = (
 
   XLSX.writeFile(workbook, filename);
 };
+
+// Mapping tên tiếng Việt sang key ProjectParams
+export const projectParamLabels: Record<string, keyof import("./projectModel").ProjectParams> = {
+  "Tên dự án": "projectName",
+  "Năm đầu tư": "investmentYear",
+  "Số năm hoạt động": "operationYears",
+  "Năm thanh lý": "liquidationYear",
+  "Diện tích đất (m2)": "landArea",
+  "Giá thuê đất (tr/m2/năm)": "landRentPrice",
+  "Điều chỉnh sau (năm)": "landRentAdjustmentYears",
+  "Giá trị TSCĐ (triệu)": "fixedAssetValue",
+  "Đời sống TSCĐ (năm)": "fixedAssetLife",
+  "Giá trị TSVH (triệu)": "intangibleAssetValue",
+  "Số năm phân bổ TSVH": "intangibleAssetLife",
+  "Công suất thiết kế": "designCapacity",
+  "Tỷ lệ tồn kho (%)": "inventoryRate",
+  "Giá bán năm 0 (triệu)": "basePrice",
+  "Thay đổi giá thực (%/năm)": "realPriceChange",
+  "Chi phí linh kiện (triệu)": "componentCost",
+  "Điện và bao bì (triệu)": "electricityPackaging",
+  "Số công nhân": "workers",
+  "Lương công nhân (triệu/tháng)": "workerSalary",
+  "Số kỹ sư": "engineers",
+  "Lương kỹ sư (triệu/tháng)": "engineerSalary",
+  "Tăng lương thực (%/năm)": "realSalaryIncrease",
+  "Chi phí quản lý (triệu/năm)": "adminCost",
+  "Chi phí QL năm thanh lý (%)": "adminCostLiquidationRate",
+  "Khoản phải thu (% DT)": "arRate",
+  "Khoản phải trả (% CP LK)": "apRate",
+  "Số dư tiền mặt (% DT)": "cashBalanceRate",
+  "Tỷ lệ vay (%)": "debtRatio",
+  "Lãi suất danh nghĩa (%)": "nominalInterestRate",
+  "Số năm trả nợ": "loanTerm",
+  "Suất sinh lời thực VCSH (%)": "realEquityReturn",
+  "Thuế TNDN (%)": "corporateTaxRate",
+  "Lạm phát (%/năm)": "inflationRate",
+};
+
+// Interface cho dữ liệu dự án nhập từ Excel
+export interface ParsedProjectData {
+  params: Partial<import("./projectModel").ProjectParams>;
+  capacitySchedule?: number[];
+  warnings: string[];
+}
+
+// Parse file Excel để lấy thông số dự án
+export const parseProjectExcelFile = async (file: File): Promise<ParsedProjectData> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+
+        const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
+
+        if (jsonData.length === 0) {
+          reject(new Error("File Excel không có dữ liệu"));
+          return;
+        }
+
+        const params: Partial<import("./projectModel").ProjectParams> = {};
+        const capacitySchedule: number[] = [];
+        const warnings: string[] = [];
+
+        // Tìm cột chứa tên tham số và giá trị
+        const firstRow = jsonData[0];
+        const keys = Object.keys(firstRow);
+
+        // Thử nhiều format khác nhau
+        // Format 1: Dữ liệu dọc với cột "Tham số" và "Giá trị"
+        const paramColName = keys.find((k) =>
+          k.toLowerCase().includes("tham số") || k.toLowerCase().includes("thông số") || k.toLowerCase() === "tên"
+        );
+        const valueColName = keys.find((k) =>
+          k.toLowerCase().includes("giá trị") || k.toLowerCase() === "value"
+        );
+
+        if (paramColName && valueColName) {
+          // Format dọc
+          jsonData.forEach((row) => {
+            const label = String(row[paramColName] || "").trim();
+            const value = row[valueColName];
+
+            // Xử lý công suất theo năm
+            if (label.startsWith("Công suất năm")) {
+              const yearMatch = label.match(/năm\s*(\d+)/i);
+              if (yearMatch) {
+                const yearIndex = parseInt(yearMatch[1]) - 1;
+                const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                if (!isNaN(numValue)) {
+                  while (capacitySchedule.length <= yearIndex) {
+                    capacitySchedule.push(0);
+                  }
+                  capacitySchedule[yearIndex] = numValue;
+                }
+              }
+              return;
+            }
+
+            const paramKey = projectParamLabels[label];
+            if (paramKey) {
+              if (paramKey === "projectName") {
+                (params as Record<string, unknown>)[paramKey] = String(value);
+              } else {
+                const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                if (!isNaN(numValue)) {
+                  (params as Record<string, unknown>)[paramKey] = numValue;
+                } else {
+                  warnings.push(`Không thể chuyển đổi giá trị "${value}" cho "${label}"`);
+                }
+              }
+            }
+          });
+        } else {
+          // Format 2: Dữ liệu ngang với tên cột là tên tham số
+          keys.forEach((key) => {
+            const label = key.trim();
+            const value = firstRow[key];
+
+            // Xử lý công suất theo năm
+            if (label.startsWith("Công suất năm")) {
+              const yearMatch = label.match(/năm\s*(\d+)/i);
+              if (yearMatch) {
+                const yearIndex = parseInt(yearMatch[1]) - 1;
+                const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                if (!isNaN(numValue)) {
+                  while (capacitySchedule.length <= yearIndex) {
+                    capacitySchedule.push(0);
+                  }
+                  capacitySchedule[yearIndex] = numValue;
+                }
+              }
+              return;
+            }
+
+            const paramKey = projectParamLabels[label];
+            if (paramKey) {
+              if (paramKey === "projectName") {
+                (params as Record<string, unknown>)[paramKey] = String(value);
+              } else {
+                const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                if (!isNaN(numValue)) {
+                  (params as Record<string, unknown>)[paramKey] = numValue;
+                }
+              }
+            }
+          });
+        }
+
+        if (Object.keys(params).length === 0) {
+          reject(new Error("Không tìm thấy thông số dự án hợp lệ trong file"));
+          return;
+        }
+
+        resolve({
+          params,
+          capacitySchedule: capacitySchedule.length > 0 ? capacitySchedule : undefined,
+          warnings,
+        });
+      } catch (error) {
+        reject(new Error("Không thể đọc file Excel"));
+      }
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Lỗi khi đọc file"));
+    };
+
+    reader.readAsBinaryString(file);
+  });
+};
+
+// Xuất template Excel cho nhập dữ liệu dự án
+export const exportProjectTemplate = (filename: string = "project-template.xlsx"): void => {
+  const workbook = XLSX.utils.book_new();
+
+  const templateData = [
+    { "Tham số": "Tên dự án", "Giá trị": "Dự án mới", "Ghi chú": "Tên dự án" },
+    { "Tham số": "Năm đầu tư", "Giá trị": 0, "Ghi chú": "Năm 0" },
+    { "Tham số": "Số năm hoạt động", "Giá trị": 8, "Ghi chú": "Số năm" },
+    { "Tham số": "Năm thanh lý", "Giá trị": 9, "Ghi chú": "Năm cuối" },
+    { "Tham số": "Diện tích đất (m2)", "Giá trị": 4000, "Ghi chú": "m2" },
+    { "Tham số": "Giá thuê đất (tr/m2/năm)", "Giá trị": 0.2, "Ghi chú": "triệu đồng/m2/năm" },
+    { "Tham số": "Điều chỉnh sau (năm)", "Giá trị": 3, "Ghi chú": "năm" },
+    { "Tham số": "Giá trị TSCĐ (triệu)", "Giá trị": 50000, "Ghi chú": "triệu đồng" },
+    { "Tham số": "Đời sống TSCĐ (năm)", "Giá trị": 10, "Ghi chú": "năm" },
+    { "Tham số": "Giá trị TSVH (triệu)", "Giá trị": 20000, "Ghi chú": "triệu đồng" },
+    { "Tham số": "Số năm phân bổ TSVH", "Giá trị": 8, "Ghi chú": "năm" },
+    { "Tham số": "Công suất thiết kế", "Giá trị": 45000, "Ghi chú": "sản phẩm/năm" },
+    { "Tham số": "Tỷ lệ tồn kho (%)", "Giá trị": 10, "Ghi chú": "%" },
+    { "Tham số": "Công suất năm 1", "Giá trị": 80, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 2", "Giá trị": 80, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 3", "Giá trị": 90, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 4", "Giá trị": 90, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 5", "Giá trị": 90, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 6", "Giá trị": 95, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 7", "Giá trị": 95, "Ghi chú": "% công suất" },
+    { "Tham số": "Công suất năm 8", "Giá trị": 95, "Ghi chú": "% công suất" },
+    { "Tham số": "Giá bán năm 0 (triệu)", "Giá trị": 12, "Ghi chú": "triệu đồng/SP" },
+    { "Tham số": "Thay đổi giá thực (%/năm)", "Giá trị": -6, "Ghi chú": "%/năm" },
+    { "Tham số": "Chi phí linh kiện (triệu)", "Giá trị": 9, "Ghi chú": "triệu đồng/SP" },
+    { "Tham số": "Điện và bao bì (triệu)", "Giá trị": 0.4, "Ghi chú": "triệu đồng/SP" },
+    { "Tham số": "Số công nhân", "Giá trị": 40, "Ghi chú": "người" },
+    { "Tham số": "Lương công nhân (triệu/tháng)", "Giá trị": 10, "Ghi chú": "triệu đồng/tháng" },
+    { "Tham số": "Số kỹ sư", "Giá trị": 20, "Ghi chú": "người" },
+    { "Tham số": "Lương kỹ sư (triệu/tháng)", "Giá trị": 15, "Ghi chú": "triệu đồng/tháng" },
+    { "Tham số": "Tăng lương thực (%/năm)", "Giá trị": 6, "Ghi chú": "%/năm" },
+    { "Tham số": "Chi phí quản lý (triệu/năm)", "Giá trị": 15000, "Ghi chú": "triệu đồng/năm" },
+    { "Tham số": "Chi phí QL năm thanh lý (%)", "Giá trị": 10, "Ghi chú": "%" },
+    { "Tham số": "Khoản phải thu (% DT)", "Giá trị": 6, "Ghi chú": "% doanh thu" },
+    { "Tham số": "Khoản phải trả (% CP LK)", "Giá trị": 5, "Ghi chú": "% chi phí linh kiện" },
+    { "Tham số": "Số dư tiền mặt (% DT)", "Giá trị": 0.2, "Ghi chú": "% doanh thu" },
+    { "Tham số": "Tỷ lệ vay (%)", "Giá trị": 60, "Ghi chú": "%" },
+    { "Tham số": "Lãi suất danh nghĩa (%)", "Giá trị": 12, "Ghi chú": "%/năm" },
+    { "Tham số": "Số năm trả nợ", "Giá trị": 3, "Ghi chú": "năm" },
+    { "Tham số": "Suất sinh lời thực VCSH (%)", "Giá trị": 12, "Ghi chú": "%/năm" },
+    { "Tham số": "Thuế TNDN (%)", "Giá trị": 20, "Ghi chú": "%" },
+    { "Tham số": "Lạm phát (%/năm)", "Giá trị": 5, "Ghi chú": "%/năm" },
+  ];
+
+  const templateSheet = XLSX.utils.json_to_sheet(templateData);
+  XLSX.utils.book_append_sheet(workbook, templateSheet, "Thông số dự án");
+
+  XLSX.writeFile(workbook, filename);
+};
