@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
+import { useRef, useState } from "react";
 import { SimulationCard } from "./SimulationCard";
 import { ProjectResults, ProjectParams } from "@/lib/projectModel";
 import { exportProjectResults, ProjectExportData } from "@/lib/excelParser";
+import { exportToPDF } from "@/lib/pdfExporter";
 import { CashFlowChart } from "./CashFlowChart";
 import { CashFlowTable } from "./CashFlowTable";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ import {
   Download,
   BarChart3,
   Table2 as TableIcon,
+  FileText,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,6 +69,9 @@ const MetricCard = ({ title, value, subtitle, icon, trend, highlighted }: Metric
 );
 
 export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResultsDisplayProps) => {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [exportingPDF, setExportingPDF] = useState(false);
+
   if (loading) {
     return (
       <SimulationCard>
@@ -124,20 +131,54 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
     toast.success("Đã xuất file Excel thành công!");
   };
 
+  const handleExportPDF = async () => {
+    if (!results || !params) return;
+    
+    setExportingPDF(true);
+    try {
+      await exportToPDF({
+        params,
+        results,
+        chartRef: chartRef.current,
+      });
+      toast.success("Đã xuất báo cáo PDF thành công!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Có lỗi khi xuất PDF. Vui lòng thử lại.");
+    } finally {
+      setExportingPDF(false);
+    }
+  };
+
   return (
     <SimulationCard>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
             <TrendingUp className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-semibold">Kết quả phân tích dự án</h3>
           </div>
           {params && (
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="w-4 h-4 mr-2" />
-              Xuất Excel
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Xuất Excel
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                onClick={handleExportPDF}
+                disabled={exportingPDF}
+              >
+                {exportingPDF ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="w-4 h-4 mr-2" />
+                )}
+                Xuất PDF
+              </Button>
+            </div>
           )}
         </div>
 
@@ -214,7 +255,9 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
             <BarChart3 className="w-4 h-4 text-primary" />
             <h4 className="text-sm font-medium">Biểu đồ dòng tiền theo năm</h4>
           </div>
-          <CashFlowChart yearlyData={results.yearlyData} />
+          <div ref={chartRef}>
+            <CashFlowChart yearlyData={results.yearlyData} />
+          </div>
         </div>
 
         {/* Cash Flow Table */}
