@@ -120,7 +120,7 @@ const Index = () => {
             <a href="/project" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Phân tích dự án
             </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Tài liệu
             </a>
           </nav>
