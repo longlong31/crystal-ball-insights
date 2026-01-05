@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   BookOpen, 
@@ -30,8 +30,12 @@ import {
   Award,
   BookMarked,
   Play,
-  ArrowRight
+  ArrowRight,
+  Search,
+  ArrowUp,
+  X
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -122,19 +126,99 @@ const MetricBadge = ({ value, label, trend }: { value: string; label: string; tr
   </div>
 );
 
+// Search content for documentation
+const searchableContent = [
+  { id: 'overview', keywords: ['tổng quan', 'crystal ball', 'công cụ', 'phân tích', 'đầu tư', 'tài chính', 'overview'] },
+  { id: 'metrics', keywords: ['npv', 'irr', 'dpp', 'dscr', 'giá trị hiện tại', 'hoàn vốn', 'chỉ số', 'tỷ suất', 'chiết khấu', 'metrics'] },
+  { id: 'sensitivity', keywords: ['độ nhạy', 'tornado', 'spider', 'ma trận', 'biến đổi', 'sensitivity'] },
+  { id: 'montecarlo', keywords: ['monte carlo', 'mô phỏng', 'xác suất', 'phân phối', 'rủi ro', 'simulation'] },
+  { id: 'guide', keywords: ['hướng dẫn', 'sử dụng', 'bước', 'nhập liệu', 'excel', 'guide'] },
+  { id: 'glossary', keywords: ['thuật ngữ', 'định nghĩa', 'wacc', 'cf', 'glossary'] },
+  { id: 'examples', keywords: ['ví dụ', 'thực tế', 'năng lượng', 'bất động sản', 'examples'] },
+  { id: 'best-practices', keywords: ['best practices', 'thực hành', 'tốt nhất', 'khuyến nghị'] },
+  { id: 'faq', keywords: ['faq', 'câu hỏi', 'thường gặp', 'hỏi đáp'] },
+  { id: 'standards', keywords: ['tiêu chuẩn', 'đánh giá', 'standards', 'criteria'] },
+  { id: 'references', keywords: ['tham khảo', 'tài liệu', 'nguồn', 'references'] },
+  { id: 'version', keywords: ['phiên bản', 'version', 'tính năng', 'features'] },
+];
+
 export const ProjectDocumentation = () => {
   const [activeSection, setActiveSection] = useState<SectionId>('overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Handle scroll for reading progress and back-to-top button
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setReadingProgress(Math.min(progress, 100));
+      setShowBackToTop(scrollTop > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Filter sections based on search query
+  const filteredSections = useMemo(() => {
+    if (!searchQuery.trim()) return sections;
+    const query = searchQuery.toLowerCase();
+    return sections.filter(section => {
+      const content = searchableContent.find(c => c.id === section.id);
+      return (
+        section.label.toLowerCase().includes(query) ||
+        content?.keywords.some(k => k.includes(query))
+      );
+    });
+  }, [searchQuery]);
 
   const scrollToSection = (sectionId: SectionId) => {
     setActiveSection(sectionId);
+    setSearchQuery('');
+    setShowSearch(false);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="relative min-h-screen">
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-muted/30">
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary via-primary to-secondary"
+          style={{ width: `${readingProgress}%` }}
+          initial={{ width: 0 }}
+          animate={{ width: `${readingProgress}%` }}
+          transition={{ duration: 0.1 }}
+        />
+      </div>
+
+      {/* Back to Top Button */}
+      <AnimatePresence>
+        {showBackToTop && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            onClick={scrollToTop}
+            className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:scale-110"
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
@@ -191,32 +275,107 @@ export const ProjectDocumentation = () => {
         </div>
       </motion.div>
 
-      {/* Navigation Pills */}
+      {/* Search Bar & Navigation Pills */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="sticky top-4 z-50 mb-8"
+        className="sticky top-2 z-50 mb-8"
       >
-        <div className="flex flex-wrap justify-center gap-2 p-4 rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg max-w-5xl mx-auto">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300",
-                  activeSection === section.id
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
+        <div className="flex flex-col gap-3 p-4 rounded-2xl bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg max-w-5xl mx-auto">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Tìm kiếm nội dung tài liệu..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearch(true);
+                  }}
+                  onFocus={() => setShowSearch(true)}
+                  className="pl-10 pr-10 bg-muted/50 border-border/50 focus:bg-background transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setShowSearch(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 )}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="hidden md:inline">{section.label}</span>
-              </button>
-            );
-          })}
+              </div>
+            </div>
+
+            {/* Search Results Dropdown */}
+            <AnimatePresence>
+              {showSearch && searchQuery && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 right-0 mt-2 p-2 rounded-xl bg-card border border-border/50 shadow-xl z-50"
+                >
+                  {filteredSections.length > 0 ? (
+                    <div className="space-y-1">
+                      {filteredSections.map((section) => {
+                        const Icon = section.icon;
+                        return (
+                          <button
+                            key={section.id}
+                            onClick={() => scrollToSection(section.id)}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors text-left"
+                          >
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <Icon className="w-4 h-4 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-sm">{section.label}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {searchableContent.find(c => c.id === section.id)?.keywords.slice(0, 3).join(', ')}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground text-sm">
+                      Không tìm thấy kết quả cho "{searchQuery}"
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Navigation Pills */}
+          <div className="flex flex-wrap justify-center gap-2">
+            {sections.map((section) => {
+              const Icon = section.icon;
+              return (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300",
+                    activeSection === section.id
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="hidden md:inline">{section.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
