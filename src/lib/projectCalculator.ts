@@ -7,6 +7,13 @@ import {
   calculateWACC,
   calculateIRR,
   calculateDPP,
+  calculatePaybackPeriod,
+  calculatePI,
+  calculateMIRR,
+  calculateEVA,
+  calculateBreakEvenPoint,
+  calculateCoefficientOfVariation,
+  calculateVolatility,
 } from "./projectModel";
 
 export function calculateProject(params: ProjectParams): ProjectResults {
@@ -310,7 +317,7 @@ export function calculateProject(params: ProjectParams): ProjectResults {
     yearlyData[i].cumulativePV_EPV = cumulativeEPV;
   }
   
-  // Tính các chỉ số tổng hợp
+  // Tính các chỉ số tổng hợp cơ bản
   const ncfsTIPV = yearlyData.map(d => d.ncfTIPV);
   const ncfsEPV = yearlyData.map(d => d.ncfEPV);
   const cumulativePVsTIPV = yearlyData.map(d => d.cumulativePV_TIPV);
@@ -327,8 +334,158 @@ export function calculateProject(params: ProjectParams): ProjectResults {
   const dscrValues = yearlyData.filter(d => d.dscr > 0).map(d => d.dscr);
   const dscrAverage = dscrValues.length > 0 ? 
     dscrValues.reduce((sum, d) => sum + d, 0) / dscrValues.length : 0;
+
+  // === TÍNH CÁC CHỈ SỐ MỞ RỘNG ===
   
+  // Tổng vốn đầu tư (sử dụng lại biến đã có ở trên)
+  const totalInvestment = params.fixedAssetValue + params.intangibleAssetValue;
+  
+  // Dữ liệu hoạt động (bỏ năm đầu tư và thanh lý)
+  const operatingYears = yearlyData.filter(d => d.year > 0 && d.year <= params.operationYears);
+  
+  // === CHỈ SỐ SINH LỜI ===
+  
+  // Tổng lợi nhuận ròng
+  const totalNetIncome = operatingYears.reduce((sum, d) => sum + d.netIncome, 0);
+  const averageNetIncome = operatingYears.length > 0 ? totalNetIncome / operatingYears.length : 0;
+  
+  // ROI - Return on Investment (%)
+  const roi = totalInvestment > 0 ? (totalNetIncome / totalInvestment) * 100 : 0;
+  
+  // ROE - Return on Equity (%)
+  const roe = equityAmount > 0 ? (averageNetIncome / equityAmount) * 100 : 0;
+  
+  // ROA - Return on Assets (%)
+  const roa = totalInvestment > 0 ? (averageNetIncome / totalInvestment) * 100 : 0;
+  
+  // Tổng doanh thu
+  const totalRevenue = operatingYears.reduce((sum, d) => sum + d.revenue, 0);
+  const averageRevenue = operatingYears.length > 0 ? totalRevenue / operatingYears.length : 0;
+  
+  // Tổng chi phí sản xuất
+  const totalCOGS = operatingYears.reduce((sum, d) => sum + d.cogs, 0);
+  
+  // Gross Profit Margin - Biên lợi nhuận gộp (%)
+  const grossProfitMargin = totalRevenue > 0 ? ((totalRevenue - totalCOGS) / totalRevenue) * 100 : 0;
+  
+  // Net Profit Margin - Biên lợi nhuận ròng (%)
+  const netProfitMargin = totalRevenue > 0 ? (totalNetIncome / totalRevenue) * 100 : 0;
+  
+  // Average Profit Margin - Biên lợi nhuận bình quân (%)
+  const profitMargins = operatingYears.map(d => d.revenue > 0 ? (d.netIncome / d.revenue) * 100 : 0);
+  const averageProfitMargin = profitMargins.length > 0 ? 
+    profitMargins.reduce((a, b) => a + b, 0) / profitMargins.length : 0;
+  
+  // Break-even Point
+  const avgFixedCosts = operatingYears.length > 0 ?
+    operatingYears.reduce((sum, d) => sum + d.depreciation + d.intangibleDepreciation + d.adminCost + d.landRent, 0) / operatingYears.length : 0;
+  const avgPrice = operatingYears.length > 0 ?
+    operatingYears.reduce((sum, d) => sum + d.sellingPrice, 0) / operatingYears.length : 0;
+  const avgVariableCost = operatingYears.length > 0 ?
+    operatingYears.reduce((sum, d) => {
+      const unitVar = d.productionVolume > 0 ? (d.componentCost + d.laborCost + d.electricityCost) / d.productionVolume : 0;
+      return sum + unitVar;
+    }, 0) / operatingYears.length : 0;
+  
+  const breakEvenPoint = calculateBreakEvenPoint(avgFixedCosts, avgPrice, avgVariableCost);
+  
+  // Break-even Year - Năm hòa vốn (dựa trên NCF tích lũy)
+  let breakEvenYear = params.operationYears + 1;
+  let cumulativeNCF = 0;
+  for (const d of yearlyData) {
+    cumulativeNCF += d.ncfTIPV;
+    if (cumulativeNCF >= 0 && d.year > 0) {
+      const prevCum = cumulativeNCF - d.ncfTIPV;
+      breakEvenYear = d.year - 1 + (-prevCum) / (cumulativeNCF - prevCum);
+      break;
+    }
+  }
+  
+  // Break-even Revenue - Doanh thu hòa vốn
+  const breakEvenRevenue = breakEvenPoint * avgPrice;
+  
+  // === CHỈ SỐ HIỆU QUẢ VỐN ===
+  
+  // PI - Profitability Index
+  const pi = calculatePI(npvTIPV, totalInvestment);
+  
+  // MIRR - Modified Internal Rate of Return
+  const mirr = calculateMIRR(ncfsTIPV, waccAverage, waccAverage);
+  
+  // Payback Period - Thời gian hoàn vốn không chiết khấu
+  const paybackPeriod = calculatePaybackPeriod(ncfsTIPV);
+  
+  // EVA - Economic Value Added (bình quân hàng năm)
+  const avgNOPAT = operatingYears.length > 0 ?
+    operatingYears.reduce((sum, d) => sum + d.ebit * (1 - params.corporateTaxRate / 100), 0) / operatingYears.length : 0;
+  const eva = calculateEVA(avgNOPAT, totalInvestment, waccAverage);
+  
+  // Capital Turnover - Vòng quay vốn
+  const capitalTurnover = totalInvestment > 0 ? averageRevenue / totalInvestment : 0;
+  
+  // Asset Turnover - Vòng quay tài sản
+  const assetTurnover = totalInvestment > 0 ? totalRevenue / totalInvestment : 0;
+  
+  // === CHỈ SỐ RỦI RO ===
+  
+  // Coefficient of Variation - Hệ số biến thiên dòng tiền
+  const operatingNCFs = operatingYears.map(d => d.ncfTIPV);
+  const coefficientOfVariation = calculateCoefficientOfVariation(operatingNCFs);
+  
+  // Sensitivity Index - Chỉ số độ nhạy (NPV / Investment)
+  const sensitivityIndex = totalInvestment > 0 ? Math.abs(npvTIPV / totalInvestment) : 0;
+  
+  // Financial Leverage - Đòn bẩy tài chính
+  const financialLeverage = equityAmount > 0 ? totalInvestment / equityAmount : 1;
+  
+  // Operating Leverage - Đòn bẩy hoạt động (Fixed Costs / Total Costs)
+  const totalCosts = operatingYears.reduce((sum, d) => 
+    sum + d.cogs + d.adminCost, 0);
+  const fixedCosts = operatingYears.reduce((sum, d) => 
+    sum + d.depreciation + d.intangibleDepreciation + d.landRent + d.adminCost, 0);
+  const operatingLeverage = totalCosts > 0 ? fixedCosts / totalCosts : 0;
+  
+  // Safety Margin - Biên an toàn (%)
+  const avgSalesVolume = operatingYears.length > 0 ?
+    operatingYears.reduce((sum, d) => sum + d.salesVolume, 0) / operatingYears.length : 0;
+  const safetyMargin = avgSalesVolume > 0 && isFinite(breakEvenPoint) ? 
+    ((avgSalesVolume - breakEvenPoint) / avgSalesVolume) * 100 : 0;
+  
+  // === CHỈ SỐ THANH KHOẢN & NỢ ===
+  
+  // Debt to Equity Ratio
+  const debtToEquity = equityAmount > 0 ? loanAmount / equityAmount : 0;
+  
+  // Interest Coverage Ratio - Hệ số thanh toán lãi vay
+  const totalInterest = yearlyData.reduce((sum, d) => sum + d.interestExpense, 0);
+  const totalEBIT = operatingYears.reduce((sum, d) => sum + d.ebit, 0);
+  const interestCoverageRatio = totalInterest > 0 ? totalEBIT / totalInterest : Infinity;
+  
+  // Debt Service Coverage Ratio (average)
+  const debtServiceCoverageRatio = dscrAverage;
+  
+  // === THỐNG KÊ DÒNG TIỀN ===
+  
+  // Total Cash Inflow/Outflow
+  const totalCashInflow = yearlyData.reduce((sum, d) => sum + Math.max(0, d.ncfTIPV), 0);
+  const totalCashOutflow = Math.abs(yearlyData.reduce((sum, d) => sum + Math.min(0, d.ncfTIPV), 0));
+  
+  // Peak Cash Deficit
+  let peakCashDeficit = 0;
+  cumulativeNCF = 0;
+  for (const d of yearlyData) {
+    cumulativeNCF += d.ncfTIPV;
+    if (cumulativeNCF < peakCashDeficit) {
+      peakCashDeficit = cumulativeNCF;
+    }
+  }
+  peakCashDeficit = Math.abs(peakCashDeficit);
+  
+  // Cash Flow Volatility
+  const cashFlowVolatility = calculateVolatility(operatingNCFs);
+
   return {
+    // Chỉ số cơ bản
     npvTIPV,
     irrTIPV,
     dppTIPV,
@@ -337,6 +494,44 @@ export function calculateProject(params: ProjectParams): ProjectResults {
     irrEPV,
     dppEPV,
     waccAverage,
+    
+    // Chỉ số sinh lời
+    roi,
+    roe,
+    roa,
+    averageProfitMargin,
+    grossProfitMargin,
+    netProfitMargin,
+    breakEvenPoint: isFinite(breakEvenPoint) ? breakEvenPoint : 0,
+    breakEvenYear,
+    breakEvenRevenue: isFinite(breakEvenRevenue) ? breakEvenRevenue : 0,
+    
+    // Chỉ số hiệu quả vốn
+    pi,
+    mirr,
+    eva,
+    paybackPeriod,
+    capitalTurnover,
+    assetTurnover,
+    
+    // Chỉ số rủi ro
+    coefficientOfVariation,
+    sensitivityIndex,
+    financialLeverage,
+    operatingLeverage,
+    safetyMargin,
+    
+    // Chỉ số thanh khoản & nợ
+    debtToEquity,
+    interestCoverageRatio: isFinite(interestCoverageRatio) ? interestCoverageRatio : 999,
+    debtServiceCoverageRatio,
+    
+    // Thống kê dòng tiền
+    totalCashInflow,
+    totalCashOutflow,
+    peakCashDeficit,
+    cashFlowVolatility,
+    
     yearlyData,
   };
 }

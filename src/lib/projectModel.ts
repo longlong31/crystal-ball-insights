@@ -74,6 +74,43 @@ export interface ProjectResults {
   // WACC bình quân
   waccAverage: number;
   
+  // === CHỈ SỐ SINH LỜI (Profitability Metrics) ===
+  roi: number; // Return on Investment (%)
+  roe: number; // Return on Equity (%)
+  roa: number; // Return on Assets (%)
+  averageProfitMargin: number; // Biên lợi nhuận bình quân (%)
+  grossProfitMargin: number; // Biên lợi nhuận gộp (%)
+  netProfitMargin: number; // Biên lợi nhuận ròng (%)
+  breakEvenPoint: number; // Điểm hòa vốn (sản lượng)
+  breakEvenYear: number; // Năm hòa vốn
+  breakEvenRevenue: number; // Doanh thu hòa vốn
+  
+  // === CHỈ SỐ HIỆU QUẢ VỐN (Capital Efficiency Metrics) ===
+  pi: number; // Profitability Index (Chỉ số sinh lời)
+  mirr: number; // Modified Internal Rate of Return
+  eva: number; // Economic Value Added
+  paybackPeriod: number; // Thời gian hoàn vốn (không chiết khấu)
+  capitalTurnover: number; // Vòng quay vốn
+  assetTurnover: number; // Vòng quay tài sản
+  
+  // === CHỈ SỐ RỦI RO (Risk Metrics) ===
+  coefficientOfVariation: number; // Hệ số biến thiên
+  sensitivityIndex: number; // Chỉ số độ nhạy
+  financialLeverage: number; // Đòn bẩy tài chính
+  operatingLeverage: number; // Đòn bẩy hoạt động
+  safetyMargin: number; // Biên an toàn (%)
+  
+  // === CHỈ SỐ THANH KHOẢN & NỢ (Liquidity & Debt Metrics) ===
+  debtToEquity: number; // Tỷ lệ nợ/vốn chủ sở hữu
+  interestCoverageRatio: number; // Hệ số thanh toán lãi vay
+  debtServiceCoverageRatio: number; // Hệ số khả năng trả nợ
+  
+  // === THỐNG KÊ DÒNG TIỀN ===
+  totalCashInflow: number; // Tổng dòng tiền vào
+  totalCashOutflow: number; // Tổng dòng tiền ra
+  peakCashDeficit: number; // Thâm hụt tiền mặt cao nhất
+  cashFlowVolatility: number; // Độ biến động dòng tiền
+  
   // Dữ liệu chi tiết theo năm
   yearlyData: YearlyData[];
 }
@@ -267,4 +304,88 @@ export function calculateDPP(cumulativePVs: number[]): number {
     }
   }
   return cumulativePVs.length; // Không hoàn vốn trong thời gian dự án
+}
+
+// Tính thời gian hoàn vốn không chiết khấu
+export function calculatePaybackPeriod(cashFlows: number[]): number {
+  let cumulative = 0;
+  for (let i = 0; i < cashFlows.length; i++) {
+    cumulative += cashFlows[i];
+    if (cumulative >= 0 && i > 0) {
+      const prevCum = cumulative - cashFlows[i];
+      return i - 1 + (-prevCum) / (cumulative - prevCum);
+    }
+  }
+  return cashFlows.length;
+}
+
+// Tính Profitability Index (PI)
+export function calculatePI(npv: number, initialInvestment: number): number {
+  if (initialInvestment === 0) return 0;
+  return 1 + npv / Math.abs(initialInvestment);
+}
+
+// Tính Modified IRR (MIRR)
+export function calculateMIRR(
+  cashFlows: number[], 
+  financeRate: number, 
+  reinvestRate: number
+): number {
+  const n = cashFlows.length - 1;
+  if (n <= 0) return 0;
+  
+  // PV của dòng tiền âm (chi phí)
+  let pvNegative = 0;
+  // FV của dòng tiền dương (lợi ích)
+  let fvPositive = 0;
+  
+  for (let t = 0; t < cashFlows.length; t++) {
+    if (cashFlows[t] < 0) {
+      pvNegative += cashFlows[t] / Math.pow(1 + financeRate, t);
+    } else {
+      fvPositive += cashFlows[t] * Math.pow(1 + reinvestRate, n - t);
+    }
+  }
+  
+  if (pvNegative >= 0 || fvPositive <= 0) return 0;
+  
+  return Math.pow(-fvPositive / pvNegative, 1 / n) - 1;
+}
+
+// Tính Economic Value Added (EVA)
+export function calculateEVA(
+  netOperatingProfit: number, 
+  investedCapital: number, 
+  wacc: number
+): number {
+  return netOperatingProfit - (investedCapital * wacc);
+}
+
+// Tính điểm hòa vốn (Break-even)
+export function calculateBreakEvenPoint(
+  fixedCosts: number,
+  pricePerUnit: number,
+  variableCostPerUnit: number
+): number {
+  const contribution = pricePerUnit - variableCostPerUnit;
+  if (contribution <= 0) return Infinity;
+  return fixedCosts / contribution;
+}
+
+// Tính hệ số biến thiên (Coefficient of Variation)
+export function calculateCoefficientOfVariation(values: number[]): number {
+  if (values.length === 0) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  if (mean === 0) return 0;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  return stdDev / Math.abs(mean);
+}
+
+// Tính độ biến động (Volatility)
+export function calculateVolatility(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance);
 }
