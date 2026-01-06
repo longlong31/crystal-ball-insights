@@ -8,12 +8,11 @@ import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
 import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
 import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
-import { ProjectDocumentation } from "@/components/ProjectDocumentation";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, BookOpen } from "lucide-react";
+import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare } from "lucide-react";
 
-type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare" | "docs";
+type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare";
 
 const ProjectAnalysis = () => {
   const [activeTab, setActiveTab] = useState<TabType>("calculate");
@@ -111,17 +110,6 @@ const ProjectAnalysis = () => {
               <GitCompare className="w-4 h-4" />
               So sánh dự án
             </button>
-            <button
-              onClick={() => setActiveTab("docs")}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                activeTab === "docs"
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              Tài liệu
-            </button>
           </div>
 
           {activeTab === "calculate" && (
@@ -170,17 +158,6 @@ const ProjectAnalysis = () => {
             </>
           )}
 
-          {activeTab === "docs" && (
-            <>
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold mb-3">Tài liệu tham khảo</h2>
-                <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Công thức, phương pháp và hướng dẫn sử dụng công cụ phân tích
-                </p>
-              </div>
-              <ProjectDocumentation />
-            </>
-          )}
         </motion.div>
       </main>
     </div>
