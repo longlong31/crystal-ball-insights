@@ -7,6 +7,7 @@ import { exportToPDF } from "@/lib/pdfExporter";
 import { CashFlowChart } from "./CashFlowChart";
 import { CashFlowTable } from "./CashFlowTable";
 import { ProjectRadarChart } from "./RadarChart";
+import { ProjectEvaluationReport } from "./ProjectEvaluationReport";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -252,9 +253,10 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-flex">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Tổng quan</TabsTrigger>
             <TabsTrigger value="radar" className="text-xs sm:text-sm">Radar</TabsTrigger>
+            <TabsTrigger value="report" className="text-xs sm:text-sm">Báo cáo</TabsTrigger>
             <TabsTrigger value="profitability" className="text-xs sm:text-sm">Sinh lời</TabsTrigger>
             <TabsTrigger value="efficiency" className="text-xs sm:text-sm">Hiệu quả</TabsTrigger>
             <TabsTrigger value="risk" className="text-xs sm:text-sm">Rủi ro</TabsTrigger>
@@ -368,6 +370,11 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
             <div className="p-4 rounded-xl border border-border bg-muted/20">
               <ProjectRadarChart results={results} />
             </div>
+          </TabsContent>
+
+          {/* Tab: Báo cáo đánh giá */}
+          <TabsContent value="report" className="mt-6">
+            {params && <ProjectEvaluationReport results={results} params={params} />}
           </TabsContent>
 
           {/* Tab: Sinh lời */}
