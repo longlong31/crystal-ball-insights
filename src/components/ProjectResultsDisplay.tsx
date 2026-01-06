@@ -6,6 +6,7 @@ import { exportProjectResults, ProjectExportData } from "@/lib/excelParser";
 import { exportToPDF } from "@/lib/pdfExporter";
 import { CashFlowChart } from "./CashFlowChart";
 import { CashFlowTable } from "./CashFlowTable";
+import { ProjectRadarChart } from "./RadarChart";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -251,8 +252,9 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
             <TabsTrigger value="overview" className="text-xs sm:text-sm">Tổng quan</TabsTrigger>
+            <TabsTrigger value="radar" className="text-xs sm:text-sm">Radar</TabsTrigger>
             <TabsTrigger value="profitability" className="text-xs sm:text-sm">Sinh lời</TabsTrigger>
             <TabsTrigger value="efficiency" className="text-xs sm:text-sm">Hiệu quả</TabsTrigger>
             <TabsTrigger value="risk" className="text-xs sm:text-sm">Rủi ro</TabsTrigger>
@@ -359,6 +361,13 @@ export const ProjectResultsDisplay = ({ results, params, loading }: ProjectResul
                 trend={results.paybackPeriod < 5 ? "up" : "neutral"}
               />
             </MetricGroup>
+          </TabsContent>
+
+          {/* Tab: Radar Chart */}
+          <TabsContent value="radar" className="mt-6">
+            <div className="p-4 rounded-xl border border-border bg-muted/20">
+              <ProjectRadarChart results={results} />
+            </div>
           </TabsContent>
 
           {/* Tab: Sinh lời */}
