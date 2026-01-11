@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ProjectResults, ProjectParams } from "@/lib/projectModel";
 import { cn } from "@/lib/utils";
 import {
@@ -14,8 +14,23 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Download,
+  Sparkles,
+  Brain,
+  FileText,
+  Loader2,
+  AlertCircle,
+  BarChart3,
+  TrendingDown as RiskIcon,
+  Star,
+  Award,
+  RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { exportToPDF } from "@/lib/pdfExporter";
 
 interface ProjectEvaluationReportProps {
   results: ProjectResults;
@@ -41,6 +56,31 @@ interface EvaluationSection {
   maxScore: number;
   status: "excellent" | "good" | "warning" | "critical";
   items: { label: string; passed: boolean; detail: string }[];
+}
+
+interface AIAnalysis {
+  overallAssessment: string;
+  score: number;
+  feasibility: "VERY_FEASIBLE" | "FEASIBLE" | "MARGINAL" | "NOT_FEASIBLE";
+  strengths: string[];
+  weaknesses: string[];
+  aiRecommendations: {
+    priority: "HIGH" | "MEDIUM" | "LOW";
+    area: string;
+    issue: string;
+    solution: string;
+    expectedImpact: string;
+    implementationSteps: string[];
+  }[];
+  riskAnalysis: {
+    overallRiskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+    financialRisk: string;
+    operationalRisk: string;
+    marketRisk: string;
+    mitigationStrategies: string[];
+  };
+  strategicInsights: string;
+  executiveSummary: string;
 }
 
 const getCategoryIcon = (category: Recommendation["category"]) => {
@@ -70,12 +110,36 @@ const getSeverityStyles = (severity: Recommendation["severity"]) => {
   }
 };
 
+const getFeasibilityConfig = (feasibility: AIAnalysis["feasibility"]) => {
+  switch (feasibility) {
+    case "VERY_FEASIBLE": return { label: "Rất khả thi", color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/30" };
+    case "FEASIBLE": return { label: "Khả thi", color: "text-green-500", bg: "bg-green-500/10", border: "border-green-500/30" };
+    case "MARGINAL": return { label: "Cần cân nhắc", color: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/30" };
+    case "NOT_FEASIBLE": return { label: "Không khả thi", color: "text-red-500", bg: "bg-red-500/10", border: "border-red-500/30" };
+  }
+};
+
+const getRiskLevelConfig = (level: AIAnalysis["riskAnalysis"]["overallRiskLevel"]) => {
+  switch (level) {
+    case "LOW": return { label: "Thấp", color: "text-green-500", icon: Shield };
+    case "MEDIUM": return { label: "Trung bình", color: "text-yellow-500", icon: AlertCircle };
+    case "HIGH": return { label: "Cao", color: "text-orange-500", icon: AlertTriangle };
+    case "CRITICAL": return { label: "Nghiêm trọng", color: "text-red-500", icon: RiskIcon };
+  }
+};
+
+const getPriorityConfig = (priority: "HIGH" | "MEDIUM" | "LOW") => {
+  switch (priority) {
+    case "HIGH": return { label: "Ưu tiên cao", color: "text-red-500", bg: "bg-red-500/10" };
+    case "MEDIUM": return { label: "Ưu tiên vừa", color: "text-yellow-500", bg: "bg-yellow-500/10" };
+    case "LOW": return { label: "Ưu tiên thấp", color: "text-blue-500", bg: "bg-blue-500/10" };
+  }
+};
+
 const generateRecommendations = (results: ProjectResults, params: ProjectParams): Recommendation[] => {
   const recommendations: Recommendation[] = [];
-
-  // NPV Analysis
   const totalInvestment = params.fixedAssetValue + params.intangibleAssetValue;
-  const projectLife = params.operationYears + 1; // Include liquidation year
+  const projectLife = params.operationYears + 1;
   
   if (results.npvTIPV <= 0) {
     recommendations.push({
@@ -105,7 +169,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // IRR Analysis
   if (results.irrTIPV < results.waccAverage) {
     recommendations.push({
       id: "irr-below-wacc",
@@ -119,22 +182,8 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
       currentValue: `${(results.irrTIPV * 100).toFixed(2)}%`,
       targetValue: `> ${(results.waccAverage * 100).toFixed(2)}%`
     });
-  } else if (results.irrTIPV > results.waccAverage && results.irrTIPV < results.waccAverage * 1.5) {
-    recommendations.push({
-      id: "irr-marginal",
-      category: "profitability",
-      severity: "info",
-      title: "IRR cao hơn WACC nhưng biên độ an toàn thấp",
-      description: `IRR chỉ cao hơn WACC ${((results.irrTIPV - results.waccAverage) * 100).toFixed(2)}%.`,
-      suggestion: "Duy trì biên độ an toàn bằng cách kiểm soát chi phí chặt chẽ.",
-      impact: "Đảm bảo dự án vẫn sinh lời trong các kịch bản bất lợi.",
-      metric: "Spread",
-      currentValue: `${((results.irrTIPV - results.waccAverage) * 100).toFixed(2)}%`,
-      targetValue: "> 5%"
-    });
   }
 
-  // DSCR Analysis
   if (results.dscrAverage < 1) {
     recommendations.push({
       id: "dscr-critical",
@@ -163,7 +212,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // Payback Period
   if (results.paybackPeriod > projectLife * 0.7) {
     recommendations.push({
       id: "payback-long",
@@ -179,7 +227,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // ROE Analysis
   if (results.roe < 10) {
     recommendations.push({
       id: "roe-low",
@@ -195,7 +242,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // PI Analysis
   if (results.pi < 1) {
     recommendations.push({
       id: "pi-below-1",
@@ -211,7 +257,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // Safety Margin
   if (results.safetyMargin < 15) {
     recommendations.push({
       id: "safety-low",
@@ -227,7 +272,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // Debt to Equity
   if (results.debtToEquity > 3) {
     recommendations.push({
       id: "de-high",
@@ -243,7 +287,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // CV (Coefficient of Variation)
   if (results.coefficientOfVariation > 0.8) {
     recommendations.push({
       id: "cv-high",
@@ -259,7 +302,6 @@ const generateRecommendations = (results: ProjectResults, params: ProjectParams)
     });
   }
 
-  // Success indicators
   if (results.npvTIPV > 0 && results.irrTIPV > results.waccAverage * 1.5 && results.dscrAverage > 1.5) {
     recommendations.push({
       id: "strong-fundamentals",
@@ -336,7 +378,6 @@ const generateEvaluationSections = (results: ProjectResults): EvaluationSection[
     }
   ];
 
-  // Calculate scores
   sections.forEach(section => {
     const passedItems = section.items.filter(item => item.passed).length;
     section.score = Math.round((passedItems / section.items.length) * section.maxScore);
@@ -353,6 +394,12 @@ const generateEvaluationSections = (results: ProjectResults): EvaluationSection[
 
 export const ProjectEvaluationReport = ({ results, params }: ProjectEvaluationReportProps) => {
   const [expandedRecs, setExpandedRecs] = useState<Set<string>>(new Set());
+  const [expandedAIRecs, setExpandedAIRecs] = useState<Set<number>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysis, setAIAnalysis] = useState<AIAnalysis | null>(null);
+  const [showAISection, setShowAISection] = useState(false);
+
   const recommendations = generateRecommendations(results, params);
   const sections = generateEvaluationSections(results);
   
@@ -369,124 +416,537 @@ export const ProjectEvaluationReport = ({ results, params }: ProjectEvaluationRe
     });
   };
 
+  const toggleAIRec = (idx: number) => {
+    setExpandedAIRecs(prev => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      await exportToPDF({ params, results });
+      toast.success("Đã xuất báo cáo PDF thành công!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Lỗi khi xuất PDF. Vui lòng thử lại.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleAIAnalysis = async () => {
+    setIsAnalyzing(true);
+    setShowAISection(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-project", {
+        body: {
+          projectData: {
+            params: {
+              projectName: params.projectName,
+              operationYears: params.operationYears,
+              fixedAssetValue: params.fixedAssetValue,
+              intangibleAssetValue: params.intangibleAssetValue,
+              debtRatio: params.debtRatio,
+              nominalInterestRate: params.nominalInterestRate,
+              loanTerm: params.loanTerm,
+              designCapacity: params.designCapacity,
+              basePrice: params.basePrice,
+              componentCost: params.componentCost,
+              adminCost: params.adminCost,
+              inflationRate: params.inflationRate,
+              corporateTaxRate: params.corporateTaxRate,
+            },
+            results: {
+              npvTIPV: results.npvTIPV,
+              npvEPV: results.npvEPV,
+              irrTIPV: results.irrTIPV,
+              irrEPV: results.irrEPV,
+              dppTIPV: results.dppTIPV,
+              dppEPV: results.dppEPV,
+              dscrAverage: results.dscrAverage,
+              waccAverage: results.waccAverage,
+              roi: results.roi,
+              roe: results.roe,
+              roa: results.roa,
+              pi: results.pi,
+              mirr: results.mirr,
+              eva: results.eva,
+              paybackPeriod: results.paybackPeriod,
+              netProfitMargin: results.netProfitMargin,
+              grossProfitMargin: results.grossProfitMargin,
+              assetTurnover: results.assetTurnover,
+              capitalEfficiency: 0,
+              interestCoverageRatio: results.interestCoverageRatio,
+              debtToEquity: results.debtToEquity,
+              financialLeverage: results.financialLeverage,
+              breakEvenRevenue: results.breakEvenRevenue,
+              breakEvenUnits: 0,
+              safetyMargin: results.safetyMargin,
+              operatingLeverage: results.operatingLeverage,
+              coefficientOfVariation: results.coefficientOfVariation,
+            },
+          },
+        },
+      });
+
+      if (error) throw error;
+      setAIAnalysis(data.analysis);
+      toast.success("Phân tích AI hoàn thành!");
+    } catch (error: any) {
+      console.error("AI analysis error:", error);
+      if (error.message?.includes("429")) {
+        toast.error("Đã vượt quá giới hạn yêu cầu, vui lòng thử lại sau.");
+      } else if (error.message?.includes("402")) {
+        toast.error("Cần nạp thêm credit để sử dụng tính năng AI.");
+      } else {
+        toast.error("Lỗi khi phân tích. Vui lòng thử lại.");
+      }
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const criticalCount = recommendations.filter(r => r.severity === "critical").length;
   const warningCount = recommendations.filter(r => r.severity === "warning").length;
   const successCount = recommendations.filter(r => r.severity === "success").length;
 
   const getStatusColor = (status: EvaluationSection["status"]) => {
     switch (status) {
-      case "excellent": return "text-green-500 bg-green-500";
+      case "excellent": return "text-emerald-500 bg-emerald-500";
       case "good": return "text-blue-500 bg-blue-500";
-      case "warning": return "text-yellow-500 bg-yellow-500";
+      case "warning": return "text-amber-500 bg-amber-500";
       case "critical": return "text-red-500 bg-red-500";
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Overall Score */}
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
+        <Button 
+          onClick={handleExportPDF} 
+          disabled={isExporting}
+          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25"
+        >
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 mr-2" />
+          )}
+          Xuất báo cáo PDF
+        </Button>
+        <Button 
+          onClick={handleAIAnalysis} 
+          disabled={isAnalyzing}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/25"
+        >
+          {isAnalyzing ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Brain className="w-4 h-4 mr-2" />
+          )}
+          Phân tích AI chuyên sâu
+        </Button>
+      </div>
+
+      {/* Overall Score Card */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 rounded-2xl border border-border bg-gradient-to-br from-muted/50 to-background"
+        className="relative overflow-hidden p-6 rounded-2xl border border-border bg-gradient-to-br from-background via-muted/30 to-background"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Target className="w-5 h-5 text-primary" />
-            Đánh giá tổng thể dự án
-          </h3>
-          <div className={cn(
-            "text-2xl font-bold",
-            overallPercentage >= 70 ? "text-green-500" : overallPercentage >= 40 ? "text-yellow-500" : "text-red-500"
-          )}>
-            {totalScore}/{maxScore}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl" />
+        
+        <div className="relative">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-primary/10">
+                <Award className="w-5 h-5 text-primary" />
+              </div>
+              Đánh giá tổng thể dự án
+            </h3>
+            <div className="flex items-center gap-2">
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+                className={cn(
+                  "text-3xl font-bold",
+                  overallPercentage >= 70 ? "text-emerald-500" : overallPercentage >= 40 ? "text-amber-500" : "text-red-500"
+                )}
+              >
+                {totalScore}
+              </motion.div>
+              <span className="text-muted-foreground">/ {maxScore}</span>
+            </div>
           </div>
-        </div>
 
-        {/* Progress Bar */}
-        <div className="h-3 bg-muted rounded-full overflow-hidden mb-4">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: `${overallPercentage}%` }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className={cn(
-              "h-full rounded-full",
-              overallPercentage >= 70 ? "bg-green-500" : overallPercentage >= 40 ? "bg-yellow-500" : "bg-red-500"
-            )}
-          />
-        </div>
-
-        {/* Section Scores */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {sections.map((section, idx) => (
-            <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="p-3 rounded-xl bg-background border border-border"
+          {/* Progress Bar */}
+          <div className="h-4 bg-muted/50 rounded-full overflow-hidden mb-6 shadow-inner">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${overallPercentage}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={cn(
+                "h-full rounded-full relative overflow-hidden",
+                overallPercentage >= 70 
+                  ? "bg-gradient-to-r from-emerald-500 to-green-400" 
+                  : overallPercentage >= 40 
+                  ? "bg-gradient-to-r from-amber-500 to-yellow-400" 
+                  : "bg-gradient-to-r from-red-500 to-orange-400"
+              )}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">{section.title}</span>
-                <span className={cn("text-sm font-bold", getStatusColor(section.status).split(" ")[0])}>
-                  {section.score}/{section.maxScore}
-                </span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className={cn("h-full rounded-full transition-all", getStatusColor(section.status).split(" ")[1])}
-                  style={{ width: `${(section.score / section.maxScore) * 100}%` }}
-                />
-              </div>
-              <div className="mt-2 space-y-1">
-                {section.items.map((item, i) => (
-                  <div key={i} className="flex items-center gap-1 text-xs">
-                    {item.passed ? (
-                      <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="w-3 h-3 text-red-500" />
-                    )}
-                    <span className={item.passed ? "text-muted-foreground" : "text-foreground"}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
             </motion.div>
-          ))}
+          </div>
+
+          {/* Section Scores Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {sections.map((section, idx) => (
+              <motion.div
+                key={section.title}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="p-4 rounded-xl bg-background/80 border border-border/50 backdrop-blur-sm hover:border-primary/30 transition-all hover:shadow-md"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium text-muted-foreground">{section.title}</span>
+                  <span className={cn("text-sm font-bold", getStatusColor(section.status).split(" ")[0])}>
+                    {section.score}/{section.maxScore}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted/50 rounded-full overflow-hidden mb-3">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(section.score / section.maxScore) * 100}%` }}
+                    transition={{ duration: 0.6, delay: idx * 0.1 }}
+                    className={cn("h-full rounded-full transition-all", getStatusColor(section.status).split(" ")[1])}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  {section.items.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs">
+                      {item.passed ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                      )}
+                      <span className={cn(
+                        "truncate",
+                        item.passed ? "text-muted-foreground" : "text-foreground font-medium"
+                      )}>
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </motion.div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
-            <span className="text-sm text-red-500 font-medium">Nghiêm trọng</span>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="p-5 rounded-xl border border-red-500/20 bg-gradient-to-br from-red-500/5 to-red-500/10 hover:shadow-lg hover:shadow-red-500/10 transition-all"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-red-500/10">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+            </div>
+            <span className="text-sm text-red-400 font-medium">Nghiêm trọng</span>
           </div>
-          <div className="text-2xl font-bold text-red-500">{criticalCount}</div>
-        </div>
-        <div className="p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm text-yellow-500 font-medium">Cảnh báo</span>
+          <div className="text-3xl font-bold text-red-500">{criticalCount}</div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="p-5 rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-amber-500/10 hover:shadow-lg hover:shadow-amber-500/10 transition-all"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-amber-500/10">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+            </div>
+            <span className="text-sm text-amber-400 font-medium">Cảnh báo</span>
           </div>
-          <div className="text-2xl font-bold text-yellow-500">{warningCount}</div>
-        </div>
-        <div className="p-4 rounded-xl border border-green-500/30 bg-green-500/10">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            <span className="text-sm text-green-500 font-medium">Tốt</span>
+          <div className="text-3xl font-bold text-amber-500">{warningCount}</div>
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="p-5 rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 hover:shadow-lg hover:shadow-emerald-500/10 transition-all"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-lg bg-emerald-500/10">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            </div>
+            <span className="text-sm text-emerald-400 font-medium">Tốt</span>
           </div>
-          <div className="text-2xl font-bold text-green-500">{successCount}</div>
-        </div>
+          <div className="text-3xl font-bold text-emerald-500">{successCount}</div>
+        </motion.div>
       </div>
 
-      {/* Recommendations */}
-      <div className="space-y-3">
+      {/* AI Analysis Section */}
+      <AnimatePresence>
+        {showAISection && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="p-6 rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 via-background to-pink-500/5">
+              <div className="flex items-center justify-between mb-6">
+                <h4 className="text-lg font-semibold flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20">
+                    <Brain className="w-5 h-5 text-purple-500" />
+                  </div>
+                  Phân tích AI chuyên sâu
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                </h4>
+                {aiAnalysis && (
+                  <Button variant="ghost" size="sm" onClick={handleAIAnalysis} disabled={isAnalyzing}>
+                    <RefreshCw className={cn("w-4 h-4 mr-1", isAnalyzing && "animate-spin")} />
+                    Phân tích lại
+                  </Button>
+                )}
+              </div>
+
+              {isAnalyzing ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin" />
+                    <Brain className="w-6 h-6 text-purple-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  </div>
+                  <p className="mt-4 text-muted-foreground">Đang phân tích dự án với AI...</p>
+                </div>
+              ) : aiAnalysis ? (
+                <div className="space-y-6">
+                  {/* Executive Summary & Score */}
+                  <div className="grid md:grid-cols-[1fr_200px] gap-4">
+                    <div className="p-4 rounded-xl bg-background/50 border border-border/50">
+                      <h5 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Tóm tắt điều hành
+                      </h5>
+                      <p className="text-sm leading-relaxed">{aiAnalysis.executiveSummary}</p>
+                    </div>
+                    <div className={cn(
+                      "p-4 rounded-xl border flex flex-col items-center justify-center",
+                      getFeasibilityConfig(aiAnalysis.feasibility).bg,
+                      getFeasibilityConfig(aiAnalysis.feasibility).border
+                    )}>
+                      <div className={cn("text-4xl font-bold mb-1", getFeasibilityConfig(aiAnalysis.feasibility).color)}>
+                        {aiAnalysis.score}
+                      </div>
+                      <div className={cn("text-sm font-medium", getFeasibilityConfig(aiAnalysis.feasibility).color)}>
+                        {getFeasibilityConfig(aiAnalysis.feasibility).label}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Overall Assessment */}
+                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
+                    <p className="text-sm leading-relaxed">{aiAnalysis.overallAssessment}</p>
+                  </div>
+
+                  {/* Strengths & Weaknesses */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                      <h5 className="text-sm font-semibold text-emerald-500 mb-3 flex items-center gap-2">
+                        <Star className="w-4 h-4" />
+                        Điểm mạnh
+                      </h5>
+                      <ul className="space-y-2">
+                        {aiAnalysis.strengths.map((s, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+                      <h5 className="text-sm font-semibold text-red-500 mb-3 flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Điểm yếu
+                      </h5>
+                      <ul className="space-y-2">
+                        {aiAnalysis.weaknesses.map((w, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <span>{w}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Risk Analysis */}
+                  <div className="p-4 rounded-xl bg-background/50 border border-border/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <h5 className="text-sm font-semibold flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-primary" />
+                        Phân tích rủi ro
+                      </h5>
+                      <div className={cn("flex items-center gap-1 text-sm font-medium", getRiskLevelConfig(aiAnalysis.riskAnalysis.overallRiskLevel).color)}>
+                        {(() => {
+                          const Icon = getRiskLevelConfig(aiAnalysis.riskAnalysis.overallRiskLevel).icon;
+                          return <Icon className="w-4 h-4" />;
+                        })()}
+                        {getRiskLevelConfig(aiAnalysis.riskAnalysis.overallRiskLevel).label}
+                      </div>
+                    </div>
+                    <div className="grid md:grid-cols-3 gap-3 mb-4">
+                      <div className="p-3 rounded-lg bg-muted/30">
+                        <div className="text-xs text-muted-foreground mb-1">Rủi ro tài chính</div>
+                        <p className="text-xs">{aiAnalysis.riskAnalysis.financialRisk}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/30">
+                        <div className="text-xs text-muted-foreground mb-1">Rủi ro vận hành</div>
+                        <p className="text-xs">{aiAnalysis.riskAnalysis.operationalRisk}</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-muted/30">
+                        <div className="text-xs text-muted-foreground mb-1">Rủi ro thị trường</div>
+                        <p className="text-xs">{aiAnalysis.riskAnalysis.marketRisk}</p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">Chiến lược giảm thiểu:</div>
+                    <ul className="space-y-1">
+                      {aiAnalysis.riskAnalysis.mitigationStrategies.map((s, i) => (
+                        <li key={i} className="text-xs flex items-start gap-2">
+                          <ArrowRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* AI Recommendations */}
+                  <div>
+                    <h5 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Lightbulb className="w-4 h-4 text-amber-500" />
+                      Gợi ý cải thiện từ AI ({aiAnalysis.aiRecommendations.length})
+                    </h5>
+                    <div className="space-y-2">
+                      {aiAnalysis.aiRecommendations.map((rec, idx) => {
+                        const priorityConfig = getPriorityConfig(rec.priority);
+                        const isExpanded = expandedAIRecs.has(idx);
+                        
+                        return (
+                          <motion.div
+                            key={idx}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className="rounded-xl border border-border/50 overflow-hidden bg-background/50"
+                          >
+                            <button
+                              onClick={() => toggleAIRec(idx)}
+                              className="w-full p-4 flex items-start gap-3 text-left hover:bg-muted/20 transition-colors"
+                            >
+                              <div className={cn("p-1.5 rounded-lg shrink-0", priorityConfig.bg)}>
+                                <Zap className={cn("w-4 h-4", priorityConfig.color)} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={cn("text-xs px-2 py-0.5 rounded-full font-medium", priorityConfig.bg, priorityConfig.color)}>
+                                    {priorityConfig.label}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">{rec.area}</span>
+                                </div>
+                                <h6 className="font-medium text-sm">{rec.issue}</h6>
+                              </div>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                              )}
+                            </button>
+                            
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="border-t border-border/50"
+                                >
+                                  <div className="p-4 space-y-4">
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                        <ArrowRight className="w-3 h-3" />
+                                        Giải pháp
+                                      </div>
+                                      <p className="text-sm bg-primary/5 p-3 rounded-lg">{rec.solution}</p>
+                                    </div>
+                                    <div>
+                                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                        <Zap className="w-3 h-3" />
+                                        Tác động dự kiến
+                                      </div>
+                                      <p className="text-sm text-foreground/80">{rec.expectedImpact}</p>
+                                    </div>
+                                    {rec.implementationSteps?.length > 0 && (
+                                      <div>
+                                        <div className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                                          <BarChart3 className="w-3 h-3" />
+                                          Các bước thực hiện
+                                        </div>
+                                        <ol className="space-y-1.5">
+                                          {rec.implementationSteps.map((step, i) => (
+                                            <li key={i} className="text-xs flex items-start gap-2">
+                                              <span className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-[10px] font-medium">
+                                                {i + 1}
+                                              </span>
+                                              <span className="pt-0.5">{step}</span>
+                                            </li>
+                                          ))}
+                                        </ol>
+                                      </div>
+                                    )}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Strategic Insights */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-primary/5 to-purple-500/5 border border-primary/20">
+                    <h5 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Target className="w-4 h-4 text-primary" />
+                      Nhận định chiến lược
+                    </h5>
+                    <p className="text-sm leading-relaxed text-foreground/90">{aiAnalysis.strategicInsights}</p>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Manual Recommendations */}
+      <div className="space-y-4">
         <h4 className="text-sm font-semibold flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-primary" />
-          Đề xuất cải thiện ({recommendations.length})
+          Đề xuất cải thiện tự động ({recommendations.length})
         </h4>
         
         <div className="space-y-2">
@@ -502,7 +962,7 @@ export const ProjectEvaluationReport = ({ results, params }: ProjectEvaluationRe
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
                 className={cn(
-                  "rounded-xl border overflow-hidden transition-all",
+                  "rounded-xl border overflow-hidden transition-all hover:shadow-md",
                   styles.bg,
                   styles.border
                 )}
@@ -533,31 +993,33 @@ export const ProjectEvaluationReport = ({ results, params }: ProjectEvaluationRe
                   )}
                 </button>
                 
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="px-4 pb-4 pt-0 border-t border-border/50"
-                  >
-                    <div className="pt-3 space-y-3">
-                      <div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          <ArrowRight className="w-3 h-3" />
-                          Đề xuất giải pháp
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-4 pb-4 pt-0 border-t border-border/50"
+                    >
+                      <div className="pt-3 space-y-3">
+                        <div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <ArrowRight className="w-3 h-3" />
+                            Đề xuất giải pháp
+                          </div>
+                          <p className="text-sm bg-background/50 p-3 rounded-lg">{rec.suggestion}</p>
                         </div>
-                        <p className="text-sm bg-background/50 p-3 rounded-lg">{rec.suggestion}</p>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                          <Zap className="w-3 h-3" />
-                          Tác động dự kiến
+                        <div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                            <Zap className="w-3 h-3" />
+                            Tác động dự kiến
+                          </div>
+                          <p className="text-sm text-foreground/80">{rec.impact}</p>
                         </div>
-                        <p className="text-sm text-foreground/80">{rec.impact}</p>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             );
           })}
