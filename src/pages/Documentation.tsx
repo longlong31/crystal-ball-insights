@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { ProjectDocumentation } from "@/components/ProjectDocumentation";
+import { Footer } from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -301,11 +302,7 @@ const Documentation = () => {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>Crystal Ball - Công cụ phân tích rủi ro và dự báo Monte Carlo</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
