@@ -332,10 +332,11 @@ export function ProjectMonteCarloPanel({ params }: ProjectMonteCarloPanelProps) 
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="histogram">
-                <TabsList className="grid grid-cols-4 w-full max-w-lg mx-auto mb-6">
+                <TabsList className="grid grid-cols-5 w-full max-w-2xl mx-auto mb-6">
                   <TabsTrigger value="histogram">Histogram</TabsTrigger>
                   <TabsTrigger value="cdf">CDF</TabsTrigger>
                   <TabsTrigger value="stats">Thống kê</TabsTrigger>
+                  <TabsTrigger value="var">VaR/CVaR</TabsTrigger>
                   <TabsTrigger value="convergence">Hội tụ</TabsTrigger>
                 </TabsList>
 
@@ -457,6 +458,83 @@ export function ProjectMonteCarloPanel({ params }: ProjectMonteCarloPanelProps) 
                           <p className="text-lg font-bold">{formatNumber(stat.value, stat.decimals || 0)}</p>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* VaR/CVaR Tab */}
+                <TabsContent value="var">
+                  {currentResultData && (
+                    <div className="space-y-6">
+                      {/* VaR & CVaR Cards */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-amber-500" />
+                            <p className="text-xs text-muted-foreground font-medium">VaR 95%</p>
+                          </div>
+                          <p className="text-xl font-bold text-amber-600">{formatNumber(currentResultData.statistics.var95)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">5% xác suất thua lỗ vượt mức này</p>
+                        </div>
+                        
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500" />
+                            <p className="text-xs text-muted-foreground font-medium">VaR 99%</p>
+                          </div>
+                          <p className="text-xl font-bold text-red-600">{formatNumber(currentResultData.statistics.var99)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">1% xác suất thua lỗ vượt mức này</p>
+                        </div>
+                        
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-purple-500" />
+                            <p className="text-xs text-muted-foreground font-medium">CVaR 95%</p>
+                          </div>
+                          <p className="text-xl font-bold text-purple-600">{formatNumber(currentResultData.statistics.cvar95)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Trung bình tổn thất trong 5% tệ nhất</p>
+                        </div>
+                        
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-rose-500/10 to-rose-600/5 border border-rose-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-rose-500" />
+                            <p className="text-xs text-muted-foreground font-medium">CVaR 99%</p>
+                          </div>
+                          <p className="text-xl font-bold text-rose-600">{formatNumber(currentResultData.statistics.cvar99)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Trung bình tổn thất trong 1% tệ nhất</p>
+                        </div>
+                      </div>
+
+                      {/* Explanation */}
+                      <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+                        <h4 className="font-medium mb-3 flex items-center gap-2">
+                          <Target className="w-4 h-4 text-primary" />
+                          Giải thích VaR & CVaR
+                        </h4>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <p className="font-medium text-foreground mb-1">Value at Risk (VaR)</p>
+                            <p>VaR đo lường mức tổn thất tối đa có thể xảy ra tại một mức độ tin cậy nhất định. VaR 95% = {formatNumber(currentResultData.statistics.var95)} nghĩa là có 95% khả năng kết quả sẽ cao hơn giá trị này.</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-foreground mb-1">Conditional VaR (CVaR / Expected Shortfall)</p>
+                            <p>CVaR đo lường trung bình của các kịch bản xấu nhất vượt qua ngưỡng VaR. CVaR 95% = {formatNumber(currentResultData.statistics.cvar95)} là trung bình kết quả trong 5% trường hợp tệ nhất.</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Risk Summary */}
+                      <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
+                        <h4 className="font-medium mb-2">📊 Đánh giá rủi ro</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {currentResultData.statistics.var95 >= 0 
+                            ? `Dự án có mức rủi ro thấp. VaR 95% dương (${formatNumber(currentResultData.statistics.var95)}) cho thấy 95% kịch bản đều có kết quả dương.`
+                            : currentResultData.statistics.mean > 0 
+                              ? `Dự án có rủi ro trung bình. Mặc dù NPV trung bình dương (${formatNumber(currentResultData.statistics.mean)}), nhưng VaR 95% âm (${formatNumber(currentResultData.statistics.var95)}) cho thấy vẫn có 5% khả năng thua lỗ.`
+                              : `Dự án có rủi ro cao. NPV trung bình (${formatNumber(currentResultData.statistics.mean)}) và VaR 95% (${formatNumber(currentResultData.statistics.var95)}) đều cho thấy xác suất thua lỗ đáng kể.`
+                          }
+                        </p>
+                      </div>
                     </div>
                   )}
                 </TabsContent>

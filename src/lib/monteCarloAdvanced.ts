@@ -40,6 +40,11 @@ export interface MonteCarloResultData {
     percentile95: number;
     skewness: number;
     kurtosis: number;
+    // VaR và CVaR
+    var95: number; // Value at Risk tại 95%
+    var99: number; // Value at Risk tại 99%
+    cvar95: number; // Conditional VaR tại 95%
+    cvar99: number; // Conditional VaR tại 99%
   };
   histogram: { bin: number; count: number; frequency: number }[];
   cdf: { value: number; probability: number }[];
@@ -184,6 +189,17 @@ function calculateResultStatistics(values: number[]): MonteCarloResultData {
   const skewness = stdDev > 0 ? m3 : 0;
   const kurtosis = stdDev > 0 ? m4 - 3 : 0;
 
+  // VaR (Value at Risk) - mức tổn thất tối đa tại mức tin cậy
+  // VaR 95%: 5% xác suất thua lỗ vượt mức này
+  const var95Index = Math.floor(0.05 * n);
+  const var99Index = Math.floor(0.01 * n);
+  const var95 = sorted[var95Index] || sorted[0];
+  const var99 = sorted[var99Index] || sorted[0];
+
+  // CVaR (Conditional VaR / Expected Shortfall) - trung bình tổn thất trong 5%/1% tệ nhất
+  const cvar95 = sorted.slice(0, var95Index + 1).reduce((a, b) => a + b, 0) / (var95Index + 1) || var95;
+  const cvar99 = sorted.slice(0, var99Index + 1).reduce((a, b) => a + b, 0) / (var99Index + 1) || var99;
+
   // Histogram
   const binCount = 30;
   const min = sorted[0];
@@ -227,6 +243,10 @@ function calculateResultStatistics(values: number[]): MonteCarloResultData {
       percentile95: percentile(95),
       skewness,
       kurtosis,
+      var95,
+      var99,
+      cvar95,
+      cvar99,
     },
     histogram,
     cdf,
