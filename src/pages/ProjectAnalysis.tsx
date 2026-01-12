@@ -8,6 +8,7 @@ import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
 import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
 import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
+import { Footer } from "@/components/Footer";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
 import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare } from "lucide-react";
@@ -160,6 +161,8 @@ const ProjectAnalysis = () => {
 
         </motion.div>
       </main>
+      
+      <Footer />
     </div>
   );
 };

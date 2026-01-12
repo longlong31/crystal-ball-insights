@@ -6,6 +6,7 @@ import { ResultsPanel } from "@/components/ResultsPanel";
 import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { ScenarioManager } from "@/components/ScenarioManager";
 import { ExcelUploader } from "@/components/ExcelUploader";
+import { Footer } from "@/components/Footer";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
@@ -222,11 +223,7 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="container text-center text-sm text-muted-foreground">
-          <p>Crystal Ball - Công cụ phân tích rủi ro và dự báo Monte Carlo</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
