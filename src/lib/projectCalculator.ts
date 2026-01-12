@@ -74,6 +74,10 @@ export function calculateProject(params: ProjectParams): ProjectResults {
         electricityCost: 0,
         landRent: 0,
         adminCost: 0,
+        maintenanceCost: 0,
+        majorRepairCost: 0,
+        insuranceCost: 0,
+        environmentalCost: 0,
         depreciation: 0,
         intangibleDepreciation: 0,
         cogs: 0,
@@ -165,14 +169,34 @@ export function calculateProject(params: ProjectParams): ProjectResults {
                   (params.adminCostLiquidationRate / 100);
     }
     
+    // Chi phí bảo trì, bảo hiểm, môi trường
+    const maintenanceCost = (!isLiquidationYear && operationYear < params.operationYears) 
+      ? params.fixedAssetValue * (params.maintenanceCostRate / 100) * inflationIndex 
+      : 0;
+    
+    const majorRepairCost = (!isLiquidationYear && operationYear > 0 && 
+      params.majorRepairInterval > 0 && 
+      operationYear % params.majorRepairInterval === 0) 
+      ? params.majorRepairCost * inflationIndex 
+      : 0;
+    
+    const insuranceCost = (!isLiquidationYear && operationYear < params.operationYears) 
+      ? params.fixedAssetValue * (params.insuranceCostRate / 100) * inflationIndex 
+      : 0;
+    
+    const environmentalCost = (!isLiquidationYear && operationYear < params.operationYears) 
+      ? params.environmentalCost * inflationIndex 
+      : 0;
+    
     // Khấu hao
     const depreciation = (operationYear < params.fixedAssetLife && !isLiquidationYear) ? annualDepreciation : 0;
     const intangibleDepreciation = (operationYear < params.intangibleAssetLife && !isLiquidationYear) ? 
                                     annualIntangibleDepreciation : 0;
     
-    // Giá thành sản xuất
+    // Giá thành sản xuất (bao gồm chi phí mới)
     const totalProductionCost = componentCost + laborCost + electricityCost + landRent + 
-                                depreciation + intangibleDepreciation;
+                                depreciation + intangibleDepreciation + 
+                                maintenanceCost + insuranceCost + environmentalCost;
     const unitProductionCost = productionVolume > 0 ? totalProductionCost / productionVolume : 0;
     
     // Giá vốn hàng bán (FIFO)
@@ -188,8 +212,8 @@ export function calculateProject(params: ProjectParams): ProjectResults {
     // Giá trị hàng tồn kho cuối kỳ
     const inventoryValue = inventoryUnits * unitProductionCost;
     
-    // EBIT, EBT, Tax, Net Income
-    const ebit = revenue - cogs - adminCost;
+    // EBIT, EBT, Tax, Net Income (bao gồm chi phí sửa chữa lớn)
+    const ebit = revenue - cogs - adminCost - majorRepairCost;
     
     const loanData = year <= params.loanTerm ? loanSchedule[year] : { interest: 0, principal: 0, balance: 0 };
     const interestExpense = loanData.interest;
@@ -213,9 +237,10 @@ export function calculateProject(params: ProjectParams): ProjectResults {
       (params.fixedAssetValue - annualDepreciation * params.operationYears) * 
       calculateInflationIndex(year, params.inflationRate) : 0;
     
-    // Ngân lưu TIPV
+    // Ngân lưu TIPV (bao gồm chi phí mới)
     const cashInflow = revenue - deltaAR + residualValue;
-    const cashOutflow = componentCost + laborCost + electricityCost + landRent + adminCost -
+    const cashOutflow = componentCost + laborCost + electricityCost + landRent + adminCost +
+                        maintenanceCost + majorRepairCost + insuranceCost + environmentalCost -
                         deltaAP + deltaCB + deltaInventory;
     const ncfBeforeTax = cashInflow - cashOutflow;
     const ncfTIPV = ncfBeforeTax - tax;
@@ -254,6 +279,10 @@ export function calculateProject(params: ProjectParams): ProjectResults {
       electricityCost,
       landRent,
       adminCost,
+      maintenanceCost,
+      majorRepairCost,
+      insuranceCost,
+      environmentalCost,
       depreciation,
       intangibleDepreciation,
       cogs,

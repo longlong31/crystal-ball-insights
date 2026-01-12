@@ -43,6 +43,13 @@ export interface ProjectParams {
   adminCost: number; // Chi phí quản lý năm 0 (triệu đồng/năm)
   adminCostLiquidationRate: number; // Tỷ lệ chi phí quản lý năm thanh lý (%)
   
+  // Chi phí bảo trì, bảo hiểm, môi trường
+  maintenanceCostRate: number; // Chi phí bảo trì (%/giá trị TSCĐ/năm)
+  majorRepairCost: number; // Chi phí sửa chữa lớn (triệu đồng/lần)
+  majorRepairInterval: number; // Chu kỳ sửa chữa lớn (năm)
+  insuranceCostRate: number; // Chi phí bảo hiểm (%/giá trị TSCĐ/năm)
+  environmentalCost: number; // Chi phí môi trường (triệu đồng/năm)
+  
   // Vốn lưu động
   arRate: number; // Khoản phải thu (% doanh thu)
   apRate: number; // Khoản phải trả (% chi phí linh kiện)
@@ -135,6 +142,10 @@ export interface YearlyData {
   electricityCost: number;
   landRent: number;
   adminCost: number;
+  maintenanceCost: number;
+  majorRepairCost: number;
+  insuranceCost: number;
+  environmentalCost: number;
   depreciation: number;
   intangibleDepreciation: number;
   cogs: number; // Giá vốn hàng bán
@@ -210,6 +221,13 @@ export const defaultProjectParams: ProjectParams = {
   
   adminCost: 15000,
   adminCostLiquidationRate: 10,
+  
+  // Chi phí bảo trì, bảo hiểm, môi trường
+  maintenanceCostRate: 2, // 2% giá trị TSCĐ/năm
+  majorRepairCost: 5000, // 5 tỷ mỗi lần sửa chữa lớn
+  majorRepairInterval: 4, // Sửa chữa lớn mỗi 4 năm
+  insuranceCostRate: 0.5, // 0.5% giá trị TSCĐ/năm
+  environmentalCost: 1000, // 1 tỷ/năm
   
   arRate: 6,
   apRate: 5,

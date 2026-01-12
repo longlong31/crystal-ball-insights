@@ -11,6 +11,9 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
+  Wrench,
+  Shield,
+  Leaf,
 } from "lucide-react";
 
 interface ProjectParamsFormProps {
@@ -89,6 +92,7 @@ export const ProjectParamsForm = ({ params, onParamsChange }: ProjectParamsFormP
     assets: false,
     production: false,
     costs: false,
+    maintenance: false,
     financing: false,
   });
 
@@ -367,6 +371,69 @@ export const ProjectParamsForm = ({ params, onParamsChange }: ProjectParamsFormP
               onChange={(v) => updateParam("cashBalanceRate", Number(v))}
               unit="% DT"
               step={0.1}
+            />
+          </div>
+        </Section>
+
+        {/* Chi phí bảo trì, bảo hiểm, môi trường */}
+        <Section
+          title="Bảo trì & Bảo hiểm"
+          icon={<Wrench className="w-4 h-4 text-red-500" />}
+          isOpen={openSections.maintenance}
+          onToggle={() => toggleSection("maintenance")}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+              <Wrench className="w-3 h-3" />
+              <span>Chi phí bảo trì</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <InputField
+                label="Tỷ lệ bảo trì"
+                value={params.maintenanceCostRate}
+                onChange={(v) => updateParam("maintenanceCostRate", Number(v))}
+                unit="% TSCĐ/năm"
+                step={0.1}
+              />
+              <InputField
+                label="Chi phí sửa chữa lớn"
+                value={params.majorRepairCost}
+                onChange={(v) => updateParam("majorRepairCost", Number(v))}
+                unit="triệu/lần"
+              />
+            </div>
+            <InputField
+              label="Chu kỳ sửa chữa lớn"
+              value={params.majorRepairInterval}
+              onChange={(v) => updateParam("majorRepairInterval", Number(v))}
+              unit="năm"
+            />
+          </div>
+          
+          <div className="space-y-3 mt-4 pt-4 border-t border-border/30">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+              <Shield className="w-3 h-3" />
+              <span>Bảo hiểm</span>
+            </div>
+            <InputField
+              label="Tỷ lệ bảo hiểm"
+              value={params.insuranceCostRate}
+              onChange={(v) => updateParam("insuranceCostRate", Number(v))}
+              unit="% TSCĐ/năm"
+              step={0.1}
+            />
+          </div>
+          
+          <div className="space-y-3 mt-4 pt-4 border-t border-border/30">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+              <Leaf className="w-3 h-3" />
+              <span>Môi trường</span>
+            </div>
+            <InputField
+              label="Chi phí môi trường"
+              value={params.environmentalCost}
+              onChange={(v) => updateParam("environmentalCost", Number(v))}
+              unit="triệu/năm"
             />
           </div>
         </Section>
