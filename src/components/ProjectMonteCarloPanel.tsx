@@ -35,8 +35,9 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { Play, RotateCcw, Settings, BarChart2, TrendingUp, Target, Zap, Download } from "lucide-react";
+import { Play, RotateCcw, Settings, BarChart2, TrendingUp, Target, Zap, Download, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { exportRiskReportToWord } from "@/lib/wordExporter";
 
 interface ProjectMonteCarloPanelProps {
   params: ProjectParams;
@@ -326,6 +327,22 @@ export function ProjectMonteCarloPanel({ params }: ProjectMonteCarloPanelProps) 
                   <Button variant="outline" size="sm" onClick={handleExportMonteCarlo}>
                     <Download className="w-4 h-4 mr-2" />
                     Xuất Excel
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      exportRiskReportToWord({
+                        params,
+                        results: require("@/lib/projectCalculator").calculateProject(params),
+                        monteCarloResult: result,
+                        selectedVariable: selectedResult,
+                      });
+                      toast.success("Đã xuất báo cáo rủi ro Word thành công!");
+                    }}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Xuất Word
                   </Button>
                 </div>
               </div>
