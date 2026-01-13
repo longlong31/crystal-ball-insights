@@ -8,12 +8,13 @@ import { ProjectMonteCarloPanel } from "@/components/ProjectMonteCarloPanel";
 import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
 import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
+import { FinancialStatementReader } from "@/components/FinancialStatementReader";
 import { Footer } from "@/components/Footer";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare } from "lucide-react";
+import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, FileText } from "lucide-react";
 
-type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare";
+type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare" | "financial";
 
 const ProjectAnalysis = () => {
   const [activeTab, setActiveTab] = useState<TabType>("calculate");
@@ -111,6 +112,17 @@ const ProjectAnalysis = () => {
               <GitCompare className="w-4 h-4" />
               So sánh dự án
             </button>
+            <button
+              onClick={() => setActiveTab("financial")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "financial"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Báo cáo tài chính
+            </button>
           </div>
 
           {activeTab === "calculate" && (
@@ -156,6 +168,18 @@ const ProjectAnalysis = () => {
                 </p>
               </div>
               <ProjectComparison currentParams={params} />
+            </>
+          )}
+
+          {activeTab === "financial" && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-3">Đọc báo cáo tài chính</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Upload và phân tích báo cáo tài chính từ file Excel hoặc PDF
+                </p>
+              </div>
+              <FinancialStatementReader />
             </>
           )}
 
