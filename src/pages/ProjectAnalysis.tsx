@@ -9,12 +9,13 @@ import { ProjectComparison } from "@/components/ProjectComparison";
 import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
 import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
 import { FinancialStatementReader } from "@/components/FinancialStatementReader";
+import { StressTestingPanel } from "@/components/StressTestingPanel";
 import { Footer } from "@/components/Footer";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, FileText } from "lucide-react";
+import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, FileText, AlertTriangle } from "lucide-react";
 
-type TabType = "calculate" | "sensitivity" | "montecarlo" | "compare" | "financial";
+type TabType = "calculate" | "sensitivity" | "montecarlo" | "stress" | "compare" | "financial";
 
 const ProjectAnalysis = () => {
   const [activeTab, setActiveTab] = useState<TabType>("calculate");
