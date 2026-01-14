@@ -103,6 +103,17 @@ const ProjectAnalysis = () => {
               Monte Carlo
             </button>
             <button
+              onClick={() => setActiveTab("stress")}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "stress"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Stress Testing
+            </button>
+            <button
               onClick={() => setActiveTab("compare")}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
                 activeTab === "compare"
@@ -157,6 +168,18 @@ const ProjectAnalysis = () => {
                 </p>
               </div>
               <ProjectMonteCarloPanel params={params} />
+            </>
+          )}
+
+          {activeTab === "stress" && results && (
+            <>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold mb-3">Stress Testing</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Kiểm tra độ bền vững của dự án trước các kịch bản khủng hoảng
+                </p>
+              </div>
+              <StressTestingPanel params={params} baseResults={results} />
             </>
           )}
 
