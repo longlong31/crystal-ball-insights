@@ -8,9 +8,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { FileText, Upload, Table2, TrendingUp, AlertCircle, CheckCircle, Download, Trash2, FileSpreadsheet, File } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { 
+  FileText, Upload, Table2, TrendingUp, AlertCircle, CheckCircle, 
+  Download, Trash2, FileSpreadsheet, File, Calculator, Sparkles,
+  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity
+} from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  Cell,
+  AreaChart,
+  Area,
+  PieChart as RechartsPieChart,
+  Pie,
+} from "recharts";
 
 interface FinancialData {
   fileName: string;
@@ -33,20 +55,64 @@ interface FinancialSummary {
   totalLiabilities?: number;
   equity?: number;
   cashFlow?: number;
+  operatingCashFlow?: number;
+  investingCashFlow?: number;
+  financingCashFlow?: number;
+  depreciation?: number;
+  interestExpense?: number;
+  taxExpense?: number;
+  ebitda?: number;
+  grossProfit?: number;
+  operatingIncome?: number;
   detectedMetrics: { name: string; value: number; unit: string }[];
+}
+
+interface CrystalBallAnalysis {
+  // Dòng tiền dự kiến
+  cashFlows: number[];
+  // Các chỉ số đầu vào
+  initialInvestment: number;
+  discountRate: number;
+  projectYears: number;
+  // Kết quả Crystal Ball
+  npv: number;
+  irr: number;
+  paybackPeriod: number;
+  profitabilityIndex: number;
+  // Phân tích tài chính
+  ratios: {
+    currentRatio: number;
+    debtToEquity: number;
+    returnOnEquity: number;
+    returnOnAssets: number;
+    grossMargin: number;
+    operatingMargin: number;
+    netMargin: number;
+    assetTurnover: number;
+  };
+  // Đánh giá
+  recommendation: "strong_buy" | "buy" | "hold" | "sell" | "strong_sell";
+  riskLevel: "low" | "medium" | "high" | "very_high";
+  strengths: string[];
+  weaknesses: string[];
 }
 
 // Danh sách từ khóa để nhận diện các chỉ số tài chính
 const financialKeywords: Record<string, string[]> = {
-  revenue: ["doanh thu", "revenue", "sales", "tổng doanh thu", "doanh số", "net sales"],
-  expenses: ["chi phí", "expense", "cost", "giá vốn", "operating expenses", "tổng chi phí"],
-  netIncome: ["lợi nhuận ròng", "net income", "profit", "lãi ròng", "thu nhập ròng", "lợi nhuận sau thuế"],
+  revenue: ["doanh thu", "revenue", "sales", "tổng doanh thu", "doanh số", "net sales", "doanh thu thuần"],
+  expenses: ["chi phí", "expense", "cost", "giá vốn", "operating expenses", "tổng chi phí", "chi phí hoạt động"],
+  netIncome: ["lợi nhuận ròng", "net income", "profit", "lãi ròng", "thu nhập ròng", "lợi nhuận sau thuế", "lãi sau thuế"],
   assets: ["tài sản", "assets", "total assets", "tổng tài sản"],
-  liabilities: ["nợ phải trả", "liabilities", "total liabilities", "công nợ"],
+  liabilities: ["nợ phải trả", "liabilities", "total liabilities", "công nợ", "tổng nợ"],
   equity: ["vốn chủ sở hữu", "equity", "shareholders equity", "vốn cổ đông"],
   cashFlow: ["dòng tiền", "cash flow", "tiền mặt", "lưu chuyển tiền"],
-  ebit: ["ebit", "thu nhập trước thuế và lãi", "operating income"],
-  ebitda: ["ebitda"],
+  operatingCashFlow: ["dòng tiền hoạt động", "operating cash flow", "lưu chuyển tiền hoạt động"],
+  investingCashFlow: ["dòng tiền đầu tư", "investing cash flow", "lưu chuyển tiền đầu tư"],
+  depreciation: ["khấu hao", "depreciation", "amortization"],
+  interestExpense: ["chi phí lãi vay", "interest expense", "lãi vay"],
+  taxExpense: ["thuế", "tax expense", "chi phí thuế"],
+  ebit: ["ebit", "thu nhập trước thuế và lãi", "operating income", "lợi nhuận hoạt động"],
+  ebitda: ["ebitda", "thu nhập trước thuế lãi và khấu hao"],
   grossProfit: ["lợi nhuận gộp", "gross profit", "lãi gộp"],
 };
 
@@ -60,9 +126,13 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString("vi-VN");
 };
 
+const formatPercent = (value: number): string => {
+  return (value * 100).toFixed(2) + "%";
+};
+
 const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
   const detectedMetrics: { name: string; value: number; unit: string }[] = [];
-  let summary: Partial<FinancialSummary> = {};
+  const summary: Partial<FinancialSummary> = {};
 
   data.forEach((sheet) => {
     sheet.rows.forEach((row) => {
@@ -73,7 +143,6 @@ const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
       Object.entries(financialKeywords).forEach(([metricKey, keywords]) => {
         keywords.forEach((keyword) => {
           if (rowText.includes(keyword.toLowerCase())) {
-            // Tìm giá trị số trong row
             Object.values(row).forEach((cellValue) => {
               const numValue = typeof cellValue === "number" ? cellValue : parseFloat(String(cellValue).replace(/[,\.]/g, ""));
               if (!isNaN(numValue) && numValue !== 0) {
@@ -84,20 +153,27 @@ const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
                 });
 
                 // Map to summary
-                if (metricKey === "revenue" && !summary.totalRevenue) {
-                  summary.totalRevenue = numValue;
-                } else if (metricKey === "expenses" && !summary.totalExpenses) {
-                  summary.totalExpenses = numValue;
-                } else if (metricKey === "netIncome" && !summary.netIncome) {
-                  summary.netIncome = numValue;
-                } else if (metricKey === "assets" && !summary.totalAssets) {
-                  summary.totalAssets = numValue;
-                } else if (metricKey === "liabilities" && !summary.totalLiabilities) {
-                  summary.totalLiabilities = numValue;
-                } else if (metricKey === "equity" && !summary.equity) {
-                  summary.equity = numValue;
-                } else if (metricKey === "cashFlow" && !summary.cashFlow) {
-                  summary.cashFlow = numValue;
+                const mappings: Record<string, keyof FinancialSummary> = {
+                  revenue: "totalRevenue",
+                  expenses: "totalExpenses",
+                  netIncome: "netIncome",
+                  assets: "totalAssets",
+                  liabilities: "totalLiabilities",
+                  equity: "equity",
+                  cashFlow: "cashFlow",
+                  operatingCashFlow: "operatingCashFlow",
+                  investingCashFlow: "investingCashFlow",
+                  depreciation: "depreciation",
+                  interestExpense: "interestExpense",
+                  taxExpense: "taxExpense",
+                  ebitda: "ebitda",
+                  grossProfit: "grossProfit",
+                  ebit: "operatingIncome",
+                };
+
+                const summaryKey = mappings[metricKey];
+                if (summaryKey && !(summaryKey in summary)) {
+                  (summary as Record<string, number>)[summaryKey] = numValue;
                 }
               }
             });
@@ -109,15 +185,72 @@ const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
 
   return {
     ...summary,
-    detectedMetrics: detectedMetrics.slice(0, 20), // Giới hạn 20 chỉ số
+    detectedMetrics: detectedMetrics.slice(0, 30),
   };
 };
 
-export function FinancialStatementReader() {
+// Tính IRR bằng phương pháp Newton-Raphson
+const calculateIRR = (cashFlows: number[], guess: number = 0.1): number => {
+  const maxIterations = 100;
+  const tolerance = 0.0001;
+  let rate = guess;
+
+  for (let i = 0; i < maxIterations; i++) {
+    let npv = 0;
+    let dnpv = 0;
+
+    for (let j = 0; j < cashFlows.length; j++) {
+      npv += cashFlows[j] / Math.pow(1 + rate, j);
+      dnpv -= j * cashFlows[j] / Math.pow(1 + rate, j + 1);
+    }
+
+    const newRate = rate - npv / dnpv;
+    
+    if (Math.abs(newRate - rate) < tolerance) {
+      return newRate;
+    }
+    
+    rate = newRate;
+  }
+
+  return rate;
+};
+
+// Tính NPV
+const calculateNPV = (cashFlows: number[], discountRate: number): number => {
+  return cashFlows.reduce((npv, cf, i) => npv + cf / Math.pow(1 + discountRate, i), 0);
+};
+
+// Tính Payback Period
+const calculatePaybackPeriod = (cashFlows: number[]): number => {
+  let cumulative = 0;
+  for (let i = 0; i < cashFlows.length; i++) {
+    cumulative += cashFlows[i];
+    if (cumulative >= 0) {
+      const prevCumulative = cumulative - cashFlows[i];
+      return i - prevCumulative / cashFlows[i];
+    }
+  }
+  return cashFlows.length;
+};
+
+interface FinancialStatementReaderProps {
+  onAnalysisComplete?: (analysis: CrystalBallAnalysis) => void;
+}
+
+export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatementReaderProps) {
   const [financialData, setFinancialData] = useState<FinancialData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeSheet, setActiveSheet] = useState(0);
+  const [activeTab, setActiveTab] = useState("upload");
+  
+  // Crystal Ball analysis parameters
+  const [discountRate, setDiscountRate] = useState(12);
+  const [projectYears, setProjectYears] = useState(10);
+  const [initialInvestment, setInitialInvestment] = useState(0);
+  const [growthRate, setGrowthRate] = useState(5);
+  const [analysis, setAnalysis] = useState<CrystalBallAnalysis | null>(null);
 
   const handleExcelUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,9 +310,15 @@ export function FinancialStatementReader() {
             summary,
           });
 
+          // Auto-set initial investment từ tài sản cố định nếu có
+          if (summary.totalAssets) {
+            setInitialInvestment(summary.totalAssets * 0.3); // Ước tính 30% tổng tài sản là đầu tư ban đầu
+          }
+
           clearInterval(progressInterval);
           setProgress(100);
           toast.success(`Đã đọc thành công ${sheets.length} sheet từ file Excel`);
+          setActiveTab("summary");
         } catch (error) {
           toast.error("Không thể đọc file Excel");
         } finally {
@@ -191,7 +330,6 @@ export function FinancialStatementReader() {
       };
 
       reader.onerror = () => {
-        clearInterval(progressInterval);
         toast.error("Lỗi khi đọc file");
         setIsLoading(false);
       };
@@ -222,10 +360,7 @@ export function FinancialStatementReader() {
         setProgress((prev) => Math.min(prev + 10, 85));
       }, 150);
 
-      // Dynamic import for pdfjs-dist
       const pdfjsLib = await import("pdfjs-dist");
-      
-      // Set worker source
       pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
       const arrayBuffer = await file.arrayBuffer();
@@ -237,10 +372,9 @@ export function FinancialStatementReader() {
       for (let i = 1; i <= Math.min(pdf.numPages, 50); i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        const pageText = textContent.items.map((item: unknown) => (item as { str: string }).str).join(" ");
         allText.push(pageText);
 
-        // Cố gắng parse các dòng thành bảng
         const lines = pageText.split(/[\n\r]+/);
         lines.forEach((line, lineIndex) => {
           const parts = line.split(/\s{2,}|\t/);
@@ -278,6 +412,7 @@ export function FinancialStatementReader() {
       clearInterval(progressInterval);
       setProgress(100);
       toast.success(`Đã đọc thành công ${pdf.numPages} trang PDF`);
+      setActiveTab("summary");
     } catch (error) {
       console.error("PDF parsing error:", error);
       toast.error("Không thể đọc file PDF. Vui lòng thử file khác.");
@@ -294,188 +429,381 @@ export function FinancialStatementReader() {
   const handleClear = useCallback(() => {
     setFinancialData(null);
     setActiveSheet(0);
+    setAnalysis(null);
+    setActiveTab("upload");
   }, []);
+
+  const runCrystalBallAnalysis = useCallback(() => {
+    if (!financialData?.summary) {
+      toast.error("Vui lòng upload báo cáo tài chính trước");
+      return;
+    }
+
+    const summary = financialData.summary;
+    
+    // Tính toán dòng tiền dự kiến
+    const baseCashFlow = summary.operatingCashFlow || summary.netIncome || summary.cashFlow || 0;
+    const cashFlows: number[] = [-initialInvestment];
+    
+    for (let i = 1; i <= projectYears; i++) {
+      const projectedCF = baseCashFlow * Math.pow(1 + growthRate / 100, i);
+      cashFlows.push(projectedCF);
+    }
+
+    // Tính các chỉ số Crystal Ball
+    const npv = calculateNPV(cashFlows, discountRate / 100);
+    const irr = calculateIRR(cashFlows) * 100;
+    const paybackPeriod = calculatePaybackPeriod(cashFlows);
+    const profitabilityIndex = initialInvestment > 0 ? (npv + initialInvestment) / initialInvestment : 0;
+
+    // Tính các tỷ số tài chính
+    const revenue = summary.totalRevenue || 1;
+    const assets = summary.totalAssets || 1;
+    const equity = summary.equity || 1;
+    const liabilities = summary.totalLiabilities || 0;
+
+    const ratios = {
+      currentRatio: assets / (liabilities || 1),
+      debtToEquity: liabilities / equity,
+      returnOnEquity: (summary.netIncome || 0) / equity,
+      returnOnAssets: (summary.netIncome || 0) / assets,
+      grossMargin: (summary.grossProfit || 0) / revenue,
+      operatingMargin: (summary.operatingIncome || summary.ebitda || 0) / revenue,
+      netMargin: (summary.netIncome || 0) / revenue,
+      assetTurnover: revenue / assets,
+    };
+
+    // Đánh giá tổng thể
+    let score = 0;
+    const strengths: string[] = [];
+    const weaknesses: string[] = [];
+
+    if (npv > 0) { score += 2; strengths.push("NPV dương - Dự án tạo giá trị"); }
+    else { score -= 2; weaknesses.push("NPV âm - Dự án có thể không khả thi"); }
+
+    if (irr > discountRate) { score += 2; strengths.push(`IRR (${irr.toFixed(1)}%) > Chi phí vốn (${discountRate}%)`); }
+    else { score -= 1; weaknesses.push("IRR thấp hơn chi phí vốn"); }
+
+    if (paybackPeriod < projectYears / 2) { score += 1; strengths.push(`Hoàn vốn nhanh (${paybackPeriod.toFixed(1)} năm)`); }
+    else if (paybackPeriod > projectYears) { score -= 1; weaknesses.push("Thời gian hoàn vốn quá dài"); }
+
+    if (ratios.currentRatio > 1.5) { score += 1; strengths.push("Thanh khoản tốt"); }
+    else if (ratios.currentRatio < 1) { score -= 1; weaknesses.push("Rủi ro thanh khoản"); }
+
+    if (ratios.debtToEquity < 1) { score += 1; strengths.push("Đòn bẩy tài chính an toàn"); }
+    else if (ratios.debtToEquity > 2) { score -= 1; weaknesses.push("Nợ cao - rủi ro tài chính"); }
+
+    if (ratios.returnOnEquity > 0.15) { score += 1; strengths.push("ROE cao > 15%"); }
+    if (ratios.netMargin > 0.1) { score += 1; strengths.push("Biên lợi nhuận tốt > 10%"); }
+
+    let recommendation: CrystalBallAnalysis["recommendation"];
+    if (score >= 5) recommendation = "strong_buy";
+    else if (score >= 2) recommendation = "buy";
+    else if (score >= 0) recommendation = "hold";
+    else if (score >= -2) recommendation = "sell";
+    else recommendation = "strong_sell";
+
+    let riskLevel: CrystalBallAnalysis["riskLevel"];
+    if (ratios.debtToEquity < 0.5 && ratios.currentRatio > 2) riskLevel = "low";
+    else if (ratios.debtToEquity < 1.5 && ratios.currentRatio > 1) riskLevel = "medium";
+    else if (ratios.debtToEquity < 3) riskLevel = "high";
+    else riskLevel = "very_high";
+
+    const result: CrystalBallAnalysis = {
+      cashFlows,
+      initialInvestment,
+      discountRate,
+      projectYears,
+      npv,
+      irr,
+      paybackPeriod,
+      profitabilityIndex,
+      ratios,
+      recommendation,
+      riskLevel,
+      strengths,
+      weaknesses,
+    };
+
+    setAnalysis(result);
+    onAnalysisComplete?.(result);
+    toast.success("Phân tích Crystal Ball hoàn tất!");
+    setActiveTab("crystal-ball");
+  }, [financialData, discountRate, projectYears, initialInvestment, growthRate, onAnalysisComplete]);
 
   const currentSheet = financialData?.sheets[activeSheet];
 
+  const recommendationLabels = {
+    strong_buy: { text: "Mua mạnh", color: "text-green-600", bg: "bg-green-500/10" },
+    buy: { text: "Nên mua", color: "text-green-500", bg: "bg-green-500/10" },
+    hold: { text: "Giữ", color: "text-yellow-500", bg: "bg-yellow-500/10" },
+    sell: { text: "Nên bán", color: "text-orange-500", bg: "bg-orange-500/10" },
+    strong_sell: { text: "Bán mạnh", color: "text-red-600", bg: "bg-red-500/10" },
+  };
+
+  const riskLabels = {
+    low: { text: "Thấp", color: "text-green-600" },
+    medium: { text: "Trung bình", color: "text-yellow-500" },
+    high: { text: "Cao", color: "text-orange-500" },
+    very_high: { text: "Rất cao", color: "text-red-600" },
+  };
+
   return (
     <div className="space-y-6">
-      {/* Upload Section */}
-      <Card className="glass">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            Đọc báo cáo tài chính
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Excel Upload */}
-            <div className="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors">
-              <div className="text-center">
-                <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 text-green-600" />
-                <h3 className="font-medium mb-2">File Excel / CSV</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Hỗ trợ .xlsx, .xls, .csv
-                </p>
-                <Label htmlFor="excel-upload" className="cursor-pointer">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    <Upload className="w-4 h-4" />
-                    Chọn file Excel
-                  </div>
-                  <Input
-                    id="excel-upload"
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    className="hidden"
-                    onChange={handleExcelUpload}
-                    disabled={isLoading}
-                  />
-                </Label>
-              </div>
-            </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 mb-6">
+          <TabsTrigger value="upload">Upload</TabsTrigger>
+          <TabsTrigger value="summary" disabled={!financialData}>Tổng quan</TabsTrigger>
+          <TabsTrigger value="data" disabled={!financialData}>Dữ liệu</TabsTrigger>
+          <TabsTrigger value="params" disabled={!financialData}>Tham số</TabsTrigger>
+          <TabsTrigger value="crystal-ball" disabled={!analysis}>Crystal Ball</TabsTrigger>
+        </TabsList>
 
-            {/* PDF Upload */}
-            <div className="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors">
-              <div className="text-center">
-                <File className="w-12 h-12 mx-auto mb-3 text-red-600" />
-                <h3 className="font-medium mb-2">File PDF</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Báo cáo tài chính dạng PDF
-                </p>
-                <Label htmlFor="pdf-upload" className="cursor-pointer">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                    <Upload className="w-4 h-4" />
-                    Chọn file PDF
+        {/* Upload Tab */}
+        <TabsContent value="upload">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Đọc báo cáo tài chính
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors">
+                  <div className="text-center">
+                    <FileSpreadsheet className="w-12 h-12 mx-auto mb-3 text-green-600" />
+                    <h3 className="font-medium mb-2">File Excel / CSV</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Hỗ trợ .xlsx, .xls, .csv
+                    </p>
+                    <Label htmlFor="excel-upload" className="cursor-pointer">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <Upload className="w-4 h-4" />
+                        Chọn file Excel
+                      </div>
+                      <Input
+                        id="excel-upload"
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={handleExcelUpload}
+                        disabled={isLoading}
+                      />
+                    </Label>
                   </div>
-                  <Input
-                    id="pdf-upload"
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={handlePDFUpload}
-                    disabled={isLoading}
-                  />
-                </Label>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading Progress */}
-          <AnimatePresence>
-            {isLoading && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mt-4 space-y-2"
-              >
-                <Progress value={progress} className="h-2" />
-                <p className="text-sm text-center text-muted-foreground">
-                  Đang xử lý file... {progress}%
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-      </Card>
-
-      {/* Results Section */}
-      <AnimatePresence>
-        {financialData && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="space-y-6"
-          >
-            {/* File Info */}
-            <Card className="glass">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {financialData.fileType === "excel" ? (
-                      <FileSpreadsheet className="w-8 h-8 text-green-600" />
-                    ) : (
-                      <File className="w-8 h-8 text-red-600" />
-                    )}
-                    <div>
-                      <h3 className="font-medium">{financialData.fileName}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {financialData.sheets.length} sheet(s) •{" "}
-                        {financialData.sheets.reduce((acc, s) => acc + s.rows.length, 0)} dòng dữ liệu
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleClear}>
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Xóa
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Financial Summary */}
-            {financialData.summary && financialData.summary.detectedMetrics.length > 0 && (
-              <Card className="glass">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Chỉ số tài chính nhận diện được
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {financialData.summary.totalRevenue && (
-                      <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <p className="text-xs text-muted-foreground mb-1">Tổng doanh thu</p>
-                        <p className="text-lg font-bold text-green-600">
-                          {formatNumber(financialData.summary.totalRevenue)}
-                        </p>
+                <div className="p-6 rounded-xl border-2 border-dashed border-border hover:border-primary/50 transition-colors">
+                  <div className="text-center">
+                    <File className="w-12 h-12 mx-auto mb-3 text-red-600" />
+                    <h3 className="font-medium mb-2">File PDF</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Báo cáo tài chính dạng PDF
+                    </p>
+                    <Label htmlFor="pdf-upload" className="cursor-pointer">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                        <Upload className="w-4 h-4" />
+                        Chọn file PDF
                       </div>
-                    )}
-                    {financialData.summary.totalExpenses && (
-                      <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
-                        <p className="text-xs text-muted-foreground mb-1">Tổng chi phí</p>
-                        <p className="text-lg font-bold text-red-600">
-                          {formatNumber(financialData.summary.totalExpenses)}
-                        </p>
-                      </div>
-                    )}
-                    {financialData.summary.netIncome && (
-                      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                        <p className="text-xs text-muted-foreground mb-1">Lợi nhuận ròng</p>
-                        <p className="text-lg font-bold text-blue-600">
-                          {formatNumber(financialData.summary.netIncome)}
-                        </p>
-                      </div>
-                    )}
-                    {financialData.summary.totalAssets && (
-                      <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
-                        <p className="text-xs text-muted-foreground mb-1">Tổng tài sản</p>
-                        <p className="text-lg font-bold text-purple-600">
-                          {formatNumber(financialData.summary.totalAssets)}
-                        </p>
-                      </div>
-                    )}
+                      <Input
+                        id="pdf-upload"
+                        type="file"
+                        accept=".pdf"
+                        className="hidden"
+                        onChange={handlePDFUpload}
+                        disabled={isLoading}
+                      />
+                    </Label>
                   </div>
+                </div>
+              </div>
 
-                  {/* Detected Metrics List */}
-                  <div className="mt-4">
-                    <p className="text-sm font-medium mb-2">Các chỉ số khác:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {financialData.summary.detectedMetrics.slice(0, 12).map((metric, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {metric.name}: {formatNumber(metric.value)}
-                        </Badge>
-                      ))}
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="mt-4 space-y-2"
+                  >
+                    <Progress value={progress} className="h-2" />
+                    <p className="text-sm text-center text-muted-foreground">
+                      Đang xử lý file... {progress}%
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Summary Tab */}
+        <TabsContent value="summary">
+          {financialData && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* File Info */}
+              <Card className="glass">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {financialData.fileType === "excel" ? (
+                        <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                      ) : (
+                        <File className="w-8 h-8 text-red-600" />
+                      )}
+                      <div>
+                        <h3 className="font-medium">{financialData.fileName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {financialData.sheets.length} sheet(s) •{" "}
+                          {financialData.sheets.reduce((acc, s) => acc + s.rows.length, 0)} dòng dữ liệu
+                        </p>
+                      </div>
                     </div>
+                    <Button variant="outline" size="sm" onClick={handleClear}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Xóa
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Data Table */}
+              {/* Financial Summary */}
+              {financialData.summary && (
+                <Card className="glass">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-primary" />
+                      Chỉ số tài chính nhận diện được
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {financialData.summary.totalRevenue && (
+                        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <DollarSign className="w-4 h-4 text-green-600" />
+                            <p className="text-xs text-muted-foreground">Tổng doanh thu</p>
+                          </div>
+                          <p className="text-lg font-bold text-green-600">
+                            {formatNumber(financialData.summary.totalRevenue)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.totalExpenses && (
+                        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <TrendingDown className="w-4 h-4 text-red-600" />
+                            <p className="text-xs text-muted-foreground">Tổng chi phí</p>
+                          </div>
+                          <p className="text-lg font-bold text-red-600">
+                            {formatNumber(financialData.summary.totalExpenses)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.netIncome && (
+                        <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Activity className="w-4 h-4 text-blue-600" />
+                            <p className="text-xs text-muted-foreground">Lợi nhuận ròng</p>
+                          </div>
+                          <p className="text-lg font-bold text-blue-600">
+                            {formatNumber(financialData.summary.netIncome)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.totalAssets && (
+                        <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <BarChart3 className="w-4 h-4 text-purple-600" />
+                            <p className="text-xs text-muted-foreground">Tổng tài sản</p>
+                          </div>
+                          <p className="text-lg font-bold text-purple-600">
+                            {formatNumber(financialData.summary.totalAssets)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.equity && (
+                        <div className="p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <PieChart className="w-4 h-4 text-indigo-600" />
+                            <p className="text-xs text-muted-foreground">Vốn chủ sở hữu</p>
+                          </div>
+                          <p className="text-lg font-bold text-indigo-600">
+                            {formatNumber(financialData.summary.equity)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.totalLiabilities && (
+                        <div className="p-4 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertCircle className="w-4 h-4 text-orange-600" />
+                            <p className="text-xs text-muted-foreground">Tổng nợ</p>
+                          </div>
+                          <p className="text-lg font-bold text-orange-600">
+                            {formatNumber(financialData.summary.totalLiabilities)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.cashFlow && (
+                        <div className="p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <TrendingUp className="w-4 h-4 text-cyan-600" />
+                            <p className="text-xs text-muted-foreground">Dòng tiền</p>
+                          </div>
+                          <p className="text-lg font-bold text-cyan-600">
+                            {formatNumber(financialData.summary.cashFlow)}
+                          </p>
+                        </div>
+                      )}
+                      {financialData.summary.ebitda && (
+                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Activity className="w-4 h-4 text-amber-600" />
+                            <p className="text-xs text-muted-foreground">EBITDA</p>
+                          </div>
+                          <p className="text-lg font-bold text-amber-600">
+                            {formatNumber(financialData.summary.ebitda)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {financialData.summary.detectedMetrics.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm font-medium mb-2">Các chỉ số khác:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {financialData.summary.detectedMetrics.slice(0, 15).map((metric, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {metric.name}: {formatNumber(metric.value)}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button 
+                      onClick={() => setActiveTab("params")} 
+                      className="w-full mt-6"
+                      variant="glow"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Tiếp tục phân tích Crystal Ball
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          )}
+        </TabsContent>
+
+        {/* Data Tab */}
+        <TabsContent value="data">
+          {financialData && (
             <Card className="glass">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -484,7 +812,6 @@ export function FinancialStatementReader() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {/* Sheet Tabs */}
                 {financialData.sheets.length > 1 && (
                   <Tabs
                     value={activeSheet.toString()}
@@ -501,7 +828,6 @@ export function FinancialStatementReader() {
                   </Tabs>
                 )}
 
-                {/* Data Table */}
                 {currentSheet && currentSheet.rows.length > 0 ? (
                   <div className="max-h-[500px] overflow-auto border rounded-lg">
                     <Table>
@@ -542,9 +868,326 @@ export function FinancialStatementReader() {
                 )}
               </CardContent>
             </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </TabsContent>
+
+        {/* Parameters Tab */}
+        <TabsContent value="params">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-primary" />
+                Tham số phân tích Crystal Ball
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="flex items-center justify-between mb-2">
+                      <span>Vốn đầu tư ban đầu (triệu đồng)</span>
+                      <span className="text-primary font-bold">{formatNumber(initialInvestment)}</span>
+                    </Label>
+                    <Input
+                      type="number"
+                      value={initialInvestment}
+                      onChange={(e) => setInitialInvestment(parseFloat(e.target.value) || 0)}
+                      placeholder="Nhập vốn đầu tư"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center justify-between mb-2">
+                      <span>Tỷ suất chiết khấu (%)</span>
+                      <span className="text-primary font-bold">{discountRate}%</span>
+                    </Label>
+                    <Slider
+                      value={[discountRate]}
+                      onValueChange={([v]) => setDiscountRate(v)}
+                      min={5}
+                      max={25}
+                      step={0.5}
+                      className="py-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="flex items-center justify-between mb-2">
+                      <span>Số năm dự án</span>
+                      <span className="text-primary font-bold">{projectYears} năm</span>
+                    </Label>
+                    <Slider
+                      value={[projectYears]}
+                      onValueChange={([v]) => setProjectYears(v)}
+                      min={3}
+                      max={30}
+                      step={1}
+                      className="py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="flex items-center justify-between mb-2">
+                      <span>Tốc độ tăng trưởng dòng tiền (%/năm)</span>
+                      <span className="text-primary font-bold">{growthRate}%</span>
+                    </Label>
+                    <Slider
+                      value={[growthRate]}
+                      onValueChange={([v]) => setGrowthRate(v)}
+                      min={-10}
+                      max={20}
+                      step={0.5}
+                      className="py-2"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
+                <h4 className="font-medium mb-2">Dòng tiền cơ sở từ báo cáo</h4>
+                <p className="text-sm text-muted-foreground">
+                  {financialData?.summary?.operatingCashFlow 
+                    ? `Dòng tiền hoạt động: ${formatNumber(financialData.summary.operatingCashFlow)}`
+                    : financialData?.summary?.netIncome
+                      ? `Lợi nhuận ròng: ${formatNumber(financialData.summary.netIncome)}`
+                      : "Chưa phát hiện dòng tiền cơ sở"
+                  }
+                </p>
+              </div>
+
+              <Button 
+                onClick={runCrystalBallAnalysis} 
+                className="w-full"
+                variant="glow"
+                size="lg"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Chạy phân tích Crystal Ball
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Crystal Ball Analysis Tab */}
+        <TabsContent value="crystal-ball">
+          {analysis && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Key Metrics */}
+              <div className="grid md:grid-cols-4 gap-4">
+                <Card className={`${analysis.npv >= 0 ? "border-green-500/30 bg-green-500/5" : "border-red-500/30 bg-red-500/5"}`}>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">NPV</p>
+                      <p className={`text-2xl font-bold ${analysis.npv >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {formatNumber(analysis.npv)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {analysis.npv >= 0 ? "✓ Dự án tạo giá trị" : "✗ Dự án phá hủy giá trị"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className={`${analysis.irr > discountRate ? "border-green-500/30 bg-green-500/5" : "border-orange-500/30 bg-orange-500/5"}`}>
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">IRR</p>
+                      <p className={`text-2xl font-bold ${analysis.irr > discountRate ? "text-green-600" : "text-orange-600"}`}>
+                        {analysis.irr.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Chi phí vốn: {discountRate}%
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-blue-500/30 bg-blue-500/5">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Thời gian hoàn vốn</p>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {analysis.paybackPeriod.toFixed(1)} năm
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tổng {projectYears} năm
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-purple-500/30 bg-purple-500/5">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-1">Profitability Index</p>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {analysis.profitabilityIndex.toFixed(2)}x
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {analysis.profitabilityIndex > 1 ? "✓ Sinh lời" : "✗ Thua lỗ"}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Recommendation & Risk */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className={`glass ${recommendationLabels[analysis.recommendation].bg}`}>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Khuyến nghị đầu tư</p>
+                        <p className={`text-2xl font-bold ${recommendationLabels[analysis.recommendation].color}`}>
+                          {recommendationLabels[analysis.recommendation].text}
+                        </p>
+                      </div>
+                      <Sparkles className={`w-10 h-10 ${recommendationLabels[analysis.recommendation].color} opacity-50`} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Mức độ rủi ro</p>
+                        <p className={`text-2xl font-bold ${riskLabels[analysis.riskLevel].color}`}>
+                          {riskLabels[analysis.riskLevel].text}
+                        </p>
+                      </div>
+                      <AlertCircle className={`w-10 h-10 ${riskLabels[analysis.riskLevel].color} opacity-50`} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Cash Flow Chart */}
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle>Dòng tiền dự kiến</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analysis.cashFlows.map((cf, i) => ({ year: i, cashFlow: cf }))}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                      <XAxis dataKey="year" label={{ value: "Năm", position: "insideBottom", offset: -5 }} />
+                      <YAxis tickFormatter={v => formatNumber(v)} />
+                      <Tooltip
+                        formatter={(value: number) => [formatNumber(value), "Dòng tiền"]}
+                        labelFormatter={(v) => `Năm ${v}`}
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" />
+                      <Bar dataKey="cashFlow" radius={[4, 4, 0, 0]}>
+                        {analysis.cashFlows.map((cf, index) => (
+                          <Cell key={`cell-${index}`} fill={cf >= 0 ? "hsl(var(--chart-2))" : "hsl(var(--destructive))"} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Financial Ratios */}
+              <Card className="glass">
+                <CardHeader>
+                  <CardTitle>Các tỷ số tài chính</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Current Ratio</p>
+                      <p className="text-lg font-bold">{analysis.ratios.currentRatio.toFixed(2)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Debt/Equity</p>
+                      <p className="text-lg font-bold">{analysis.ratios.debtToEquity.toFixed(2)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">ROE</p>
+                      <p className="text-lg font-bold">{formatPercent(analysis.ratios.returnOnEquity)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">ROA</p>
+                      <p className="text-lg font-bold">{formatPercent(analysis.ratios.returnOnAssets)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Gross Margin</p>
+                      <p className="text-lg font-bold">{formatPercent(analysis.ratios.grossMargin)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Operating Margin</p>
+                      <p className="text-lg font-bold">{formatPercent(analysis.ratios.operatingMargin)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Net Margin</p>
+                      <p className="text-lg font-bold">{formatPercent(analysis.ratios.netMargin)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                      <p className="text-xs text-muted-foreground">Asset Turnover</p>
+                      <p className="text-lg font-bold">{analysis.ratios.assetTurnover.toFixed(2)}x</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Strengths & Weaknesses */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="glass border-green-500/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-green-600">
+                      <CheckCircle className="w-5 h-5" />
+                      Điểm mạnh
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {analysis.strengths.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card className="glass border-red-500/30">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-600">
+                      <AlertCircle className="w-5 h-5" />
+                      Điểm yếu / Rủi ro
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {analysis.weaknesses.length > 0 ? analysis.weaknesses.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm">
+                          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                          {w}
+                        </li>
+                      )) : (
+                        <li className="text-sm text-muted-foreground">Không phát hiện điểm yếu đáng kể</li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
