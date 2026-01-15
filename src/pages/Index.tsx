@@ -7,10 +7,16 @@ import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { ScenarioManager } from "@/components/ScenarioManager";
 import { ExcelUploader } from "@/components/ExcelUploader";
 import { Footer } from "@/components/Footer";
+import { UserMenu } from "@/components/auth/UserMenu";
+import { AuthForm } from "@/components/auth/AuthForm";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
 import { Sparkles, BarChart2, Activity } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 type TabType = 'simulation' | 'sensitivity';
 
@@ -33,6 +39,7 @@ const Index = () => {
   const [simulationData, setSimulationData] = useState<number[]>([]);
   const [stats, setStats] = useState(calculateStatistics([]));
   const [isRunning, setIsRunning] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   const handleDistributionTypeChange = (type: DistributionType) => {
     setDistributionType(type);
@@ -107,6 +114,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Auth Dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
+          <AuthForm onSuccess={() => setShowAuthDialog(false)} />
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex items-center justify-between h-16">
@@ -125,6 +139,7 @@ const Index = () => {
               Tài liệu
             </a>
           </nav>
+          <UserMenu onAuthClick={() => setShowAuthDialog(true)} />
         </div>
       </header>
 
