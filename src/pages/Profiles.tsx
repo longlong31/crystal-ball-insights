@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Mail, Phone, Save, ArrowLeft, Loader2, Camera } from "lucide-react";
+import { User, Mail, Phone, Save, ArrowLeft, Loader2, Camera, GraduationCap, Upload } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
 
@@ -18,6 +18,7 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string | null;
+  education: string | null;
   avatar_url: string | null;
   created_at: string;
   updated_at: string;
@@ -27,10 +28,13 @@ export default function Profiles() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
+    education: "",
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,6 +62,7 @@ export default function Profiles() {
         setFormData({
           full_name: data.full_name || "",
           phone: data.phone || "",
+          education: data.education || "",
         });
       }
       setIsLoading(false);
@@ -76,6 +81,7 @@ export default function Profiles() {
       .update({
         full_name: formData.full_name,
         phone: formData.phone || null,
+        education: formData.education || null,
       })
       .eq("user_id", profile.user_id);
 
@@ -87,6 +93,62 @@ export default function Profiles() {
     }
     
     setIsSaving(false);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Vui lòng chọn file hình ảnh");
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Kích thước ảnh tối đa 2MB");
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${profile.user_id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      // Update profile with avatar URL
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl })
+        .eq("user_id", profile.user_id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: publicUrl } : null);
+      toast.success("Đã cập nhật ảnh đại diện!");
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      toast.error("Không thể tải lên ảnh đại diện");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const getInitials = (name?: string) => {
@@ -148,17 +210,33 @@ export default function Profiles() {
                       {getInitials(profile?.full_name)}
                     </AvatarFallback>
                   </Avatar>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                  />
                   <Button
                     size="icon"
                     variant="outline"
                     className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                    onClick={handleAvatarClick}
+                    disabled={isUploading}
                   >
-                    <Camera className="w-4 h-4" />
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Camera className="w-4 h-4" />
+                    )}
                   </Button>
                 </div>
                 <div>
                   <CardTitle className="text-xl">{profile?.full_name || "Người dùng"}</CardTitle>
                   <CardDescription>{profile?.email}</CardDescription>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Nhấn vào biểu tượng camera để đổi ảnh
+                  </p>
                 </div>
               </div>
             </CardHeader>
@@ -202,6 +280,19 @@ export default function Profiles() {
                   value={formData.phone}
                   onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   placeholder="0901234567"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="education" className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                  Học vấn
+                </Label>
+                <Input
+                  id="education"
+                  value={formData.education}
+                  onChange={e => setFormData(prev => ({ ...prev, education: e.target.value }))}
+                  placeholder="Đại học Kinh tế TP.HCM"
                 />
               </div>
 

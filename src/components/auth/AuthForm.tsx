@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Mail, Phone, Lock, LogIn, UserPlus, Loader2 } from "lucide-react";
+import { User, Mail, Phone, Lock, LogIn, UserPlus, Loader2, KeyRound, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -25,12 +25,18 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Email không hợp lệ"),
+});
+
 interface AuthFormProps {
   onSuccess?: () => void;
 }
 
+type AuthMode = "login" | "signup" | "forgot-password";
+
 export function AuthForm({ onSuccess }: AuthFormProps) {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -51,8 +57,10 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     try {
       if (mode === "login") {
         loginSchema.parse({ email: formData.email, password: formData.password });
-      } else {
+      } else if (mode === "signup") {
         signupSchema.parse(formData);
+      } else {
+        forgotPasswordSchema.parse({ email: formData.email });
       }
       setErrors({});
       return true;
@@ -88,7 +96,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
         toast.success("Đăng nhập thành công!");
         onSuccess?.();
-      } else {
+      } else if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -116,6 +124,16 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
         toast.success("Đăng ký thành công! Chào mừng bạn đến với Crystal Ball.");
         onSuccess?.();
+      } else {
+        // Forgot password
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) throw error;
+
+        toast.success("Đã gửi email đặt lại mật khẩu! Vui lòng kiểm tra hộp thư của bạn.");
+        setMode("login");
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Có lỗi xảy ra";
@@ -125,8 +143,8 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     }
   };
 
-  const toggleMode = () => {
-    setMode(prev => prev === "login" ? "signup" : "login");
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode);
     setErrors({});
   };
 
@@ -139,17 +157,24 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
               <LogIn className="w-6 h-6 text-primary" />
               Đăng nhập
             </>
-          ) : (
+          ) : mode === "signup" ? (
             <>
               <UserPlus className="w-6 h-6 text-primary" />
               Đăng ký tài khoản
+            </>
+          ) : (
+            <>
+              <KeyRound className="w-6 h-6 text-primary" />
+              Quên mật khẩu
             </>
           )}
         </CardTitle>
         <CardDescription>
           {mode === "login" 
             ? "Đăng nhập để sử dụng đầy đủ tính năng Crystal Ball"
-            : "Tạo tài khoản mới để lưu trữ và quản lý dự án"
+            : mode === "signup"
+            ? "Tạo tài khoản mới để lưu trữ và quản lý dự án"
+            : "Nhập email để nhận link đặt lại mật khẩu"
           }
         </CardDescription>
       </CardHeader>
@@ -219,24 +244,35 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-muted-foreground" />
-              Mật khẩu
-            </Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••"
-              value={formData.password}
-              onChange={handleInputChange}
-              className={errors.password ? "border-destructive" : ""}
-            />
-            {errors.password && (
-              <p className="text-xs text-destructive">{errors.password}</p>
+          <AnimatePresence mode="wait">
+            {mode !== "forgot-password" && (
+              <motion.div
+                key="password-field"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    Mật khẩu
+                  </Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className={errors.password ? "border-destructive" : ""}
+                  />
+                  {errors.password && (
+                    <p className="text-xs text-destructive">{errors.password}</p>
+                  )}
+                </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
 
           <AnimatePresence mode="wait">
             {mode === "signup" && (
@@ -268,6 +304,19 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             )}
           </AnimatePresence>
 
+          {mode === "login" && (
+            <div className="text-right">
+              <Button
+                type="button"
+                variant="link"
+                className="px-0 text-sm"
+                onClick={() => switchMode("forgot-password")}
+              >
+                Quên mật khẩu?
+              </Button>
+            </div>
+          )}
+
           <Button 
             type="submit" 
             variant="glow" 
@@ -284,26 +333,43 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
                 <LogIn className="w-4 h-4 mr-2" />
                 Đăng nhập
               </>
-            ) : (
+            ) : mode === "signup" ? (
               <>
                 <UserPlus className="w-4 h-4 mr-2" />
                 Đăng ký
               </>
+            ) : (
+              <>
+                <KeyRound className="w-4 h-4 mr-2" />
+                Gửi email đặt lại
+              </>
             )}
           </Button>
 
-          <div className="text-center pt-4 border-t">
-            <p className="text-sm text-muted-foreground">
-              {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
+          <div className="text-center pt-4 border-t space-y-2">
+            {mode === "forgot-password" ? (
               <Button
                 type="button"
-                variant="link"
-                className="px-1"
-                onClick={toggleMode}
+                variant="ghost"
+                className="text-sm"
+                onClick={() => switchMode("login")}
               >
-                {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Quay lại đăng nhập
               </Button>
-            </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {mode === "login" ? "Chưa có tài khoản?" : "Đã có tài khoản?"}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-1"
+                  onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+                >
+                  {mode === "login" ? "Đăng ký ngay" : "Đăng nhập"}
+                </Button>
+              </p>
+            )}
           </div>
         </form>
       </CardContent>
