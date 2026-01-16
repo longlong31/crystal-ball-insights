@@ -44,7 +44,12 @@ import {
   Calendar,
   Edit,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Crown,
+  UserCheck,
+  Activity,
+  TrendingUp,
+  Sparkles
 } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
@@ -85,7 +90,6 @@ export default function Admin() {
         return;
       }
 
-      // Check if user is admin
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
@@ -110,7 +114,6 @@ export default function Admin() {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      // Fetch all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -118,14 +121,12 @@ export default function Admin() {
 
       if (profilesError) throw profilesError;
 
-      // Fetch all roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
 
       if (rolesError) throw rolesError;
 
-      // Merge profiles with roles
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
         return {
@@ -146,20 +147,17 @@ export default function Admin() {
   const handleRoleChange = async (userId: string, newRole: "admin" | "user") => {
     setIsUpdating(true);
     try {
-      // First delete existing role
       await supabase
         .from("user_roles")
         .delete()
         .eq("user_id", userId);
 
-      // Insert new role
       const { error } = await supabase
         .from("user_roles")
         .insert({ user_id: userId, role: newRole });
 
       if (error) throw error;
 
-      // Update local state
       setUsers(prev => 
         prev.map(u => u.user_id === userId ? { ...u, role: newRole } : u)
       );
@@ -177,7 +175,6 @@ export default function Admin() {
     if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     try {
-      // Delete profile (cascade will delete role)
       const { error } = await supabase
         .from("profiles")
         .delete()
@@ -209,32 +206,64 @@ export default function Admin() {
     user.phone?.includes(searchTerm)
   );
 
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const userCount = users.filter(u => u.role === 'user').length;
+  const recentUsers = users.filter(u => {
+    const createdDate = new Date(u.created_at);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return createdDate > sevenDaysAgo;
+  }).length;
+
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+            <Loader2 className="w-16 h-16 animate-spin text-primary relative" />
+          </div>
+          <p className="mt-4 text-muted-foreground">Đang xác thực quyền truy cập...</p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Animated Background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-full blur-3xl" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/60 backdrop-blur-xl">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
-              <CrystalBallIcon className="w-10 h-10" />
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
-                Crystal Ball
-              </span>
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/30 blur-lg rounded-full group-hover:bg-primary/50 transition-colors" />
+                <CrystalBallIcon className="w-12 h-12 relative" />
+              </div>
+              <div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Crystal Ball
+                </span>
+                <p className="text-xs text-muted-foreground">Admin Dashboard</p>
+              </div>
             </Link>
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-primary" />
-                Admin
+              <Badge className="px-4 py-2 bg-gradient-to-r from-primary/20 to-purple-500/20 border-primary/30 text-primary">
+                <Crown className="w-4 h-4 mr-2" />
+                Super Admin
               </Badge>
-              <Button variant="outline" onClick={() => navigate(-1)}>
+              <Button variant="outline" onClick={() => navigate(-1)} className="border-border/50 hover:bg-primary/10">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Quay lại
               </Button>
@@ -244,113 +273,247 @@ export default function Admin() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="mb-10"
         >
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <Shield className="w-8 h-8 text-primary" />
-                Quản lý người dùng
-              </h1>
-              <p className="text-muted-foreground mt-1">
-                Quản lý tài khoản và phân quyền người dùng
-              </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-purple-500 blur-xl opacity-50" />
+                <div className="relative p-4 bg-gradient-to-r from-primary to-purple-500 rounded-2xl">
+                  <Shield className="w-10 h-10 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Quản lý người dùng
+                </h1>
+                <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  Quản trị toàn bộ tài khoản và phân quyền hệ thống
+                </p>
+              </div>
             </div>
-            <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
+            <Button 
+              variant="outline" 
+              onClick={fetchUsers} 
+              disabled={isLoading}
+              className="border-primary/30 hover:bg-primary/10 hover:border-primary"
+            >
               <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Làm mới
             </Button>
           </div>
+        </motion.div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <CardDescription>Tổng người dùng</CardDescription>
-                <CardTitle className="text-3xl">{users.length}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <CardDescription>Quản trị viên</CardDescription>
-                <CardTitle className="text-3xl text-primary">
-                  {users.filter(u => u.role === 'admin').length}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="glass">
-              <CardHeader className="pb-2">
-                <CardDescription>Người dùng thường</CardDescription>
-                <CardTitle className="text-3xl">
-                  {users.filter(u => u.role === 'user').length}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* Search */}
-          <Card className="glass mb-6">
-            <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Tìm kiếm theo tên, email hoặc số điện thoại..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        {/* Stats Cards */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+        >
+          <Card className="relative overflow-hidden border-border/50 bg-gradient-to-br from-background to-primary/5">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl" />
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Tổng người dùng
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                {users.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Activity className="w-3 h-3" />
+                Tất cả tài khoản
               </div>
             </CardContent>
           </Card>
 
-          {/* Users Table */}
-          <Card className="glass">
+          <Card className="relative overflow-hidden border-border/50 bg-gradient-to-br from-background to-yellow-500/5">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-500/10 rounded-full blur-2xl" />
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-yellow-500" />
+                Quản trị viên
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-yellow-500">
+                {adminCount}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <ShieldCheck className="w-3 h-3" />
+                Quyền cao nhất
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-border/50 bg-gradient-to-br from-background to-blue-500/5">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/10 rounded-full blur-2xl" />
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-blue-500" />
+                Người dùng thường
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-blue-500">
+                {userCount}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="w-3 h-3" />
+                Tài khoản cơ bản
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-border/50 bg-gradient-to-br from-background to-green-500/5">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-green-500" />
+                Mới trong 7 ngày
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-green-500">
+                {recentUsers}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                Đăng ký gần đây
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Search */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="mb-6 border-border/50 bg-background/50 backdrop-blur-sm">
             <CardContent className="pt-6">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="🔍 Tìm kiếm theo tên, email hoặc số điện thoại..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-12 h-12 text-lg border-border/50 bg-background/50 focus:border-primary focus:ring-primary/20"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Users Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="border-border/50 bg-background/50 backdrop-blur-sm overflow-hidden">
+            <CardHeader className="border-b border-border/50 bg-gradient-to-r from-primary/5 to-purple-500/5">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Danh sách người dùng
+                <Badge variant="secondary" className="ml-2">
+                  {filteredUsers.length} kết quả
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="flex items-center justify-center py-16">
+                  <div className="text-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">Đang tải dữ liệu...</p>
+                  </div>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <Users className="w-16 h-16 text-muted-foreground/30" />
+                  <p className="mt-4 text-muted-foreground">Không tìm thấy người dùng nào</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Người dùng</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Số điện thoại</TableHead>
-                        <TableHead>Học vấn</TableHead>
-                        <TableHead>Ngày tạo</TableHead>
-                        <TableHead>Vai trò</TableHead>
-                        <TableHead className="text-right">Thao tác</TableHead>
+                      <TableRow className="hover:bg-transparent border-border/50">
+                        <TableHead className="font-semibold">Người dùng</TableHead>
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Số điện thoại</TableHead>
+                        <TableHead className="font-semibold">Học vấn</TableHead>
+                        <TableHead className="font-semibold">Ngày tạo</TableHead>
+                        <TableHead className="font-semibold">Vai trò</TableHead>
+                        <TableHead className="text-right font-semibold">Thao tác</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredUsers.map((user) => (
-                        <TableRow key={user.id}>
+                      {filteredUsers.map((user, index) => (
+                        <motion.tr
+                          key={user.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="border-border/50 hover:bg-primary/5 transition-colors"
+                        >
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={user.avatar_url || undefined} />
-                                <AvatarFallback className="bg-primary/10 text-primary">
-                                  {getInitials(user.full_name)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">{user.full_name || "N/A"}</span>
+                              <div className="relative">
+                                <Avatar className="h-12 w-12 ring-2 ring-border/50">
+                                  <AvatarImage src={user.avatar_url || undefined} />
+                                  <AvatarFallback className="bg-gradient-to-br from-primary/20 to-purple-500/20 text-primary font-semibold">
+                                    {getInitials(user.full_name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                {user.role === 'admin' && (
+                                  <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1">
+                                    <Crown className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-semibold">{user.full_name || "Chưa đặt tên"}</span>
+                                {user.role === 'admin' && (
+                                  <Badge variant="outline" className="ml-2 text-xs border-yellow-500/50 text-yellow-500">
+                                    Admin
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {user.email}
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Mail className="w-4 h-4" />
+                              {user.email}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {user.phone || "—"}
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Phone className="w-4 h-4" />
+                              {user.phone || "—"}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {user.education || "—"}
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <GraduationCap className="w-4 h-4" />
+                              {user.education || "—"}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(user.created_at).toLocaleDateString("vi-VN")}
+                          <TableCell>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Calendar className="w-4 h-4" />
+                              {new Date(user.created_at).toLocaleDateString("vi-VN")}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Select
@@ -360,19 +523,19 @@ export default function Admin() {
                               }
                               disabled={isUpdating}
                             >
-                              <SelectTrigger className="w-36">
+                              <SelectTrigger className={`w-40 ${user.role === 'admin' ? 'border-yellow-500/50 bg-yellow-500/10' : 'border-border/50'}`}>
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="user">
                                   <div className="flex items-center gap-2">
-                                    <Users className="w-4 h-4" />
+                                    <UserCheck className="w-4 h-4 text-blue-500" />
                                     Người dùng
                                   </div>
                                 </SelectItem>
                                 <SelectItem value="admin">
                                   <div className="flex items-center gap-2">
-                                    <ShieldCheck className="w-4 h-4 text-primary" />
+                                    <Crown className="w-4 h-4 text-yellow-500" />
                                     Quản trị viên
                                   </div>
                                 </SelectItem>
@@ -387,53 +550,93 @@ export default function Admin() {
                                     variant="ghost" 
                                     size="icon"
                                     onClick={() => setSelectedUser(user)}
+                                    className="hover:bg-primary/10 hover:text-primary"
                                   >
                                     <Edit className="w-4 h-4" />
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent>
+                                <DialogContent className="border-border/50 bg-background/95 backdrop-blur-xl">
                                   <DialogHeader>
-                                    <DialogTitle>Thông tin người dùng</DialogTitle>
+                                    <DialogTitle className="flex items-center gap-2">
+                                      <Users className="w-5 h-5 text-primary" />
+                                      Thông tin người dùng
+                                    </DialogTitle>
                                     <DialogDescription>
                                       Chi tiết tài khoản
                                     </DialogDescription>
                                   </DialogHeader>
                                   {selectedUser && (
-                                    <div className="space-y-4 mt-4">
+                                    <div className="space-y-6 mt-4">
                                       <div className="flex items-center gap-4">
-                                        <Avatar className="h-16 w-16">
-                                          <AvatarImage src={selectedUser.avatar_url || undefined} />
-                                          <AvatarFallback className="text-xl bg-primary/10 text-primary">
-                                            {getInitials(selectedUser.full_name)}
-                                          </AvatarFallback>
-                                        </Avatar>
+                                        <div className="relative">
+                                          <Avatar className="h-20 w-20 ring-4 ring-primary/20">
+                                            <AvatarImage src={selectedUser.avatar_url || undefined} />
+                                            <AvatarFallback className="text-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 text-primary">
+                                              {getInitials(selectedUser.full_name)}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          {selectedUser.role === 'admin' && (
+                                            <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1.5">
+                                              <Crown className="w-4 h-4 text-white" />
+                                            </div>
+                                          )}
+                                        </div>
                                         <div>
-                                          <h3 className="font-semibold text-lg">
-                                            {selectedUser.full_name}
+                                          <h3 className="font-bold text-xl">
+                                            {selectedUser.full_name || "Chưa đặt tên"}
                                           </h3>
-                                          <Badge variant={selectedUser.role === 'admin' ? 'default' : 'secondary'}>
-                                            {selectedUser.role === 'admin' ? 'Quản trị viên' : 'Người dùng'}
+                                          <Badge 
+                                            className={selectedUser.role === 'admin' 
+                                              ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30' 
+                                              : 'bg-blue-500/20 text-blue-500 border-blue-500/30'
+                                            }
+                                          >
+                                            {selectedUser.role === 'admin' ? '👑 Quản trị viên' : '👤 Người dùng'}
                                           </Badge>
                                         </div>
                                       </div>
-                                      <div className="space-y-3">
-                                        <div className="flex items-center gap-3 text-sm">
-                                          <Mail className="w-4 h-4 text-muted-foreground" />
-                                          <span>{selectedUser.email}</span>
+                                      <div className="space-y-4 p-4 rounded-xl bg-muted/30">
+                                        <div className="flex items-center gap-3">
+                                          <div className="p-2 rounded-lg bg-primary/10">
+                                            <Mail className="w-4 h-4 text-primary" />
+                                          </div>
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Email</p>
+                                            <p className="font-medium">{selectedUser.email}</p>
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm">
-                                          <Phone className="w-4 h-4 text-muted-foreground" />
-                                          <span>{selectedUser.phone || "Chưa cập nhật"}</span>
+                                        <div className="flex items-center gap-3">
+                                          <div className="p-2 rounded-lg bg-green-500/10">
+                                            <Phone className="w-4 h-4 text-green-500" />
+                                          </div>
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Số điện thoại</p>
+                                            <p className="font-medium">{selectedUser.phone || "Chưa cập nhật"}</p>
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm">
-                                          <GraduationCap className="w-4 h-4 text-muted-foreground" />
-                                          <span>{selectedUser.education || "Chưa cập nhật"}</span>
+                                        <div className="flex items-center gap-3">
+                                          <div className="p-2 rounded-lg bg-purple-500/10">
+                                            <GraduationCap className="w-4 h-4 text-purple-500" />
+                                          </div>
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Học vấn</p>
+                                            <p className="font-medium">{selectedUser.education || "Chưa cập nhật"}</p>
+                                          </div>
                                         </div>
-                                        <div className="flex items-center gap-3 text-sm">
-                                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                                          <span>
-                                            Tham gia: {new Date(selectedUser.created_at).toLocaleDateString("vi-VN")}
-                                          </span>
+                                        <div className="flex items-center gap-3">
+                                          <div className="p-2 rounded-lg bg-orange-500/10">
+                                            <Calendar className="w-4 h-4 text-orange-500" />
+                                          </div>
+                                          <div>
+                                            <p className="text-xs text-muted-foreground">Ngày tham gia</p>
+                                            <p className="font-medium">
+                                              {new Date(selectedUser.created_at).toLocaleDateString("vi-VN", {
+                                                day: "2-digit",
+                                                month: "long",
+                                                year: "numeric"
+                                              })}
+                                            </p>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
@@ -443,22 +646,15 @@ export default function Admin() {
                               <Button 
                                 variant="ghost" 
                                 size="icon"
-                                className="text-destructive hover:text-destructive"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => handleDeleteUser(user.user_id)}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </TableCell>
-                        </TableRow>
+                        </motion.tr>
                       ))}
-                      {filteredUsers.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                            {searchTerm ? "Không tìm thấy người dùng" : "Chưa có người dùng nào"}
-                          </TableCell>
-                        </TableRow>
-                      )}
                     </TableBody>
                   </Table>
                 </div>
