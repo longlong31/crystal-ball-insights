@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -49,10 +50,13 @@ import {
   UserCheck,
   Activity,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Bot,
+  MessageSquare
 } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
+import { ChatbotQAManager } from "@/components/admin/ChatbotQAManager";
 
 interface UserWithRole {
   id: string;
@@ -289,25 +293,43 @@ export default function Admin() {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Quản lý người dùng
+                  Quản trị hệ thống
                 </h1>
                 <p className="text-muted-foreground mt-1 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  Quản trị toàn bộ tài khoản và phân quyền hệ thống
+                  Quản lý người dùng, phân quyền và chatbot
                 </p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={fetchUsers} 
-              disabled={isLoading}
-              className="border-primary/30 hover:bg-primary/10 hover:border-primary"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Làm mới
-            </Button>
           </div>
         </motion.div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="bg-card/50 border border-border/50 p-1">
+            <TabsTrigger value="users" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
+              <Users className="w-4 h-4" />
+              Người dùng
+            </TabsTrigger>
+            <TabsTrigger value="chatbot" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
+              <Bot className="w-4 h-4" />
+              Chatbot Q&A
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="space-y-6">
+            {/* Refresh Button */}
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                onClick={fetchUsers} 
+                disabled={isLoading}
+                className="border-primary/30 hover:bg-primary/10 hover:border-primary"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Làm mới
+              </Button>
+            </div>
 
         {/* Stats Cards */}
         <motion.div 
@@ -662,6 +684,12 @@ export default function Admin() {
             </CardContent>
           </Card>
         </motion.div>
+          </TabsContent>
+
+          <TabsContent value="chatbot">
+            <ChatbotQAManager />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Footer />
