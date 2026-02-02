@@ -8,23 +8,19 @@ import {
   Bot, 
   User,
   Sparkles,
-  GripVertical
+  GripVertical,
+  Loader2,
+  Maximize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-
-interface QA {
-  id: string;
-  question: string;
-  answer: string;
-  keywords: string[];
-}
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
   id: string;
-  role: "user" | "bot";
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
@@ -35,15 +31,10 @@ export function ChatbotWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [qaData, setQaData] = useState<QA[]>([]);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const constraintsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetchQAData();
-  }, []);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -51,77 +42,59 @@ export function ChatbotWidget() {
     }
   }, [messages]);
 
-  const fetchQAData = async () => {
-    const { data, error } = await supabase
-      .from("chatbot_qa")
-      .select("*")
-      .eq("is_active", true);
-    
-    if (!error && data) {
-      setQaData(data);
-    }
-  };
+  const sendMessage = async (userMessage: string) => {
+    if (!userMessage.trim()) return;
 
-  const findBestMatch = (userInput: string): string => {
-    const input = userInput.toLowerCase().trim();
-    
-    // Exact match
-    const exactMatch = qaData.find(
-      qa => qa.question.toLowerCase().includes(input) || input.includes(qa.question.toLowerCase())
-    );
-    if (exactMatch) return exactMatch.answer;
-
-    // Keyword match
-    for (const qa of qaData) {
-      if (qa.keywords && qa.keywords.length > 0) {
-        const hasKeyword = qa.keywords.some(keyword => 
-          input.includes(keyword.toLowerCase()) || keyword.toLowerCase().includes(input)
-        );
-        if (hasKeyword) return qa.answer;
-      }
-    }
-
-    // Partial match
-    const words = input.split(/\s+/);
-    for (const qa of qaData) {
-      const questionWords = qa.question.toLowerCase().split(/\s+/);
-      const matchCount = words.filter(word => 
-        questionWords.some(qWord => qWord.includes(word) || word.includes(qWord))
-      ).length;
-      if (matchCount >= 2) return qa.answer;
-    }
-
-    return "Xin lỗi, tôi chưa có câu trả lời cho câu hỏi này. Vui lòng liên hệ admin để được hỗ trợ! 😊";
-  };
-
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage: Message = {
+    const newUserMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: userMessage.trim(),
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [...prev, newUserMessage]);
     setInput("");
     setIsTyping(true);
 
-    // Simulate typing delay
-    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
+    try {
+      // Prepare conversation history (last 10 messages for context)
+      const conversationHistory = messages.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-    const botResponse = findBestMatch(input.trim());
-    const botMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "bot",
-      content: botResponse,
-      timestamp: new Date(),
-    };
+      const { data, error } = await supabase.functions.invoke("chatbot-ai", {
+        body: { 
+          message: userMessage.trim(),
+          conversationHistory,
+        },
+      });
 
-    setIsTyping(false);
-    setMessages(prev => [...prev, botMessage]);
+      if (error) throw error;
+
+      const botMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.reply || "Xin lỗi, tôi không thể trả lời lúc này.",
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Chatbot error:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau! 🙏",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
+
+  const handleSend = () => sendMessage(input);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -135,13 +108,20 @@ export function ChatbotWidget() {
       setIsMinimized(false);
       setMessages([{
         id: "welcome",
-        role: "bot",
-        content: "Xin chào! 👋 Tôi là Crystal Ball Assistant. Tôi có thể giúp gì cho bạn hôm nay?",
+        role: "assistant",
+        content: "Xin chào! 👋 Tôi là Crystal Ball AI Assistant. Tôi có thể giúp bạn tìm hiểu về phân tích dự án đầu tư, mô phỏng Monte Carlo và các chỉ số tài chính. Hãy hỏi tôi bất cứ điều gì! ✨",
         timestamp: new Date(),
       }]);
     }
     setIsOpen(!isOpen);
   };
+
+  // Mobile-specific dimensions
+  const chatWidth = isMobile ? "calc(100vw - 32px)" : "380px";
+  const chatHeight = isMobile ? "70vh" : "500px";
+  const chatPosition = isMobile 
+    ? { bottom: 16, left: 16, right: 16 } 
+    : { bottom: 24, right: 24 };
 
   return (
     <>
@@ -158,34 +138,38 @@ export function ChatbotWidget() {
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            drag
+            drag={!isMobile}
             dragConstraints={constraintsRef}
             dragElastic={0.1}
             whileDrag={{ scale: 1.1 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed z-50"
+            style={{ 
+              bottom: isMobile ? 16 : 24, 
+              right: isMobile ? 16 : 24 
+            }}
           >
             <Button
               onClick={toggleOpen}
-              className="relative w-16 h-16 rounded-full bg-gradient-to-br from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90 shadow-lg hover:shadow-xl transition-all duration-300 group"
+              className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 hover:from-primary/90 hover:via-purple-500/90 hover:to-pink-500/90 shadow-2xl hover:shadow-primary/25 transition-all duration-300 group border-2 border-white/20"
             >
               {/* Animated rings */}
               <div className="absolute inset-0 rounded-full bg-primary/30 animate-ping" />
-              <div className="absolute inset-[-4px] rounded-full border-2 border-primary/50 animate-pulse" />
+              <div className="absolute inset-[-4px] rounded-full border-2 border-primary/40 animate-pulse" />
               
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
               >
-                <MessageCircle className="w-7 h-7 text-primary-foreground" />
+                <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 text-primary-foreground" />
               </motion.div>
               
               {/* Sparkle effect */}
               <motion.div
                 className="absolute -top-1 -right-1"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
               >
-                <Sparkles className="w-5 h-5 text-yellow-300" />
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300 drop-shadow-lg" />
               </motion.div>
             </Button>
           </motion.div>
@@ -196,7 +180,7 @@ export function ChatbotWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            drag
+            drag={!isMobile}
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={constraintsRef}
@@ -206,53 +190,66 @@ export function ChatbotWidget() {
               opacity: 1, 
               scale: 1, 
               y: 0,
-              height: isMinimized ? "auto" : "500px"
+              height: isMinimized ? "auto" : chatHeight
             }}
             exit={{ opacity: 0, scale: 0.8, y: 50 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] bg-gradient-to-b from-card to-background border border-border/50 rounded-2xl shadow-2xl overflow-hidden"
-            style={{ boxShadow: "0 0 50px hsl(185 80% 50% / 0.15)" }}
+            className="fixed z-50 bg-gradient-to-b from-card via-card to-background/95 backdrop-blur-xl border border-border/50 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden"
+            style={{ 
+              width: chatWidth,
+              maxWidth: isMobile ? "calc(100vw - 32px)" : "400px",
+              boxShadow: "0 0 60px hsl(var(--primary) / 0.2), 0 20px 40px -20px rgba(0,0,0,0.5)",
+              ...chatPosition
+            }}
           >
             {/* Header - Draggable */}
             <motion.div 
-              onPointerDown={(e) => dragControls.start(e)}
-              className="bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 p-4 flex items-center justify-between cursor-grab active:cursor-grabbing"
+              onPointerDown={(e) => !isMobile && dragControls.start(e)}
+              className="relative bg-gradient-to-r from-primary/30 via-purple-500/30 to-pink-500/30 p-3 sm:p-4 flex items-center justify-between cursor-grab active:cursor-grabbing overflow-hidden"
             >
-              <div className="flex items-center gap-3">
+              {/* Animated background */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 animate-pulse" />
+              
+              <div className="flex items-center gap-2 sm:gap-3 relative z-10">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-primary-foreground" />
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                    <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-primary-foreground" />
                   </div>
                   <motion.div
-                    className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card"
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-400 rounded-full border-2 border-card shadow-lg"
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ repeat: Infinity, duration: 2 }}
                   />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <h3 className="font-bold text-sm sm:text-base text-foreground flex items-center gap-1.5 sm:gap-2">
                     Crystal Ball AI
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <motion.div
+                      animate={{ rotate: [0, 360] }}
+                      transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                    >
+                      <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
+                    </motion.div>
                   </h3>
-                  <p className="text-xs text-muted-foreground">Sẵn sàng hỗ trợ bạn</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">Trợ lý AI thông minh</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <GripVertical className="w-4 h-4 text-muted-foreground mr-1" />
+              <div className="flex items-center gap-0.5 sm:gap-1 relative z-10">
+                {!isMobile && <GripVertical className="w-4 h-4 text-muted-foreground/50 mr-1" />}
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsMinimized(!isMinimized)}
-                  className="h-8 w-8 hover:bg-primary/10"
+                  className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-white/10 rounded-full"
                 >
-                  <Minimize2 className="w-4 h-4" />
+                  {isMinimized ? <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={toggleOpen}
-                  className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                  className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-destructive/20 hover:text-destructive rounded-full"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </motion.div>
@@ -263,35 +260,37 @@ export function ChatbotWidget() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
+                  className="flex flex-col"
+                  style={{ height: isMobile ? "calc(70vh - 120px)" : "calc(500px - 80px)" }}
                 >
                   {/* Messages */}
-                  <ScrollArea className="h-[340px] p-4" ref={scrollRef}>
-                    <div className="space-y-4">
+                  <ScrollArea className="flex-1 p-3 sm:p-4" ref={scrollRef}>
+                    <div className="space-y-3 sm:space-y-4">
                       {messages.map((message, index) => (
                         <motion.div
                           key={message.id}
                           initial={{ opacity: 0, y: 10, scale: 0.95 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
-                          transition={{ delay: index * 0.05 }}
+                          transition={{ delay: index * 0.03 }}
                           className={`flex gap-2 ${message.role === "user" ? "flex-row-reverse" : ""}`}
                         >
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${
                             message.role === "user" 
-                              ? "bg-gradient-to-br from-blue-500 to-cyan-500" 
-                              : "bg-gradient-to-br from-primary to-purple-500"
+                              ? "bg-gradient-to-br from-blue-500 to-cyan-400" 
+                              : "bg-gradient-to-br from-primary via-purple-500 to-pink-500"
                           }`}>
                             {message.role === "user" 
-                              ? <User className="w-4 h-4 text-white" />
-                              : <Bot className="w-4 h-4 text-primary-foreground" />
+                              ? <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                              : <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
                             }
                           </div>
-                          <div className={`max-w-[260px] p-3 rounded-2xl ${
+                          <div className={`max-w-[75%] sm:max-w-[80%] p-2.5 sm:p-3 rounded-2xl shadow-md ${
                             message.role === "user"
-                              ? "bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-br-md"
-                              : "bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20 rounded-bl-md"
+                              ? "bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-400/30 rounded-br-md"
+                              : "bg-gradient-to-br from-card to-muted/50 border border-border/50 rounded-bl-md"
                           }`}>
-                            <p className="text-sm leading-relaxed">{message.content}</p>
-                            <span className="text-[10px] text-muted-foreground mt-1 block">
+                            <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                            <span className="text-[9px] sm:text-[10px] text-muted-foreground mt-1 block opacity-70">
                               {message.timestamp.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
@@ -305,26 +304,13 @@ export function ChatbotWidget() {
                           animate={{ opacity: 1, y: 0 }}
                           className="flex gap-2"
                         >
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center">
-                            <Bot className="w-4 h-4 text-primary-foreground" />
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-primary via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                            <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-foreground" />
                           </div>
-                          <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20 rounded-2xl rounded-bl-md p-3">
-                            <div className="flex gap-1">
-                              <motion.div
-                                className="w-2 h-2 bg-primary rounded-full"
-                                animate={{ y: [0, -5, 0] }}
-                                transition={{ repeat: Infinity, duration: 0.6, delay: 0 }}
-                              />
-                              <motion.div
-                                className="w-2 h-2 bg-primary rounded-full"
-                                animate={{ y: [0, -5, 0] }}
-                                transition={{ repeat: Infinity, duration: 0.6, delay: 0.15 }}
-                              />
-                              <motion.div
-                                className="w-2 h-2 bg-primary rounded-full"
-                                animate={{ y: [0, -5, 0] }}
-                                transition={{ repeat: Infinity, duration: 0.6, delay: 0.3 }}
-                              />
+                          <div className="bg-gradient-to-br from-card to-muted/50 border border-border/50 rounded-2xl rounded-bl-md p-2.5 sm:p-3 shadow-md">
+                            <div className="flex items-center gap-1.5">
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin text-primary" />
+                              <span className="text-[10px] sm:text-xs text-muted-foreground">Đang suy nghĩ...</span>
                             </div>
                           </div>
                         </motion.div>
@@ -333,25 +319,28 @@ export function ChatbotWidget() {
                   </ScrollArea>
 
                   {/* Input */}
-                  <div className="p-4 border-t border-border/50 bg-card/50">
+                  <div className="p-3 sm:p-4 border-t border-border/30 bg-gradient-to-b from-transparent to-muted/20">
                     <div className="flex gap-2">
                       <Input
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyPress}
                         placeholder="Nhập câu hỏi của bạn..."
-                        className="flex-1 bg-background/50 border-border/50 focus:border-primary"
+                        disabled={isTyping}
+                        className="flex-1 bg-background/60 border-border/50 focus:border-primary/50 rounded-xl text-xs sm:text-sm h-9 sm:h-10 placeholder:text-muted-foreground/50"
                       />
                       <Button
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping}
-                        className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-500/90"
+                        size="icon"
+                        className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 hover:from-primary/90 hover:via-purple-500/90 hover:to-pink-500/90 rounded-xl h-9 w-9 sm:h-10 sm:w-10 shadow-lg disabled:opacity-50"
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
-                    <p className="text-[10px] text-muted-foreground text-center mt-2">
-                      Powered by Crystal Ball AI ✨
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground/60 text-center mt-2 flex items-center justify-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      Powered by Crystal Ball AI
                     </p>
                   </div>
                 </motion.div>
