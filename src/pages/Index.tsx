@@ -9,6 +9,7 @@ import { ExcelUploader } from "@/components/ExcelUploader";
 import { Footer } from "@/components/Footer";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { MobileNav } from "@/components/MobileNav";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
@@ -125,6 +126,7 @@ const Index = () => {
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-2">
+            <MobileNav />
             <Sparkles className="w-6 h-6 text-primary" />
             <span className="text-xl font-bold">Crystal Ball</span>
           </div>
