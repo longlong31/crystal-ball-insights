@@ -44,6 +44,86 @@ export type Database = {
         }
         Relationships: []
       }
+      community_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          status: Database["public"]["Enums"]["post_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          status?: Database["public"]["Enums"]["post_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          status?: Database["public"]["Enums"]["post_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          content: string
+          created_at: string
+          file_urls: string[] | null
+          id: string
+          media_urls: string[] | null
+          post_type: Database["public"]["Enums"]["post_type"]
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["post_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          file_urls?: string[] | null
+          id?: string
+          media_urls?: string[] | null
+          post_type?: Database["public"]["Enums"]["post_type"]
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          file_urls?: string[] | null
+          id?: string
+          media_urls?: string[] | null
+          post_type?: Database["public"]["Enums"]["post_type"]
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["post_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -117,6 +197,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      post_status: "pending" | "approved" | "rejected"
+      post_type: "discussion" | "blog" | "event"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -245,6 +327,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      post_status: ["pending", "approved", "rejected"],
+      post_type: ["discussion", "blog", "event"],
     },
   },
 } as const
