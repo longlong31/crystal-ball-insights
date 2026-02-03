@@ -8,6 +8,7 @@ import ProjectAnalysis from "./pages/ProjectAnalysis";
 import Documentation from "./pages/Documentation";
 import Profiles from "./pages/Profiles";
 import Admin from "./pages/Admin";
+import Community from "./pages/Community";
 import NotFound from "./pages/NotFound";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/docs" element={<Documentation />} />
           <Route path="/profiles" element={<Profiles />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/community" element={<Community />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

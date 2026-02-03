@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, Sparkles, BarChart2, FileText, User, Shield } from "lucide-react";
+import { Menu, X, Sparkles, BarChart2, FileText, Users } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { href: "/", label: "Mô phỏng cơ bản", icon: BarChart2 },
   { href: "/project", label: "Phân tích dự án", icon: FileText },
+  { href: "/community", label: "Cộng đồng", icon: Users },
   { href: "/docs", label: "Tài liệu", icon: FileText },
 ];
 

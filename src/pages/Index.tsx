@@ -137,6 +137,9 @@ const Index = () => {
             <a href="/project" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Phân tích dự án
             </a>
+            <a href="/community" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Cộng đồng
+            </a>
             <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Tài liệu
             </a>
