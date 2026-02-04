@@ -30,7 +30,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { exportToPDF } from "@/lib/pdfExporter";
+import { exportToPDF, exportToPDFWithAI } from "@/lib/pdfExporter";
 
 interface ProjectEvaluationReportProps {
   results: ProjectResults;
@@ -428,8 +428,14 @@ export const ProjectEvaluationReport = ({ results, params }: ProjectEvaluationRe
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      await exportToPDF({ params, results });
-      toast.success("Đã xuất báo cáo PDF thành công!");
+      // If we have AI analysis, use the AI-enhanced PDF export
+      if (aiAnalysis) {
+        await exportToPDFWithAI({ params, results, aiAnalysis });
+        toast.success("Đã xuất báo cáo PDF với phân tích AI!");
+      } else {
+        await exportToPDF({ params, results });
+        toast.success("Đã xuất báo cáo PDF thành công!");
+      }
     } catch (error) {
       console.error("PDF export error:", error);
       toast.error("Lỗi khi xuất PDF. Vui lòng thử lại.");

@@ -21,9 +21,10 @@ interface Comment {
 
 interface CommunityCommentsProps {
   postId: string;
+  onCommentAdded?: () => void;
 }
 
-export function CommunityComments({ postId }: CommunityCommentsProps) {
+export function CommunityComments({ postId, onCommentAdded }: CommunityCommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
@@ -115,6 +116,7 @@ export function CommunityComments({ postId }: CommunityCommentsProps) {
 
       setNewComment("");
       fetchComments();
+      onCommentAdded?.();
       toast({
         title: "Đã gửi bình luận",
       });
