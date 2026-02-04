@@ -567,14 +567,14 @@ export const exportToPDF = async (options: PDFExportOptions): Promise<void> => {
   
   yPos = (pdf as any).lastAutoTable.finalY + 15;
   
-  // Footer
+  // Footer with branding
   const totalPages = pdf.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i);
     pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);
     pdf.text(
-      `Trang ${i}/${totalPages} | Báo cáo được tạo tự động bởi Hệ thống Phân tích Dự án Đầu tư`,
+      `Trang ${i}/${totalPages} | Báo cáo được tạo bởi Crystal Ball - quachthanhlong.com`,
       pageWidth / 2,
       pageHeight - 10,
       { align: 'center' }
@@ -583,4 +583,327 @@ export const exportToPDF = async (options: PDFExportOptions): Promise<void> => {
   
   // Save PDF
   pdf.save(`${params.projectName}-BaoCaoPhanTich.pdf`);
+};
+
+// Export PDF with AI Analysis
+export interface AIAnalysisData {
+  overallAssessment: string;
+  score: number;
+  feasibility: string;
+  strengths: string[];
+  weaknesses: string[];
+  aiRecommendations: {
+    priority: string;
+    area: string;
+    issue: string;
+    solution: string;
+    expectedImpact: string;
+    implementationSteps: string[];
+  }[];
+  riskAnalysis: {
+    overallRiskLevel: string;
+    financialRisk: string;
+    operationalRisk: string;
+    marketRisk: string;
+    mitigationStrategies: string[];
+  };
+  strategicInsights: string;
+  executiveSummary: string;
+}
+
+export interface PDFExportWithAIOptions extends PDFExportOptions {
+  aiAnalysis?: AIAnalysisData;
+}
+
+export const exportToPDFWithAI = async (options: PDFExportWithAIOptions): Promise<void> => {
+  const { params, results, chartRef, aiAnalysis } = options;
+  
+  // Create PDF document
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 15;
+  let yPos = margin;
+  
+  const checkNewPage = (requiredSpace: number): void => {
+    if (yPos + requiredSpace > pageHeight - margin) {
+      pdf.addPage();
+      yPos = margin;
+    }
+  };
+  
+  // Header
+  pdf.setFontSize(20);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(33, 37, 41);
+  pdf.text('BÁO CÁO PHÂN TÍCH DỰ ÁN ĐẦU TƯ', pageWidth / 2, yPos, { align: 'center' });
+  yPos += 10;
+  
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(108, 117, 125);
+  pdf.text(params.projectName, pageWidth / 2, yPos, { align: 'center' });
+  yPos += 8;
+  
+  pdf.setFontSize(10);
+  pdf.text(`Ngày lập: ${new Date().toLocaleDateString('vi-VN')} | Phân tích bởi AI`, pageWidth / 2, yPos, { align: 'center' });
+  yPos += 12;
+  
+  pdf.setDrawColor(200, 200, 200);
+  pdf.line(margin, yPos, pageWidth - margin, yPos);
+  yPos += 10;
+  
+  // AI Executive Summary
+  if (aiAnalysis) {
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(139, 92, 246); // Purple
+    pdf.text('1. TÓM TẮT ĐIỀU HÀNH (AI)', margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    
+    const summaryLines = pdf.splitTextToSize(aiAnalysis.executiveSummary || aiAnalysis.overallAssessment, pageWidth - 2 * margin);
+    pdf.text(summaryLines, margin, yPos);
+    yPos += summaryLines.length * 5 + 5;
+    
+    // AI Score
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Điểm đánh giá AI: ${aiAnalysis.score}/100 - ${aiAnalysis.feasibility}`, margin, yPos);
+    yPos += 10;
+    
+    // AI Strengths & Weaknesses
+    checkNewPage(50);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(34, 197, 94);
+    pdf.text('Điểm mạnh:', margin, yPos);
+    yPos += 6;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    aiAnalysis.strengths?.slice(0, 5).forEach((str, idx) => {
+      checkNewPage(8);
+      const lines = pdf.splitTextToSize(`• ${str}`, pageWidth - 2 * margin - 5);
+      pdf.text(lines, margin + 5, yPos);
+      yPos += lines.length * 4 + 2;
+    });
+    yPos += 5;
+    
+    checkNewPage(50);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(239, 68, 68);
+    pdf.text('Điểm yếu:', margin, yPos);
+    yPos += 6;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    aiAnalysis.weaknesses?.slice(0, 5).forEach((weak, idx) => {
+      checkNewPage(8);
+      const lines = pdf.splitTextToSize(`• ${weak}`, pageWidth - 2 * margin - 5);
+      pdf.text(lines, margin + 5, yPos);
+      yPos += lines.length * 4 + 2;
+    });
+    yPos += 10;
+  } else {
+    // Fallback to generated conclusion
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(25, 135, 84);
+    pdf.text('1. TÓM TẮT ĐIỀU HÀNH', margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    
+    const conclusion = generateOverallConclusion(results, params);
+    const conclusionLines = pdf.splitTextToSize(conclusion, pageWidth - 2 * margin);
+    pdf.text(conclusionLines, margin, yPos);
+    yPos += conclusionLines.length * 5 + 10;
+  }
+  
+  // Key Metrics
+  checkNewPage(60);
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(13, 110, 253);
+  pdf.text('2. CÁC CHỈ TIÊU TÀI CHÍNH CHÍNH', margin, yPos);
+  yPos += 6;
+  
+  autoTable(pdf, {
+    startY: yPos,
+    head: [['Chỉ tiêu', 'TIPV (Tổng đầu tư)', 'EPV (Chủ đầu tư)', 'Đánh giá']],
+    body: [
+      ['NPV', `${formatNumber(results.npvTIPV)} triệu`, `${formatNumber(results.npvEPV)} triệu`, results.npvTIPV > 0 ? '✓ Đạt' : '✗ Không đạt'],
+      ['IRR', formatPercent(results.irrTIPV), formatPercent(results.irrEPV), results.irrTIPV > results.waccAverage ? '✓ Đạt' : '✗ Không đạt'],
+      ['DPP', `${results.dppTIPV.toFixed(2)} năm`, `${results.dppEPV.toFixed(2)} năm`, results.dppTIPV < params.operationYears ? '✓ Đạt' : '✗ Không đạt'],
+      ['DSCR', results.dscrAverage.toFixed(2), '-', results.dscrAverage >= 1.2 ? '✓ Đạt' : '⚠ Cảnh báo'],
+      ['WACC', formatPercent(results.waccAverage), '-', '-'],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [13, 110, 253], fontSize: 10 },
+    bodyStyles: { fontSize: 9 },
+    columnStyles: { 0: { fontStyle: 'bold' }, 3: { halign: 'center' } },
+    margin: { left: margin, right: margin },
+  });
+  
+  yPos = (pdf as any).lastAutoTable.finalY + 10;
+  
+  // AI Recommendations (if available)
+  if (aiAnalysis?.aiRecommendations?.length) {
+    checkNewPage(80);
+    pdf.addPage();
+    yPos = margin;
+    
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(139, 92, 246);
+    pdf.text('3. KHUYẾN NGHỊ TỪ AI', margin, yPos);
+    yPos += 8;
+    
+    aiAnalysis.aiRecommendations.slice(0, 5).forEach((rec, idx) => {
+      checkNewPage(40);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(33, 37, 41);
+      const priorityLabel = rec.priority === 'HIGH' ? '[Ưu tiên cao]' : rec.priority === 'MEDIUM' ? '[Ưu tiên vừa]' : '[Ưu tiên thấp]';
+      pdf.text(`${idx + 1}. ${priorityLabel} ${rec.area}`, margin, yPos);
+      yPos += 6;
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      
+      const issueLines = pdf.splitTextToSize(`Vấn đề: ${rec.issue}`, pageWidth - 2 * margin - 5);
+      pdf.text(issueLines, margin + 5, yPos);
+      yPos += issueLines.length * 4 + 2;
+      
+      const solutionLines = pdf.splitTextToSize(`Giải pháp: ${rec.solution}`, pageWidth - 2 * margin - 5);
+      pdf.text(solutionLines, margin + 5, yPos);
+      yPos += solutionLines.length * 4 + 2;
+      
+      const impactLines = pdf.splitTextToSize(`Tác động: ${rec.expectedImpact}`, pageWidth - 2 * margin - 5);
+      pdf.text(impactLines, margin + 5, yPos);
+      yPos += impactLines.length * 4 + 8;
+    });
+  }
+  
+  // AI Risk Analysis
+  if (aiAnalysis?.riskAnalysis) {
+    checkNewPage(80);
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(220, 53, 69);
+    pdf.text('4. PHÂN TÍCH RỦI RO (AI)', margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`Mức độ rủi ro tổng thể: ${aiAnalysis.riskAnalysis.overallRiskLevel}`, margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    
+    const financialLines = pdf.splitTextToSize(`Rủi ro tài chính: ${aiAnalysis.riskAnalysis.financialRisk}`, pageWidth - 2 * margin);
+    pdf.text(financialLines, margin, yPos);
+    yPos += financialLines.length * 4 + 4;
+    
+    const operationalLines = pdf.splitTextToSize(`Rủi ro vận hành: ${aiAnalysis.riskAnalysis.operationalRisk}`, pageWidth - 2 * margin);
+    pdf.text(operationalLines, margin, yPos);
+    yPos += operationalLines.length * 4 + 4;
+    
+    const marketLines = pdf.splitTextToSize(`Rủi ro thị trường: ${aiAnalysis.riskAnalysis.marketRisk}`, pageWidth - 2 * margin);
+    pdf.text(marketLines, margin, yPos);
+    yPos += marketLines.length * 4 + 8;
+    
+    if (aiAnalysis.riskAnalysis.mitigationStrategies?.length) {
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Chiến lược giảm thiểu:', margin, yPos);
+      yPos += 6;
+      
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      aiAnalysis.riskAnalysis.mitigationStrategies.slice(0, 4).forEach((strategy, idx) => {
+        checkNewPage(10);
+        const lines = pdf.splitTextToSize(`${idx + 1}. ${strategy}`, pageWidth - 2 * margin - 5);
+        pdf.text(lines, margin + 5, yPos);
+        yPos += lines.length * 4 + 2;
+      });
+    }
+  }
+  
+  // Strategic Insights
+  if (aiAnalysis?.strategicInsights) {
+    checkNewPage(40);
+    yPos += 5;
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(25, 135, 84);
+    pdf.text('5. NHẬN ĐỊNH CHIẾN LƯỢC', margin, yPos);
+    yPos += 8;
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(33, 37, 41);
+    const insightLines = pdf.splitTextToSize(aiAnalysis.strategicInsights, pageWidth - 2 * margin);
+    pdf.text(insightLines, margin, yPos);
+    yPos += insightLines.length * 5 + 10;
+  }
+  
+  // Cash Flow Table
+  checkNewPage(80);
+  pdf.addPage();
+  yPos = margin;
+  
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(220, 53, 69);
+  pdf.text('6. BẢNG DÒNG TIỀN CHI TIẾT', margin, yPos);
+  yPos += 6;
+  
+  autoTable(pdf, {
+    startY: yPos,
+    head: [['Năm', 'Doanh thu', 'Chi phí', 'EBIT', 'Thuế', 'NCF TIPV', 'NCF EPV', 'Lũy kế']],
+    body: results.yearlyData.map(row => [
+      row.year.toString(),
+      formatNumber(row.revenue),
+      formatNumber(row.cogs + row.adminCost),
+      formatNumber(row.ebit),
+      formatNumber(row.tax),
+      formatNumber(row.ncfTIPV),
+      formatNumber(row.ncfEPV),
+      formatNumber(row.cumulativePV_TIPV)
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [220, 53, 69], fontSize: 8 },
+    bodyStyles: { fontSize: 7, halign: 'right' },
+    columnStyles: { 0: { halign: 'center' } },
+    margin: { left: margin, right: margin },
+  });
+  
+  // Footer
+  const totalPages = pdf.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    pdf.setPage(i);
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text(
+      `Trang ${i}/${totalPages} | Crystal Ball AI - quachthanhlong.com`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' }
+    );
+  }
+  
+  pdf.save(`${params.projectName}-BaoCaoAI.pdf`);
 };
