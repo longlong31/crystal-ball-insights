@@ -110,6 +110,9 @@ const Documentation = () => {
             <a href="/docs" className="text-sm text-foreground font-medium transition-colors">
               Tài liệu
             </a>
+            <a href="/community" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Cộng đồng
+            </a>
           </nav>
         </div>
       </header>
