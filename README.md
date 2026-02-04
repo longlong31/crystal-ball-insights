@@ -1,73 +1,46 @@
-# Welcome to your Lovable project
+# Crystal Ball - Công cụ phân tích rủi ro Monte Carlo
 
-## Project info
+**Phát triển bởi**: [Quách Thành Long](https://quachthanhlong.com)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Giới thiệu
 
-## How can I edit this code?
+Crystal Ball là công cụ mô phỏng Monte Carlo chuyên nghiệp cho phân tích rủi ro dự án đầu tư, dự báo tài chính và hỗ trợ ra quyết định.
 
-There are several ways of editing your application.
+## Tính năng chính
 
-**Use Lovable**
+- **Mô phỏng Monte Carlo**: Phân tích rủi ro với hàng nghìn kịch bản mô phỏng
+- **Phân tích dự án đầu tư**: Tính toán NPV, IRR, Payback Period
+- **Stress Testing**: Kiểm tra độ nhạy và kịch bản xấu nhất
+- **AI Insights**: Phân tích chuyên sâu và đề xuất cải thiện thông minh
+- **Cộng đồng**: Thảo luận, chia sẻ kiến thức và kinh nghiệm
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Công nghệ sử dụng
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React, TypeScript, Tailwind CSS, Framer Motion
+- **Backend**: Supabase (Database, Authentication, Edge Functions)
+- **AI**: Google Gemini AI cho phân tích và chatbot
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Cài đặt local
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Di chuyển vào thư mục dự án
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
+# Cài đặt dependencies
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Chạy development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Liên hệ
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Website: [quachthanhlong.com](https://quachthanhlong.com)
+- Email: [contact@quachthanhlong.com](mailto:contact@quachthanhlong.com)
 
-**Use GitHub Codespaces**
+---
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+© 2025 Crystal Ball. All rights reserved.
