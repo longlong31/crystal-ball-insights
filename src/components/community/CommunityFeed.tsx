@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   MessageSquare, Heart, Share2, Clock, User, 
-  Image as ImageIcon, FileText, Video, Loader2
+  FileText, Loader2, Link2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CommunityComments } from "./CommunityComments";
+import { useToast } from "@/hooks/use-toast";
 
 interface Post {
   id: string;
@@ -26,6 +27,9 @@ interface Post {
     full_name: string;
     avatar_url: string | null;
   };
+  likes_count?: number;
+  comments_count?: number;
+  user_liked?: boolean;
 }
 
 interface CommunityFeedProps {
@@ -36,14 +40,25 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchPosts();
+    checkUser();
   }, [postType]);
+
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   const fetchPosts = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data: postsData, error } = await supabase
         .from("community_posts")
         .select("*")
@@ -61,10 +76,43 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
         .in("user_id", userIds);
 
       const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+
+      // Fetch reactions for all posts
+      const postIds = (postsData || []).map(p => p.id);
+      const { data: reactionsData } = await supabase
+        .from("post_reactions")
+        .select("post_id, user_id")
+        .in("post_id", postIds);
+
+      // Fetch comments count
+      const { data: commentsData } = await supabase
+        .from("community_comments")
+        .select("post_id")
+        .in("post_id", postIds)
+        .eq("status", "approved");
+
+      // Count reactions and comments per post
+      const likesMap = new Map<string, number>();
+      const userLikesMap = new Map<string, boolean>();
+      const commentsMap = new Map<string, number>();
+
+      (reactionsData || []).forEach(r => {
+        likesMap.set(r.post_id, (likesMap.get(r.post_id) || 0) + 1);
+        if (user && r.user_id === user.id) {
+          userLikesMap.set(r.post_id, true);
+        }
+      });
+
+      (commentsData || []).forEach(c => {
+        commentsMap.set(c.post_id, (commentsMap.get(c.post_id) || 0) + 1);
+      });
       
       const postsWithProfiles = (postsData || []).map(post => ({
         ...post,
-        profiles: profilesMap.get(post.user_id) || { full_name: "Người dùng", avatar_url: null }
+        profiles: profilesMap.get(post.user_id) || { full_name: "Người dùng", avatar_url: null },
+        likes_count: likesMap.get(post.id) || 0,
+        comments_count: commentsMap.get(post.id) || 0,
+        user_liked: userLikesMap.get(post.id) || false,
       }));
 
       setPosts(postsWithProfiles);
@@ -72,6 +120,77 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
       console.error("Fetch posts error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập để thích bài viết",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    try {
+      if (post.user_liked) {
+        // Unlike
+        await supabase
+          .from("post_reactions")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", currentUser.id);
+
+        setPosts(prev => prev.map(p => 
+          p.id === postId 
+            ? { ...p, likes_count: (p.likes_count || 1) - 1, user_liked: false }
+            : p
+        ));
+      } else {
+        // Like
+        await supabase
+          .from("post_reactions")
+          .insert({ post_id: postId, user_id: currentUser.id, reaction_type: "like" });
+
+        setPosts(prev => prev.map(p => 
+          p.id === postId 
+            ? { ...p, likes_count: (p.likes_count || 0) + 1, user_liked: true }
+            : p
+        ));
+      }
+    } catch (error) {
+      console.error("Like error:", error);
+    }
+  };
+
+  const handleShare = async (postId: string) => {
+    const url = `${window.location.origin}/community?post=${postId}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedPostId(postId);
+      toast({
+        title: "Đã sao chép liên kết",
+        description: "Link bài viết đã được sao chép vào clipboard",
+      });
+      setTimeout(() => setCopiedPostId(null), 2000);
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedPostId(postId);
+      toast({
+        title: "Đã sao chép liên kết",
+      });
+      setTimeout(() => setCopiedPostId(null), 2000);
     }
   };
 
@@ -203,9 +322,14 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
 
               {/* Actions */}
               <div className="flex items-center gap-2 pt-3 border-t border-border">
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                  <Heart className="w-4 h-4 mr-1" />
-                  Thích
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`${post.user_liked ? "text-red-500" : "text-muted-foreground"} hover:text-red-500`}
+                  onClick={() => handleLike(post.id)}
+                >
+                  <Heart className={`w-4 h-4 mr-1 ${post.user_liked ? "fill-red-500" : ""}`} />
+                  {post.likes_count || 0}
                 </Button>
                 <Button 
                   variant="ghost" 
@@ -214,17 +338,31 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
                   onClick={() => setExpandedPost(expandedPost === post.id ? null : post.id)}
                 >
                   <MessageSquare className="w-4 h-4 mr-1" />
-                  Bình luận
+                  {post.comments_count || 0}
                 </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                  <Share2 className="w-4 h-4 mr-1" />
-                  Chia sẻ
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-muted-foreground hover:text-primary"
+                  onClick={() => handleShare(post.id)}
+                >
+                  {copiedPostId === post.id ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1 text-green-500" />
+                      <span className="text-green-500">Đã sao chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="w-4 h-4 mr-1" />
+                      Chia sẻ
+                    </>
+                  )}
                 </Button>
               </div>
 
               {/* Comments section */}
               {expandedPost === post.id && (
-                <CommunityComments postId={post.id} />
+                <CommunityComments postId={post.id} onCommentAdded={fetchPosts} />
               )}
             </CardContent>
           </Card>
