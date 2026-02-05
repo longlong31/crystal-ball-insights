@@ -1,28 +1,20 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Users, Plus, MessageSquare, Calendar, FileText, 
-  Image, Video, FileIcon, Send, Heart, Share2,
-  Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft
-} from "lucide-react";
+ import { Users, Plus, MessageSquare, Calendar, FileText, AlertCircle, Newspaper } from "lucide-react";
+ import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Link } from "react-router-dom";
 import { CommunityPostForm } from "@/components/community/CommunityPostForm";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CommunityAdminPanel } from "@/components/community/CommunityAdminPanel";
+ import { NewsFeed } from "@/components/community/NewsFeed";
+ import { Footer } from "@/components/Footer";
 
 export default function Community() {
   const [user, setUser] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     const checkUser = async () => {
@@ -52,38 +44,35 @@ export default function Community() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex items-center gap-2">
-              <Users className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-bold">Cộng đồng</h1>
-            </div>
-          </div>
-          
-          {user && (
-            <Button 
-              onClick={() => setShowPostForm(true)}
-              className="bg-gradient-to-r from-primary to-purple-500"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Đăng bài
-            </Button>
-          )}
-        </div>
-      </header>
+       <AppHeader />
 
-      <main className="container mx-auto px-4 py-6">
+       <main className="container py-8">
+         <div className="flex items-center justify-between mb-6">
+           <div className="flex items-center gap-2">
+             <Users className="w-6 h-6 text-primary" />
+             <h1 className="text-2xl font-bold">Cộng đồng</h1>
+           </div>
+           {user && (
+             <Button 
+               onClick={() => setShowPostForm(true)}
+               className="bg-gradient-to-r from-primary to-purple-500"
+             >
+               <Plus className="w-4 h-4 mr-2" />
+               Đăng bài
+             </Button>
+           )}
+         </div>
+ 
         <Tabs defaultValue="feed" className="space-y-6">
           <TabsList className="bg-card border border-border">
             <TabsTrigger value="feed" className="data-[state=active]:bg-primary/20">
               <MessageSquare className="w-4 h-4 mr-2" />
               Bài viết
             </TabsTrigger>
+             <TabsTrigger value="news" className="data-[state=active]:bg-primary/20">
+               <Newspaper className="w-4 h-4 mr-2" />
+               Tin tức
+             </TabsTrigger>
             <TabsTrigger value="events" className="data-[state=active]:bg-primary/20">
               <Calendar className="w-4 h-4 mr-2" />
               Sự kiện
@@ -103,6 +92,10 @@ export default function Community() {
           <TabsContent value="feed">
             <CommunityFeed postType="discussion" />
           </TabsContent>
+ 
+           <TabsContent value="news">
+             <NewsFeed />
+           </TabsContent>
 
           <TabsContent value="events">
             <CommunityFeed postType="event" />
@@ -119,6 +112,8 @@ export default function Community() {
           )}
         </Tabs>
       </main>
+ 
+       <Footer />
 
       {/* Post Form Modal */}
       <AnimatePresence>

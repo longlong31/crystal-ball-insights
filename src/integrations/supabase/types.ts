@@ -124,6 +124,51 @@ export type Database = {
         }
         Relationships: []
       }
+      news_articles: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          language: string
+          published_at: string | null
+          source: string
+          source_url: string | null
+          title: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          language?: string
+          published_at?: string | null
+          source: string
+          source_url?: string | null
+          title: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          language?: string
+          published_at?: string | null
+          source?: string
+          source_url?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       post_reactions: {
         Row: {
           created_at: string
@@ -187,6 +232,39 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_analysis_history: {
+        Row: {
+          ai_analysis: Json | null
+          created_at: string
+          id: string
+          params: Json
+          project_name: string
+          results: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          created_at?: string
+          id?: string
+          params: Json
+          project_name: string
+          results: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          created_at?: string
+          id?: string
+          params?: Json
+          project_name?: string
+          results?: Json
           updated_at?: string
           user_id?: string
         }
