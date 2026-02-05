@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+ import { motion } from "framer-motion";
+ import { AppHeader } from "@/components/layout/AppHeader";
+ import { Button } from "@/components/ui/button";
 import { ProjectParamsForm } from "@/components/ProjectParamsForm";
 import { ProjectResultsDisplay } from "@/components/ProjectResultsDisplay";
 import { AdvancedSensitivityPanel } from "@/components/AdvancedSensitivityPanel";
@@ -10,10 +11,11 @@ import { ProjectScenarioManager } from "@/components/ProjectScenarioManager";
 import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
 import { FinancialStatementReader } from "@/components/FinancialStatementReader";
 import { StressTestingPanel } from "@/components/StressTestingPanel";
+ import { ProjectAnalysisHistory } from "@/components/ProjectAnalysisHistory";
 import { Footer } from "@/components/Footer";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
 import { calculateProject } from "@/lib/projectCalculator";
-import { Sparkles, Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, FileText, AlertTriangle } from "lucide-react";
+ import { Calculator, Activity, Play, RotateCcw, Dice5, GitCompare, FileText, AlertTriangle } from "lucide-react";
 
 type TabType = "calculate" | "sensitivity" | "montecarlo" | "stress" | "compare" | "financial";
 
@@ -22,6 +24,7 @@ const ProjectAnalysis = () => {
   const [params, setParams] = useState<ProjectParams>(defaultProjectParams);
   const [results, setResults] = useState<ProjectResults | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
   const handleCalculate = useCallback(() => {
     setIsCalculating(true);
@@ -35,32 +38,17 @@ const ProjectAnalysis = () => {
   const handleReset = useCallback(() => {
     setParams(defaultProjectParams);
     setResults(null);
+     setAiAnalysis(null);
   }, []);
+ 
+   const handleLoadHistory = useCallback((loadedParams: ProjectParams, loadedResults: ProjectResults) => {
+     setParams(loadedParams);
+     setResults(loadedResults);
+   }, []);
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold">Crystal Ball</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Mô phỏng cơ bản
-            </a>
-            <a href="/project" className="text-sm text-foreground font-medium transition-colors">
-              Phân tích dự án
-            </a>
-            <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Tài liệu
-            </a>
-            <a href="/community" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Cộng đồng
-            </a>
-          </nav>
-        </div>
-      </header>
+       <AppHeader />
 
       <main className="container py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -145,6 +133,12 @@ const ProjectAnalysis = () => {
               <div className="space-y-4">
                 <ProjectExcelImporter onImport={setParams} currentParams={params} />
                 <ProjectScenarioManager currentParams={params} onLoadScenario={setParams} />
+               <ProjectAnalysisHistory 
+                 currentParams={params} 
+                 currentResults={results}
+                 aiAnalysis={aiAnalysis}
+                 onLoadHistory={handleLoadHistory}
+               />
                 <ProjectParamsForm params={params} onParamsChange={setParams} />
                 <div className="flex gap-3">
                   <Button variant="glow" size="lg" className="flex-1" onClick={handleCalculate} disabled={isCalculating}>

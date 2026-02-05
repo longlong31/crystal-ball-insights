@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { 
-  Sparkles, 
+ import {
   BookOpen, 
   TrendingUp, 
   BarChart3, 
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 import { ProjectDocumentation } from "@/components/ProjectDocumentation";
 import { Footer } from "@/components/Footer";
+ import { AppHeader } from "@/components/layout/AppHeader";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -78,44 +78,7 @@ const Documentation = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            {/* Sidebar Toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="hidden lg:flex"
-            >
-              {sidebarOpen ? (
-                <PanelLeftClose className="w-5 h-5" />
-              ) : (
-                <PanelLeft className="w-5 h-5" />
-              )}
-            </Button>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-primary" />
-              <span className="text-xl font-bold">Crystal Ball</span>
-            </div>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Mô phỏng cơ bản
-            </a>
-            <a href="/project" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Phân tích dự án
-            </a>
-            <a href="/docs" className="text-sm text-foreground font-medium transition-colors">
-              Tài liệu
-            </a>
-            <a href="/community" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Cộng đồng
-            </a>
-          </nav>
-        </div>
-      </header>
+       <AppHeader />
 
       <div className="flex">
         {/* Sidebar - Table of Contents */}
@@ -128,7 +91,16 @@ const Documentation = () => {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               className="hidden lg:block sticky top-16 h-[calc(100vh-4rem)] border-r border-border/50 bg-card/30 backdrop-blur-sm overflow-hidden flex-shrink-0"
             >
-              <ScrollArea className="h-full">
+               <div className="flex items-center justify-end p-2 border-b border-border/30">
+                 <Button
+                   variant="ghost"
+                   size="sm"
+                   onClick={() => setSidebarOpen(false)}
+                 >
+                   <PanelLeftClose className="w-4 h-4" />
+                 </Button>
+               </div>
+               <ScrollArea className="h-[calc(100%-48px)]">
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-4 px-2">
                     <BookOpen className="w-5 h-5 text-primary" />

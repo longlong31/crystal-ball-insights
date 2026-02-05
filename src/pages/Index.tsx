@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
+ import { AppHeader } from "@/components/layout/AppHeader";
 import { HeroSection } from "@/components/HeroSection";
 import { SimulationForm } from "@/components/SimulationForm";
 import { ResultsPanel } from "@/components/ResultsPanel";
@@ -7,17 +8,10 @@ import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { ScenarioManager } from "@/components/ScenarioManager";
 import { ExcelUploader } from "@/components/ExcelUploader";
 import { Footer } from "@/components/Footer";
-import { UserMenu } from "@/components/auth/UserMenu";
-import { AuthForm } from "@/components/auth/AuthForm";
-import { MobileNav } from "@/components/MobileNav";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
-import { Sparkles, BarChart2, Activity } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+ import { BarChart2, Activity } from "lucide-react";
 
 type TabType = 'simulation' | 'sensitivity';
 
@@ -40,7 +34,6 @@ const Index = () => {
   const [simulationData, setSimulationData] = useState<number[]>([]);
   const [stats, setStats] = useState(calculateStatistics([]));
   const [isRunning, setIsRunning] = useState(false);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
 
   const handleDistributionTypeChange = (type: DistributionType) => {
     setDistributionType(type);
@@ -115,38 +108,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Auth Dialog */}
-      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
-        <DialogContent className="sm:max-w-md p-0 border-0 bg-transparent shadow-none">
-          <AuthForm onSuccess={() => setShowAuthDialog(false)} />
-        </DialogContent>
-      </Dialog>
-
-      {/* Header */}
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
-        <div className="container flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <MobileNav />
-            <Sparkles className="w-6 h-6 text-primary" />
-            <span className="text-xl font-bold">Crystal Ball</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="/" className="text-sm text-foreground font-medium transition-colors">
-              Mô phỏng cơ bản
-            </a>
-            <a href="/project" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Phân tích dự án
-            </a>
-            <a href="/community" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Cộng đồng
-            </a>
-            <a href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Tài liệu
-            </a>
-          </nav>
-          <UserMenu onAuthClick={() => setShowAuthDialog(true)} />
-        </div>
-      </header>
+       <AppHeader />
 
       {/* Hero Section */}
       <HeroSection />
