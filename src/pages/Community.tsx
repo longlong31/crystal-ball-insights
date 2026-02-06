@@ -93,16 +93,16 @@ export default function Community() {
             <CommunityFeed postType="discussion" />
           </TabsContent>
  
-           <TabsContent value="news">
-             <NewsFeed />
-           </TabsContent>
+          <TabsContent value="news">
+            <NewsFeed category="news" />
+          </TabsContent>
 
           <TabsContent value="events">
-            <CommunityFeed postType="event" />
+            <NewsFeed category="event" />
           </TabsContent>
 
           <TabsContent value="blogs">
-            <CommunityFeed postType="blog" />
+            <NewsFeed category="blog" />
           </TabsContent>
 
           {isAdmin && (
