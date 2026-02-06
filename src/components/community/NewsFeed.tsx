@@ -9,9 +9,9 @@
  import { toast } from "sonner";
  import { useState } from "react";
  
- export const NewsFeed = () => {
-   const { articles, loading, refreshNews } = useNewsArticles("news", 15);
-   const [refreshing, setRefreshing] = useState(false);
+export const NewsFeed = ({ category = "news" }: { category?: string }) => {
+  const { articles, loading, refreshNews } = useNewsArticles(category, 15);
+  const [refreshing, setRefreshing] = useState(false);
  
    const handleRefresh = async () => {
      setRefreshing(true);
@@ -58,13 +58,21 @@
      );
    }
  
-   return (
-     <div className="space-y-4">
-       <div className="flex justify-between items-center">
-         <h3 className="text-lg font-semibold flex items-center gap-2">
-           <Newspaper className="w-5 h-5 text-primary" />
-           Tin tức mới nhất
-         </h3>
+  const getTitle = () => {
+    switch (category) {
+      case "event": return "Sự kiện mới nhất";
+      case "blog": return "Blog mới nhất";
+      default: return "Tin tức mới nhất";
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Newspaper className="w-5 h-5 text-primary" />
+          {getTitle()}
+        </h3>
          <Button 
            variant="outline" 
            size="sm" 
