@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { 
   MessageSquare, Heart, Share2, Clock, User, 
@@ -13,6 +13,7 @@ import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { CommunityComments } from "./CommunityComments";
 import { useToast } from "@/hooks/use-toast";
+import { useCommunityRealtime } from "@/hooks/useCommunityRealtime";
 
 interface Post {
   id: string;
@@ -43,6 +44,22 @@ export function CommunityFeed({ postType }: CommunityFeedProps) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const handleNewPost = useCallback(() => {
+    fetchPosts();
+  }, []);
+
+  const handleNewComment = useCallback(() => {
+    // Refresh comments count
+    fetchPosts();
+  }, []);
+
+  // Subscribe to realtime updates
+  useCommunityRealtime({
+    onNewPost: handleNewPost,
+    onNewComment: handleNewComment,
+    enabled: true,
+  });
 
   useEffect(() => {
     fetchPosts();
