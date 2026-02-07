@@ -52,11 +52,13 @@ import {
   TrendingUp,
   Sparkles,
   Bot,
-  MessageSquare
+  MessageSquare,
+  Newspaper
 } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
 import { ChatbotQAManager } from "@/components/admin/ChatbotQAManager";
+import { NewsManager } from "@/components/admin/NewsManager";
 
 interface UserWithRole {
   id: string;
@@ -314,6 +316,10 @@ export default function Admin() {
             <TabsTrigger value="chatbot" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
               <Bot className="w-4 h-4" />
               Chatbot Q&A
+            </TabsTrigger>
+            <TabsTrigger value="news" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
+              <Newspaper className="w-4 h-4" />
+              Tin tức / Sự kiện
             </TabsTrigger>
           </TabsList>
 
@@ -688,6 +694,10 @@ export default function Admin() {
 
           <TabsContent value="chatbot">
             <ChatbotQAManager />
+          </TabsContent>
+
+          <TabsContent value="news">
+            <NewsManager />
           </TabsContent>
         </Tabs>
       </main>
