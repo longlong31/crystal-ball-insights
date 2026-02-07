@@ -5,20 +5,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNewsArticles, NewsArticle } from "@/hooks/useNewsArticles";
-import { ExternalLink, Newspaper, RefreshCw, Clock, Search, Filter, X } from "lucide-react";
+import { ExternalLink, Newspaper, RefreshCw, Clock, Search, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo } from "react";
 
 type TimeFilter = "all" | "today" | "week" | "month";
+const ITEMS_PER_PAGE = 9;
 
 export const NewsFeed = ({ category = "news" }: { category?: string }) => {
-  const { articles, loading, refreshNews } = useNewsArticles(category, 50);
+  const { articles, loading, refreshNews } = useNewsArticles(category, 100);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Get unique sources from articles
   const sources = useMemo(() => {
@@ -74,12 +76,26 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
     });
   }, [articles, searchQuery, sourceFilter, timeFilter]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);
+  const paginatedArticles = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredArticles.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredArticles, currentPage]);
+
+  // Reset to page 1 when filters change
   const hasActiveFilters = searchQuery || sourceFilter !== "all" || timeFilter !== "all";
 
   const clearFilters = () => {
     setSearchQuery("");
     setSourceFilter("all");
     setTimeFilter("all");
+    setCurrentPage(1);
+  };
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleRefresh = async () => {
@@ -237,69 +253,132 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArticles.map((article, index) => (
-            <motion.div
-              key={article.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-            >
-              <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-all h-full">
-                <CardContent className="p-4 flex flex-col h-full">
-                  {article.image_url && (
-                    <div className="w-full h-32 rounded-lg overflow-hidden mb-3 bg-muted">
-                      <img 
-                        src={article.image_url} 
-                        alt={article.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                    <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      {article.source}
-                    </span>
-                    {article.published_at && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatDistanceToNow(new Date(article.published_at), {
-                          addSuffix: true,
-                          locale: vi
-                        })}
-                      </span>
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedArticles.map((article, index) => (
+              <motion.div
+                key={article.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+              >
+                <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-all h-full">
+                  <CardContent className="p-4 flex flex-col h-full">
+                    {article.image_url && (
+                      <div className="w-full h-32 rounded-lg overflow-hidden mb-3 bg-muted">
+                        <img 
+                          src={article.image_url} 
+                          alt={article.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      </div>
                     )}
-                  </div>
+                    
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                        {article.source}
+                      </span>
+                      {article.published_at && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatDistanceToNow(new Date(article.published_at), {
+                            addSuffix: true,
+                            locale: vi
+                          })}
+                        </span>
+                      )}
+                    </div>
 
-                  <h4 className="font-medium text-sm mb-2 line-clamp-2 flex-grow">
-                    {article.title}
-                  </h4>
+                    <h4 className="font-medium text-sm mb-2 line-clamp-2 flex-grow">
+                      {article.title}
+                    </h4>
 
-                  {article.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                      {article.description}
-                    </p>
-                  )}
+                    {article.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                        {article.description}
+                      </p>
+                    )}
 
-                  {article.source_url && (
-                    <a
-                      href={article.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
-                    >
-                      Đọc tiếp <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                    {article.source_url && (
+                      <a
+                        href={article.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
+                      >
+                        Đọc tiếp <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Trước
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(page => {
+                    // Show first, last, current, and adjacent pages
+                    return page === 1 || 
+                           page === totalPages || 
+                           Math.abs(page - currentPage) <= 1;
+                  })
+                  .map((page, index, array) => {
+                    // Add ellipsis if there's a gap
+                    const showEllipsisBefore = index > 0 && page - array[index - 1] > 1;
+                    return (
+                      <div key={page} className="flex items-center gap-1">
+                        {showEllipsisBefore && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(page)}
+                          className="w-9 h-9"
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Sau
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
+
+          {/* Page info */}
+          {totalPages > 1 && (
+            <p className="text-center text-sm text-muted-foreground mt-2">
+              Trang {currentPage} / {totalPages} ({filteredArticles.length} bài viết)
+            </p>
+          )}
+        </>
       )}
     </div>
   );
