@@ -5,17 +5,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNewsArticles, NewsArticle } from "@/hooks/useNewsArticles";
+import { useNewsRealtime } from "@/hooks/useNewsRealtime";
 import { ExternalLink, Newspaper, RefreshCw, Clock, Search, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { vi } from "date-fns/locale";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 type TimeFilter = "all" | "today" | "week" | "month";
 const ITEMS_PER_PAGE = 9;
 
 export const NewsFeed = ({ category = "news" }: { category?: string }) => {
-  const { articles, loading, refreshNews } = useNewsArticles(category, 100);
+  const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
+  
+  // Realtime subscription for new articles
+  const handleNewArticle = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  useNewsRealtime({
+    onNewArticle: handleNewArticle,
+    category,
+    enabled: true,
+  });
+
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
