@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,17 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNewsArticles, NewsArticle } from "@/hooks/useNewsArticles";
 import { useNewsRealtime } from "@/hooks/useNewsRealtime";
-import { ExternalLink, Newspaper, RefreshCw, Clock, Search, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { ExternalLink, Newspaper, RefreshCw, Clock, Search, Filter, X, ChevronLeft, ChevronRight, Globe } from "lucide-react";
 import { formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
 
 type TimeFilter = "all" | "today" | "week" | "month";
 const ITEMS_PER_PAGE = 9;
 
-export const NewsFeed = ({ category = "news" }: { category?: string }) => {
+interface NewsFeedProps {
+  category?: string;
+}
+
+export const NewsFeed = ({ category = "news" }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'vi' ? vi : enUS;
   
   // Realtime subscription for new articles
   const handleNewArticle = useCallback(() => {
@@ -115,11 +124,28 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
     setRefreshing(true);
     const result = await refreshNews();
     if (result.success) {
-      toast.success(`Đã cập nhật ${result.inserted || 0} bài viết mới`);
+      toast.success(`${t('news.updated')} ${result.inserted || 0} ${t('news.newArticles')}`);
     } else {
-      toast.error("Không thể cập nhật tin tức");
+      toast.error(t('news.updateFailed'));
     }
     setRefreshing(false);
+  };
+
+  const getTitle = () => {
+    switch (category) {
+      case "event": return t('news.latestEvents');
+      case "blog": return t('news.latestBlogs');
+      default: return t('news.latest');
+    }
+  };
+
+  const getTimeFilterLabel = (filter: TimeFilter) => {
+    switch (filter) {
+      case "today": return t('news.today');
+      case "week": return t('news.thisWeek');
+      case "month": return t('news.thisMonth');
+      default: return t('news.allTime');
+    }
   };
 
   if (loading) {
@@ -143,26 +169,18 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
       <Card className="bg-card/50 border-border/50">
         <CardContent className="py-12 text-center">
           <Newspaper className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">Chưa có tin tức</h3>
+          <h3 className="text-lg font-medium mb-2">{t('news.noArticles')}</h3>
           <p className="text-muted-foreground mb-4">
-            Nhấn nút bên dưới để tải tin tức mới nhất
+            {t('news.noArticlesDesc')}
           </p>
           <Button onClick={handleRefresh} disabled={refreshing}>
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-            Tải tin tức
+            {t('news.loadNews')}
           </Button>
         </CardContent>
       </Card>
     );
   }
-
-  const getTitle = () => {
-    switch (category) {
-      case "event": return "Sự kiện mới nhất";
-      case "blog": return "Blog mới nhất";
-      default: return "Tin tức mới nhất";
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -182,7 +200,7 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
           disabled={refreshing}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-          Cập nhật
+          {t('news.refresh')}
         </Button>
       </div>
 
@@ -194,7 +212,7 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Tìm kiếm theo từ khóa..."
+                placeholder={t('news.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -204,10 +222,10 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
             {/* Source Filter */}
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
               <SelectTrigger className="w-full md:w-40">
-                <SelectValue placeholder="Nguồn" />
+                <SelectValue placeholder={t('filter.source')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả nguồn</SelectItem>
+                <SelectItem value="all">{t('news.allSources')}</SelectItem>
                 {sources.map(source => (
                   <SelectItem key={source} value={source}>
                     {source}
@@ -219,19 +237,19 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
             {/* Time Filter */}
             <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
               <SelectTrigger className="w-full md:w-36">
-                <SelectValue placeholder="Thời gian" />
+                <SelectValue placeholder={t('filter.time')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Mọi lúc</SelectItem>
-                <SelectItem value="today">Hôm nay</SelectItem>
-                <SelectItem value="week">Tuần này</SelectItem>
-                <SelectItem value="month">Tháng này</SelectItem>
+                <SelectItem value="all">{t('news.allTime')}</SelectItem>
+                <SelectItem value="today">{t('news.today')}</SelectItem>
+                <SelectItem value="week">{t('news.thisWeek')}</SelectItem>
+                <SelectItem value="month">{t('news.thisMonth')}</SelectItem>
               </SelectContent>
             </Select>
 
             {/* Clear Filters */}
             {hasActiveFilters && (
-              <Button variant="ghost" size="icon" onClick={clearFilters} title="Xóa bộ lọc">
+              <Button variant="ghost" size="icon" onClick={clearFilters} title={t('news.clearFilters')}>
                 <X className="w-4 h-4" />
               </Button>
             )}
@@ -241,10 +259,10 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
             <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
               <Filter className="w-4 h-4" />
               <span>
-                Đang hiển thị {filteredArticles.length} kết quả
-                {searchQuery && ` cho "${searchQuery}"`}
-                {sourceFilter !== "all" && ` từ ${sourceFilter}`}
-                {timeFilter !== "all" && ` trong ${timeFilter === "today" ? "hôm nay" : timeFilter === "week" ? "tuần này" : "tháng này"}`}
+                {t('news.showing')} {filteredArticles.length} {t('news.results')}
+                {searchQuery && ` ${t('news.for')} "${searchQuery}"`}
+                {sourceFilter !== "all" && ` ${t('news.from')} ${sourceFilter}`}
+                {timeFilter !== "all" && ` ${t('news.in')} ${getTimeFilterLabel(timeFilter)}`}
               </span>
             </div>
           )}
@@ -256,12 +274,12 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
         <Card className="bg-card/50 border-border/50">
           <CardContent className="py-8 text-center">
             <Search className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-            <h4 className="font-medium mb-1">Không tìm thấy kết quả</h4>
+            <h4 className="font-medium mb-1">{t('news.noResults')}</h4>
             <p className="text-sm text-muted-foreground mb-3">
-              Thử thay đổi từ khóa hoặc bộ lọc
+              {t('news.tryDifferent')}
             </p>
             <Button variant="outline" size="sm" onClick={clearFilters}>
-              Xóa bộ lọc
+              {t('news.clearFilters')}
             </Button>
           </CardContent>
         </Card>
@@ -275,58 +293,67 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <Card className="bg-card/50 border-border/50 hover:border-primary/50 transition-all h-full">
-                  <CardContent className="p-4 flex flex-col h-full">
-                    {article.image_url && (
-                      <div className="w-full h-32 rounded-lg overflow-hidden mb-3 bg-muted">
-                        <img 
-                          src={article.image_url} 
-                          alt={article.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
+                <Link to={`/news/${article.id}`}>
+                  <Card className="bg-card/50 border-border/50 hover:border-primary/50 hover:shadow-lg transition-all h-full group cursor-pointer">
+                    <CardContent className="p-4 flex flex-col h-full">
+                      {/* Cover Image */}
+                      <div className="w-full h-40 rounded-lg overflow-hidden mb-3 bg-gradient-to-br from-primary/20 to-purple-500/20 relative">
+                        {article.image_url ? (
+                          <img 
+                            src={article.image_url} 
+                            alt={article.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = "none";
+                              target.parentElement!.classList.add("flex", "items-center", "justify-center");
+                              const icon = document.createElement("div");
+                              icon.innerHTML = `<svg class="w-12 h-12 text-primary/40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>`;
+                              target.parentElement!.appendChild(icon);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Newspaper className="w-12 h-12 text-primary/40" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <span className="px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                        {article.source}
-                      </span>
-                      {article.published_at && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDistanceToNow(new Date(article.published_at), {
-                            addSuffix: true,
-                            locale: vi
-                          })}
-                        </span>
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 flex-wrap">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary font-medium">
+                          {article.source}
+                        </Badge>
+                        <Badge variant="outline" className="gap-1">
+                          <Globe className="w-3 h-3" />
+                          {article.language === 'vi' ? 'VI' : 'EN'}
+                        </Badge>
+                        {article.published_at && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDistanceToNow(new Date(article.published_at), {
+                              addSuffix: true,
+                              locale: dateLocale
+                            })}
+                          </span>
+                        )}
+                      </div>
+
+                      <h4 className="font-medium text-sm mb-2 line-clamp-2 flex-grow group-hover:text-primary transition-colors">
+                        {article.title}
+                      </h4>
+
+                      {article.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                          {article.description}
+                        </p>
                       )}
-                    </div>
 
-                    <h4 className="font-medium text-sm mb-2 line-clamp-2 flex-grow">
-                      {article.title}
-                    </h4>
-
-                    {article.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                        {article.description}
-                      </p>
-                    )}
-
-                    {article.source_url && (
-                      <a
-                        href={article.source_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-auto"
-                      >
-                        Đọc tiếp <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </CardContent>
-                </Card>
+                      <span className="inline-flex items-center gap-1 text-xs text-primary group-hover:underline mt-auto">
+                        {t('news.readMore')} <ExternalLink className="w-3 h-3" />
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -341,7 +368,7 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
                 disabled={currentPage === 1}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" />
-                Trước
+                {t('news.prev')}
               </Button>
 
               <div className="flex items-center gap-1">
@@ -379,7 +406,7 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                Sau
+                {t('news.next')}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
@@ -388,7 +415,7 @@ export const NewsFeed = ({ category = "news" }: { category?: string }) => {
           {/* Page info */}
           {totalPages > 1 && (
             <p className="text-center text-sm text-muted-foreground mt-2">
-              Trang {currentPage} / {totalPages} ({filteredArticles.length} bài viết)
+              {t('news.page')} {currentPage} / {totalPages} ({filteredArticles.length} {t('news.articles')})
             </p>
           )}
         </>
