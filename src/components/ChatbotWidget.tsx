@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Message {
   id: string;
@@ -24,6 +25,7 @@ interface Message {
 }
 
 export function ChatbotWidget() {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -71,7 +73,7 @@ export function ChatbotWidget() {
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.reply || "Xin lỗi, tôi không thể trả lời lúc này.",
+        content: data.reply || t("chatbot.fallback"),
         timestamp: new Date(),
       };
 
@@ -81,7 +83,7 @@ export function ChatbotWidget() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau! 🙏",
+        content: t("chatbot.error"),
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -105,7 +107,7 @@ export function ChatbotWidget() {
       setMessages([{
         id: "welcome",
         role: "assistant",
-        content: "Xin chào! 👋 Tôi là Crystal Ball AI. Hỏi tôi về phân tích dự án đầu tư, Monte Carlo, hoặc bất cứ điều gì! ✨",
+        content: t("chatbot.welcome"),
         timestamp: new Date(),
       }]);
     }
@@ -236,7 +238,7 @@ export function ChatbotWidget() {
                       <div className="bg-muted border border-border rounded-2xl rounded-bl-md p-2.5">
                         <div className="flex items-center gap-1.5">
                           <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                          <span className="text-xs text-muted-foreground">Đang suy nghĩ...</span>
+                          <span className="text-xs text-muted-foreground">{t("chatbot.thinking")}</span>
                         </div>
                       </div>
                     </div>
@@ -253,7 +255,7 @@ export function ChatbotWidget() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyDown={handleKeyPress}
-                      placeholder="Nhập câu hỏi..."
+                      placeholder={t("chatbot.placeholder")}
                       disabled={isTyping}
                       className="flex-1 bg-background border-border focus:border-primary rounded-xl text-sm h-9"
                     />

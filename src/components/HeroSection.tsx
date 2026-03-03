@@ -1,12 +1,15 @@
 import { motion } from "framer-motion";
 import { CrystalBallIcon } from "./CrystalBallIcon";
 import { Sparkles, Target, BarChart3, Shield } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const HeroSection = () => {
+  const { t } = useLanguage();
+  
   const features = [
-    { icon: <Target className="w-5 h-5" />, text: "Dự báo chính xác" },
-    { icon: <BarChart3 className="w-5 h-5" />, text: "Phân tích rủi ro" },
-    { icon: <Shield className="w-5 h-5" />, text: "Ra quyết định tự tin" },
+    { icon: <Target className="w-5 h-5" />, text: t("hero.feature1") },
+    { icon: <BarChart3 className="w-5 h-5" />, text: t("hero.feature2") },
+    { icon: <Shield className="w-5 h-5" />, text: t("hero.feature3") },
   ];
 
   return (
@@ -30,18 +33,17 @@ export const HeroSection = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm mb-6"
             >
               <Sparkles className="w-4 h-4" />
-              Mô phỏng Monte Carlo
+              {t("hero.badge")}
             </motion.div>
             
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
               <span className="text-foreground">Crystal Ball</span>
               <br />
-              <span className="text-primary glow-text">Phân tích rủi ro</span>
+              <span className="text-primary glow-text">{t("hero.subtitle")}</span>
             </h1>
             
             <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
-              Công cụ mô phỏng Monte Carlo giúp bạn dự báo kết quả, phân tích rủi ro 
-              và đưa ra quyết định chính xác với độ tin cậy cao.
+              {t("hero.description")}
             </p>
             
             <div className="flex flex-wrap justify-center lg:justify-start gap-4">

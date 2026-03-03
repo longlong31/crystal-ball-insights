@@ -4,6 +4,7 @@ import { Play, RotateCcw, Settings2 } from "lucide-react";
 import { SimulationCard } from "./SimulationCard";
 import { DistributionSelector } from "./DistributionSelector";
 import { DistributionType, distributionInfo } from "@/lib/distributions";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SimulationFormProps {
   distributionType: DistributionType;
@@ -28,11 +29,13 @@ export const SimulationForm = ({
   onReset,
   isRunning,
 }: SimulationFormProps) => {
+  const { t } = useLanguage();
+
   return (
     <SimulationCard className="h-full">
       <div className="flex items-center gap-3 mb-6">
         <Settings2 className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold">Thông số mô phỏng</h3>
+        <h3 className="text-lg font-semibold">{t("form.params")}</h3>
       </div>
 
       <div className="space-y-5">
@@ -45,7 +48,7 @@ export const SimulationForm = ({
 
         <div className="pt-2 border-t border-border">
           <div className="space-y-2 mt-4">
-            <label className="text-sm text-muted-foreground">Số lần mô phỏng</label>
+            <label className="text-sm text-muted-foreground">{t("form.iterations")}</label>
             <input
               type="number"
               value={iterations}
@@ -76,7 +79,7 @@ export const SimulationForm = ({
             ) : (
               <Play className="w-4 h-4" />
             )}
-            {isRunning ? "Đang chạy..." : "Chạy mô phỏng"}
+            {isRunning ? t("form.running") : t("form.run")}
           </Button>
           <Button variant="outline" size="lg" onClick={onReset}>
             <RotateCcw className="w-4 h-4" />

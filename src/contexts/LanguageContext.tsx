@@ -20,6 +20,40 @@ const translations: Translations = {
   "nav.login": { vi: "Đăng nhập", en: "Login" },
   "nav.logout": { vi: "Đăng xuất", en: "Logout" },
 
+  // Hero Section
+  "hero.badge": { vi: "Mô phỏng Monte Carlo", en: "Monte Carlo Simulation" },
+  "hero.subtitle": { vi: "Phân tích rủi ro", en: "Risk Analysis" },
+  "hero.description": { vi: "Công cụ mô phỏng Monte Carlo giúp bạn dự báo kết quả, phân tích rủi ro và đưa ra quyết định chính xác với độ tin cậy cao.", en: "Monte Carlo simulation tool that helps you forecast outcomes, analyze risks, and make accurate decisions with high confidence." },
+  "hero.feature1": { vi: "Dự báo chính xác", en: "Accurate Forecasting" },
+  "hero.feature2": { vi: "Phân tích rủi ro", en: "Risk Analysis" },
+  "hero.feature3": { vi: "Ra quyết định tự tin", en: "Confident Decisions" },
+
+  // Index Page Tabs
+  "tab.simulation": { vi: "Mô phỏng Monte Carlo", en: "Monte Carlo Simulation" },
+  "tab.sensitivity": { vi: "Phân tích độ nhạy", en: "Sensitivity Analysis" },
+  "simulation.title": { vi: "Mô phỏng Monte Carlo", en: "Monte Carlo Simulation" },
+  "simulation.description": { vi: "Chọn loại phân phối phù hợp và chạy mô phỏng để xem phân phối xác suất của các kết quả có thể xảy ra.", en: "Choose the appropriate distribution and run a simulation to view the probability distribution of possible outcomes." },
+  "sensitivity.title": { vi: "Phân tích độ nhạy", en: "Sensitivity Analysis" },
+  "sensitivity.description": { vi: "Xác định các yếu tố ảnh hưởng nhiều nhất đến kết quả dự báo thông qua phân tích tương quan và biểu đồ Tornado.", en: "Identify the factors that most influence forecast results through correlation analysis and Tornado charts." },
+
+  // Simulation Form
+  "form.params": { vi: "Thông số mô phỏng", en: "Simulation Parameters" },
+  "form.iterations": { vi: "Số lần mô phỏng", en: "Number of Iterations" },
+  "form.run": { vi: "Chạy mô phỏng", en: "Run Simulation" },
+  "form.running": { vi: "Đang chạy...", en: "Running..." },
+
+  // Footer
+  "footer.tagline": { vi: "Công cụ phân tích rủi ro và dự báo Monte Carlo", en: "Risk analysis and Monte Carlo forecasting tool" },
+  "footer.projects": { vi: "Dự án khác", en: "Other Projects" },
+  "footer.contact": { vi: "Liên hệ", en: "Contact" },
+
+  // Chatbot
+  "chatbot.welcome": { vi: "Xin chào! 👋 Tôi là Crystal Ball AI. Hỏi tôi về phân tích dự án đầu tư, Monte Carlo, hoặc bất cứ điều gì! ✨", en: "Hello! 👋 I'm Crystal Ball AI. Ask me about investment project analysis, Monte Carlo, or anything! ✨" },
+  "chatbot.thinking": { vi: "Đang suy nghĩ...", en: "Thinking..." },
+  "chatbot.placeholder": { vi: "Nhập câu hỏi...", en: "Type a question..." },
+  "chatbot.error": { vi: "Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau! 🙏", en: "Sorry, an error occurred. Please try again later! 🙏" },
+  "chatbot.fallback": { vi: "Xin lỗi, tôi không thể trả lời lúc này.", en: "Sorry, I can't answer right now." },
+
   // Community
   "community.title": { vi: "Cộng đồng", en: "Community" },
   "community.posts": { vi: "Bài viết", en: "Posts" },
@@ -93,6 +127,13 @@ const translations: Translations = {
   "language.vietnamese": { vi: "Tiếng Việt", en: "Vietnamese" },
   "language.english": { vi: "Tiếng Anh", en: "English" },
   "language.switch": { vi: "Ngôn ngữ", en: "Language" },
+
+  // Stats
+  "stats.min": { vi: "Giá trị nhỏ nhất", en: "Minimum" },
+  "stats.max": { vi: "Giá trị lớn nhất", en: "Maximum" },
+  "stats.mean": { vi: "Trung bình", en: "Mean" },
+  "stats.stdDev": { vi: "Độ lệch chuẩn", en: "Std. Deviation" },
+  "stats.median": { vi: "Trung vị (P50)", en: "Median (P50)" },
 };
 
 interface LanguageContextType {
