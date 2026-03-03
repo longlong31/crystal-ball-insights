@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
- import { AppHeader } from "@/components/layout/AppHeader";
+import { AppHeader } from "@/components/layout/AppHeader";
 import { HeroSection } from "@/components/HeroSection";
 import { SimulationForm } from "@/components/SimulationForm";
 import { ResultsPanel } from "@/components/ResultsPanel";
@@ -11,7 +11,8 @@ import { Footer } from "@/components/Footer";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
- import { BarChart2, Activity } from "lucide-react";
+import { BarChart2, Activity } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type TabType = 'simulation' | 'sensitivity';
 
@@ -24,6 +25,7 @@ const defaultDistParams: Record<DistributionType, Record<string, number>> = {
 };
 
 const Index = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('simulation');
   const [distributionType, setDistributionType] = useState<DistributionType>('triangular');
   const [distParams, setDistParams] = useState<Record<string, number>>(
@@ -95,13 +97,13 @@ const Index = () => {
   };
 
   const simulationStatsForExport = simulationData.length > 0 ? {
-    "Giá trị nhỏ nhất": stats.min,
-    "Giá trị lớn nhất": stats.max,
-    "Trung bình": stats.mean,
-    "Độ lệch chuẩn": stats.stdDev,
+    [t("stats.min")]: stats.min,
+    [t("stats.max")]: stats.max,
+    [t("stats.mean")]: stats.mean,
+    [t("stats.stdDev")]: stats.stdDev,
     "P5": stats.percentile5,
     "P25": stats.percentile25,
-    "Trung vị (P50)": stats.percentile50,
+    [t("stats.median")]: stats.percentile50,
     "P75": stats.percentile75,
     "P95": stats.percentile95,
   } : undefined;
@@ -131,7 +133,7 @@ const Index = () => {
               }`}
             >
               <BarChart2 className="w-4 h-4" />
-              Mô phỏng Monte Carlo
+              {t("tab.simulation")}
             </button>
             <button
               onClick={() => setActiveTab('sensitivity')}
@@ -142,19 +144,18 @@ const Index = () => {
               }`}
             >
               <Activity className="w-4 h-4" />
-              Phân tích độ nhạy
+              {t("tab.sensitivity")}
             </button>
           </div>
 
           {activeTab === 'simulation' && (
             <>
               <div className="text-center mb-10">
-                <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                  Mô phỏng Monte Carlo
+               <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                  {t("simulation.title")}
                 </h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Chọn loại phân phối phù hợp và chạy mô phỏng để xem phân phối 
-                  xác suất của các kết quả có thể xảy ra.
+                  {t("simulation.description")}
                 </p>
               </div>
 
@@ -189,12 +190,11 @@ const Index = () => {
           {activeTab === 'sensitivity' && (
             <>
               <div className="text-center mb-10">
-                <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                  Phân tích độ nhạy
+               <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                  {t("sensitivity.title")}
                 </h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Xác định các yếu tố ảnh hưởng nhiều nhất đến kết quả dự báo 
-                  thông qua phân tích tương quan và biểu đồ Tornado.
+                  {t("sensitivity.description")}
                 </p>
               </div>
 

@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, LogOut, Settings, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface UserProfile {
   full_name: string;
@@ -30,6 +31,7 @@ export function UserMenu({ onAuthClick }: UserMenuProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -111,7 +113,7 @@ export function UserMenu({ onAuthClick }: UserMenuProps) {
     return (
       <Button variant="outline" onClick={onAuthClick}>
         <User className="w-4 h-4 mr-2" />
-        Đăng nhập
+        {t("nav.login")}
       </Button>
     );
   }
@@ -142,7 +144,7 @@ export function UserMenu({ onAuthClick }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate("/profiles")}>
           <UserCircle className="mr-2 h-4 w-4" />
-          Hồ sơ cá nhân
+          {t("nav.profile")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate("/profiles")}>
           <Settings className="mr-2 h-4 w-4" />
@@ -151,7 +153,7 @@ export function UserMenu({ onAuthClick }: UserMenuProps) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
-          Đăng xuất
+          {t("nav.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
