@@ -6,104 +6,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Dữ liệu về Quách Thành Long cho chatbot
-const LONG_PROFILE_DATA = `
-# Thông tin về Quách Thành Long (Long Quach)
+const SYSTEM_KNOWLEDGE = `
+# Crystal Ball AI - Trợ lý phân tích đầu tư thông minh
 
-## Giới thiệu
-- Tên: Quách Thành Long
-- Vai trò: Investor | Web/Game Developer | Business Analyst
-- Năng lực: CTO-level talent passionate about technology, economics, and creating innovative solutions
-- Website chính thức: https://quachthanhlong.com
-
-## Thống kê
-- 25+ dự án đã hoàn thành
-- 800+ giờ học tập và nghiên cứu
-- 12+ khách hàng phục vụ
-
-## Kỹ năng chuyên môn
-1. **Full-Stack Development**: React, Next.js, Node.js, Unity
-2. **Business Analysis**: Strategic Planning, Market Research
-3. **Investment**: Tech Startups, Market Analysis
-
-## Dự án nổi bật
-1. **ThinkShift**: Tái định nghĩa năng lực trong Kỷ nguyên Số (Next.js, Python, Analytics)
-   - Demo: https://thinkshift-vietnam.vercel.app/
-   
-2. **MSC**: Trung tâm đào tạo và phát triển kỹ năng chuyên nghiệp hàng đầu Việt Nam (Next.js, GoLang)
-   - Demo: https://msc-rebuild.vercel.app/
-   
-3. **Fragments of Memory Game**: Healing Game (Unity, C#, WebGL, Mobile)
-
-## Game Development
-1. **Dragon Keeper**: Game nuôi rồng fantasy với PvP, tiến hóa & giao diện đẹp mắt (Next.js, Tailwind)
-   - Play: https://dragon-keeper-game.vercel.app/
-   
-2. **Cosmic Emotion Letter**: Emotional space-themed letter writing game with beautiful UI and healing gameplay
-   - Play: https://cosmic-emotion-letter-game.vercel.app/play
-
-## Blog & Insights
-- "The Future of Web Development: AI Integration" - Khám phá cách AI đang thay đổi phát triển web
-- "Game Development with Unity: Best Practices" - Tips và kỹ thuật tạo game hấp dẫn với Unity
-- "Investment Strategies in Tech Startups" - Phân tích xu hướng thị trường và cơ hội đầu tư
-
-## Liên hệ
+## Về Crystal Ball
+Crystal Ball là ứng dụng phân tích rủi ro và mô phỏng Monte Carlo do Quách Thành Long phát triển.
 - Website: https://quachthanhlong.com
-- Projects: https://quachthanhlong.com/projects
-- Contact: https://quachthanhlong.com/contact
+- Slogan: "Tech gives me the tools, economics gives me the vision."
 
-## Slogan
-"Tech gives me the tools, economics gives me the vision."
-`;
+## Khả năng AI
+Bạn có thể:
+1. **Phân tích tài chính thời gian thực** - NPV, IRR, WACC, DSCR, ROI, ROE, ROA, PI, MIRR, EVA
+2. **Mô phỏng Monte Carlo** - Giải thích phân phối xác suất, VaR, CVaR, stress testing
+3. **Tư vấn đầu tư** - Đánh giá dự án, so sánh kịch bản, phân tích rủi ro
+4. **Kiến thức kinh tế vĩ mô** - Lạm phát, lãi suất, tỷ giá, chính sách tiền tệ
+5. **Phân tích thị trường** - Xu hướng ngành, cơ hội đầu tư, rủi ro thị trường
+6. **Hỗ trợ kỹ thuật** - Hướng dẫn sử dụng Crystal Ball, import/export dữ liệu
 
-// Dữ liệu về Crystal Ball app
-const CRYSTAL_BALL_DATA = `
-# Thông tin về Crystal Ball - Ứng dụng Mô phỏng Monte Carlo
-
-## Giới thiệu
-Crystal Ball là một ứng dụng web hiện đại được phát triển bởi Quách Thành Long để hỗ trợ phân tích rủi ro và mô phỏng Monte Carlo trong các dự án đầu tư.
-
-## Tính năng chính
-1. **Mô phỏng Monte Carlo cơ bản**
-   - Hỗ trợ nhiều loại phân phối: Triangular, Normal, Lognormal, Uniform, Beta
-   - Chạy hàng nghìn lần lặp để dự đoán kết quả
-   - Hiển thị thống kê chi tiết: Mean, Median, Percentiles (P5, P25, P50, P75, P95)
-
-2. **Phân tích độ nhạy**
-   - Xác định các yếu tố ảnh hưởng nhiều nhất đến kết quả
-   - Biểu đồ Tornado trực quan
-   - Phân tích tương quan
-
-3. **Phân tích dự án đầu tư**
-   - Tính NPV (Net Present Value) - Giá trị hiện tại ròng
-   - Tính IRR (Internal Rate of Return) - Tỷ suất hoàn vốn nội bộ
-   - Phân tích Payback Period - Thời gian hoàn vốn
-   - DSCR (Debt Service Coverage Ratio) - Hệ số khả năng trả nợ
-   - ROI, ROE - Tỷ suất sinh lời
-   - Stress Testing - Kiểm tra khả năng chịu đựng
-
-4. **Quản lý kịch bản**
-   - Lưu và load các kịch bản mô phỏng
-   - So sánh nhiều kịch bản
-   - Export kết quả ra PDF/Word
-
-5. **Import/Export dữ liệu**
-   - Hỗ trợ import từ Excel
-   - Export báo cáo PDF/Word chuyên nghiệp
-
-## Các khái niệm tài chính quan trọng
-1. **Monte Carlo Simulation**: Phương pháp sử dụng mô phỏng ngẫu nhiên để dự đoán kết quả có tính đến rủi ro
-2. **NPV**: Tổng giá trị hiện tại của tất cả dòng tiền tương lai, chiết khấu về hiện tại
-3. **IRR**: Tỷ suất chiết khấu mà tại đó NPV = 0
-4. **Sensitivity Analysis**: Phân tích ảnh hưởng của từng biến số đến kết quả
-5. **Risk Analysis**: Đánh giá và lượng hóa rủi ro trong đầu tư
-
-## Đối tượng sử dụng
-- Nhà phân tích tài chính
-- Quản lý dự án
-- Nhà đầu tư cá nhân và tổ chức
-- Sinh viên kinh tế/tài chính
-- Doanh nghiệp cần đánh giá dự án
+## Phong cách trả lời
+- Chuyên nghiệp nhưng thân thiện, dùng emoji phù hợp
+- Trả lời chi tiết với ví dụ thực tế khi cần
+- Sử dụng markdown: **bold**, *italic*, \`code\`, danh sách, bảng
+- Khi phân tích số liệu, dùng bảng markdown để trình bày rõ ràng
+- Nếu câu hỏi liên quan đến Crystal Ball, hướng dẫn cụ thể các bước
+- Tự động nhận diện ngôn ngữ người dùng (Việt/Anh) và trả lời phù hợp
 `;
 
 serve(async (req) => {
@@ -112,7 +38,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationHistory } = await req.json();
+    const { message, conversationHistory, stream: enableStream, language } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
@@ -130,37 +56,49 @@ serve(async (req) => {
 
     let qaContext = '';
     if (qaData && qaData.length > 0) {
-      qaContext = '\n\n# Câu hỏi và trả lời được định nghĩa sẵn từ Admin:\n';
+      qaContext = '\n\n## Admin Q&A Knowledge Base:\n';
       qaData.forEach((qa: any) => {
-        qaContext += `\nQ: ${qa.question}\nA: ${qa.answer}\n`;
-        if (qa.keywords && qa.keywords.length > 0) {
-          qaContext += `Keywords: ${qa.keywords.join(', ')}\n`;
-        }
+        qaContext += `\n**Q:** ${qa.question}\n**A:** ${qa.answer}\n`;
       });
     }
 
-    const systemPrompt = `Bạn là Crystal Ball AI Assistant - trợ lý thông minh chuyên về phân tích rủi ro, mô phỏng Monte Carlo và tư vấn đầu tư. 
+    // Fetch recent community insights for dynamic context
+    const { data: recentPosts } = await supabase
+      .from("community_posts")
+      .select("title, content, post_type")
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-Bạn được phát triển bởi Quách Thành Long (Long Quach) - một developer và business analyst tài năng.
+    let communityContext = '';
+    if (recentPosts && recentPosts.length > 0) {
+      communityContext = '\n\n## Xu hướng cộng đồng gần đây:\n';
+      recentPosts.forEach((post: any) => {
+        communityContext += `- [${post.post_type}] ${post.title}\n`;
+      });
+    }
 
-## Kiến thức của bạn:
+    // Fetch recent news for dynamic context
+    const { data: recentNews } = await supabase
+      .from("news_articles")
+      .select("title, category, source")
+      .eq("is_active", true)
+      .order("published_at", { ascending: false })
+      .limit(5);
 
-${LONG_PROFILE_DATA}
+    let newsContext = '';
+    if (recentNews && recentNews.length > 0) {
+      newsContext = '\n\n## Tin tức tài chính mới nhất:\n';
+      recentNews.forEach((news: any) => {
+        newsContext += `- [${news.category}] ${news.title} (${news.source})\n`;
+      });
+    }
 
-${CRYSTAL_BALL_DATA}
+    const langInstruction = language === 'en' 
+      ? '\n\n**IMPORTANT: Respond in English as the user has set English as their language.**'
+      : '\n\n**IMPORTANT: Trả lời bằng tiếng Việt.**';
 
-${qaContext}
-
-## Hướng dẫn trả lời:
-1. Luôn thân thiện, chuyên nghiệp và hữu ích
-2. Ưu tiên sử dụng thông tin từ Q&A đã định nghĩa nếu có câu hỏi liên quan
-3. Có thể trả lời về Quách Thành Long, các dự án của anh ấy, và thông tin liên hệ
-4. Giải thích các khái niệm tài chính một cách dễ hiểu với ví dụ thực tế
-5. Hỗ trợ sử dụng ứng dụng Crystal Ball
-6. Trả lời bằng tiếng Việt trừ khi được yêu cầu khác
-7. Sử dụng emoji phù hợp để tạo trải nghiệm thân thiện 🎯
-8. Nếu không biết câu trả lời, hãy thành thật nói và gợi ý liên hệ qua quachthanhlong.com
-9. Khi nói về Long/Quách Thành Long, hãy giới thiệu như một chuyên gia đáng tin cậy`;
+    const systemPrompt = SYSTEM_KNOWLEDGE + qaContext + communityContext + newsContext + langInstruction;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -168,44 +106,81 @@ ${qaContext}
       { role: "user", content: message },
     ];
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-      }),
-    });
+    if (enableStream) {
+      // Streaming response
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000,
+          stream: true,
+        }),
+      });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Đã vượt quá giới hạn yêu cầu, vui lòng thử lại sau.", reply: "⏳ Xin lỗi, hệ thống đang bận. Vui lòng thử lại sau ít phút nhé!" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ error: "Rate limited", reply: "⏳ Hệ thống đang bận, vui lòng thử lại sau!" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ error: "Payment required", reply: "💳 Tính năng AI tạm thời không khả dụng." }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw new Error("AI gateway error");
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Cần nạp thêm credit.", reply: "💳 Xin lỗi, tính năng AI tạm thời không khả dụng. Vui lòng liên hệ admin!" }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    } else {
+      // Non-streaming response
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ reply: "⏳ Hệ thống đang bận, vui lòng thử lại sau!" }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ reply: "💳 Tính năng AI tạm thời không khả dụng." }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        throw new Error("AI gateway error");
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      throw new Error("AI gateway error");
+
+      const data = await response.json();
+      const reply = data.choices?.[0]?.message?.content || "Xin lỗi, tôi không thể trả lời lúc này.";
+
+      return new Response(JSON.stringify({ reply }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "Xin lỗi, tôi không thể trả lời lúc này.";
-
-    return new Response(JSON.stringify({ reply }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (error) {
     console.error("chatbot-ai error:", error);
     return new Response(
