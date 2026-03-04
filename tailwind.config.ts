@@ -59,6 +59,14 @@ export default {
           purple: "hsl(var(--crystal-purple))",
           blue: "hsl(var(--crystal-blue))",
         },
+        quant: {
+          green: "hsl(var(--quant-green))",
+          red: "hsl(var(--quant-red))",
+          amber: "hsl(var(--quant-amber))",
+          cyan: "hsl(var(--quant-cyan))",
+          violet: "hsl(var(--quant-violet))",
+          orange: "hsl(var(--quant-orange))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
