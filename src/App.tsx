@@ -13,6 +13,13 @@ import Community from "./pages/Community";
 import NewsDetail from "./pages/NewsDetail";
 import NotFound from "./pages/NotFound";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { PlatformLayout } from "@/components/platform/PlatformLayout";
+import Dashboard from "./pages/platform/Dashboard";
+import StockAnalysis from "./pages/platform/StockAnalysis";
+import CryptoIntelligence from "./pages/platform/CryptoIntelligence";
+import PortfolioOptimizer from "./pages/platform/PortfolioOptimizer";
+import RiskEngine from "./pages/platform/RiskEngine";
+import AIInsights from "./pages/platform/AIInsights";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +38,13 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/community" element={<Community />} />
             <Route path="/news/:id" element={<NewsDetail />} />
+            {/* Platform Routes */}
+            <Route path="/platform" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
+            <Route path="/platform/stocks" element={<PlatformLayout><StockAnalysis /></PlatformLayout>} />
+            <Route path="/platform/crypto" element={<PlatformLayout><CryptoIntelligence /></PlatformLayout>} />
+            <Route path="/platform/portfolio" element={<PlatformLayout><PortfolioOptimizer /></PlatformLayout>} />
+            <Route path="/platform/risk" element={<PlatformLayout><RiskEngine /></PlatformLayout>} />
+            <Route path="/platform/ai-insights" element={<PlatformLayout><AIInsights /></PlatformLayout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

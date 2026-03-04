@@ -1,6 +1,8 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { CrystalBallIcon } from "./CrystalBallIcon";
-import { Sparkles, Target, BarChart3, Shield } from "lucide-react";
+import { Sparkles, Target, BarChart3, Shield, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export const HeroSection = () => {
@@ -60,8 +62,22 @@ export const HeroSection = () => {
                 </motion.div>
               ))}
             </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mt-8 flex flex-wrap justify-center lg:justify-start gap-3"
+            >
+              <Link to="/platform">
+                <Button size="lg" className="gap-2 text-base">
+                  <Sparkles className="w-4 h-4" />
+                  Launch Quant Platform
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </motion.div>
           </motion.div>
-          
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
