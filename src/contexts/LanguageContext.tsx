@@ -15,6 +15,7 @@ const translations: Translations = {
   "nav.project": { vi: "Phân tích dự án", en: "Project Analysis" },
   "nav.docs": { vi: "Tài liệu", en: "Documentation" },
   "nav.community": { vi: "Cộng đồng", en: "Community" },
+  "nav.platform": { vi: "Nền tảng", en: "Platform" },
   "nav.admin": { vi: "Quản trị", en: "Admin" },
   "nav.profile": { vi: "Hồ sơ", en: "Profile" },
   "nav.login": { vi: "Đăng nhập", en: "Login" },

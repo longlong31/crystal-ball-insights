@@ -1,21 +1,25 @@
 import { useState } from "react";
-import { Menu, X, Sparkles, BarChart2, FileText, Users } from "lucide-react";
+import { Menu, X, Sparkles, BarChart2, FileText, Users, BarChart3 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const navItems = [
-  { href: "/", label: "Mô phỏng cơ bản", icon: BarChart2 },
-  { href: "/project", label: "Phân tích dự án", icon: FileText },
-  { href: "/community", label: "Cộng đồng", icon: Users },
-  { href: "/docs", label: "Tài liệu", icon: FileText },
+const navItemsDef = [
+  { href: "/", labelKey: "nav.home", icon: BarChart2 },
+  { href: "/project", labelKey: "nav.project", icon: FileText },
+  { href: "/platform", labelKey: "nav.platform", icon: BarChart3 },
+  { href: "/community", labelKey: "nav.community", icon: Users },
+  { href: "/docs", labelKey: "nav.docs", icon: FileText },
 ];
 
 export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
+  const navItems = navItemsDef.map((item) => ({ ...item, label: t(item.labelKey) }));
 
   const handleNavigation = (href: string) => {
     navigate(href);
