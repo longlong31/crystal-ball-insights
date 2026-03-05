@@ -1,14 +1,15 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart3, Zap, Shield, Brain } from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart3, Zap, Shield, Brain, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
-import { generateSampleStockData, generateSampleCryptoData, calculateRSI, calculateSharpeRatio, calculateMaxDrawdown, calculateVolatility } from "@/lib/technicalIndicators";
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from "recharts";
+import { generateSampleStockData, calculateSharpeRatio, calculateMaxDrawdown, calculateVolatility, calculateVaR } from "@/lib/technicalIndicators";
+import { useCryptoMarkets, useCryptoGlobal } from "@/hooks/useMarketData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const TICKER_COLORS = {
   up: "hsl(142, 76%, 45%)",
   down: "hsl(0, 72%, 55%)",
-  neutral: "hsl(215, 15%, 50%)",
 };
 
 function MetricCard({ label, value, change, icon: Icon, color }: { label: string; value: string; change?: number; icon: any; color: string }) {
@@ -37,23 +38,25 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
     <ResponsiveContainer width="100%" height={40}>
       <AreaChart data={chartData}>
         <defs>
-          <linearGradient id={`spark-${color}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={`spark-${color.replace(/[^a-z0-9]/gi, '')}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.3} />
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <Area type="monotone" dataKey="v" stroke={color} fill={`url(#spark-${color})`} strokeWidth={1.5} dot={false} />
+        <Area type="monotone" dataKey="v" stroke={color} fill={`url(#spark-${color.replace(/[^a-z0-9]/gi, '')})`} strokeWidth={1.5} dot={false} />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
 export default function Dashboard() {
-  const marketData = useMemo(() => {
-    const stocks = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN'];
-    const cryptos = ['BTC', 'ETH', 'SOL', 'BNB'];
+  const { language } = useLanguage();
+  const { data: cryptoMarkets, isLoading: cryptoLoading } = useCryptoMarkets(["BTC", "ETH", "SOL", "BNB"]);
+  const { data: globalData } = useCryptoGlobal();
 
-    const stockData = stocks.map(s => {
+  const stockData = useMemo(() => {
+    const stocks = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN'];
+    return stocks.map(s => {
       const data = generateSampleStockData(s, 90);
       const closes = data.map(d => d.close);
       const lastPrice = closes[closes.length - 1];
@@ -61,29 +64,34 @@ export default function Dashboard() {
       const change = ((lastPrice - prevPrice) / prevPrice) * 100;
       return { symbol: s, price: lastPrice, change, closes };
     });
-
-    const cryptoData = cryptos.map(c => {
-      const data = generateSampleCryptoData(c, 90);
-      const closes = data.map(d => d.close);
-      const lastPrice = closes[closes.length - 1];
-      const prevPrice = closes[closes.length - 2];
-      const change = ((lastPrice - prevPrice) / prevPrice) * 100;
-      return { symbol: c, price: lastPrice, change, closes };
-    });
-
-    return { stockData, cryptoData };
   }, []);
+
+  // Portfolio metrics from stock data
+  const portfolioMetrics = useMemo(() => {
+    const allReturns = stockData.flatMap(s => {
+      const c = s.closes;
+      return c.slice(1).map((v, i) => (v - c[i]) / c[i]);
+    });
+    const avgReturns = stockData[0].closes.slice(1).map((_, i) =>
+      stockData.reduce((sum, s) => sum + ((s.closes[i + 1] - s.closes[i]) / s.closes[i]), 0) / stockData.length
+    );
+    return {
+      sharpe: calculateSharpeRatio(avgReturns),
+      maxDD: calculateMaxDrawdown(stockData[0].closes),
+      var95: calculateVaR(avgReturns, 0.95),
+    };
+  }, [stockData]);
 
   const portfolioValue = 2847650;
   const dailyPnL = 12453.20;
   const dailyPnLPct = 0.44;
 
   const allocationData = [
-    { name: 'US Stocks', value: 45, color: 'hsl(185, 80%, 50%)' },
+    { name: language === 'vi' ? 'Cổ phiếu Mỹ' : 'US Stocks', value: 45, color: 'hsl(185, 80%, 50%)' },
     { name: 'Crypto', value: 20, color: 'hsl(270, 70%, 60%)' },
-    { name: 'Bonds', value: 15, color: 'hsl(142, 76%, 45%)' },
-    { name: 'Commodities', value: 10, color: 'hsl(38, 92%, 55%)' },
-    { name: 'Cash', value: 10, color: 'hsl(215, 15%, 50%)' },
+    { name: language === 'vi' ? 'Trái phiếu' : 'Bonds', value: 15, color: 'hsl(142, 76%, 45%)' },
+    { name: language === 'vi' ? 'Hàng hóa' : 'Commodities', value: 10, color: 'hsl(38, 92%, 55%)' },
+    { name: language === 'vi' ? 'Tiền mặt' : 'Cash', value: 10, color: 'hsl(215, 15%, 50%)' },
   ];
 
   const performanceData = Array.from({ length: 90 }, (_, i) => ({
@@ -92,23 +100,24 @@ export default function Dashboard() {
   }));
 
   const modules = [
-    { path: '/platform/stocks', icon: TrendingUp, title: 'Stock Analysis', desc: 'Fundamental & technical analysis', color: 'hsl(185, 80%, 50%)' },
-    { path: '/platform/crypto', icon: Zap, title: 'Crypto Intelligence', desc: 'Market dominance & cycles', color: 'hsl(270, 70%, 60%)' },
-    { path: '/platform/portfolio', icon: BarChart3, title: 'Portfolio Optimizer', desc: 'Risk-adjusted allocation', color: 'hsl(142, 76%, 45%)' },
-    { path: '/platform/risk', icon: Shield, title: 'Risk Engine', desc: 'VaR & correlation analysis', color: 'hsl(38, 92%, 55%)' },
-    { path: '/platform/ai-insights', icon: Brain, title: 'AI Insights', desc: 'Pattern & anomaly detection', color: 'hsl(0, 72%, 55%)' },
+    { path: '/platform/stocks', icon: TrendingUp, title: language === 'vi' ? 'Cổ phiếu' : 'Stocks', desc: language === 'vi' ? 'Phân tích kỹ thuật & cơ bản' : 'Technical & fundamental', color: 'hsl(185, 80%, 50%)' },
+    { path: '/platform/crypto', icon: Zap, title: 'Crypto', desc: language === 'vi' ? 'Dữ liệu thời gian thực' : 'Real-time data', color: 'hsl(270, 70%, 60%)' },
+    { path: '/platform/portfolio', icon: BarChart3, title: language === 'vi' ? 'Danh mục' : 'Portfolio', desc: language === 'vi' ? 'Tối ưu phân bổ' : 'Optimization', color: 'hsl(142, 76%, 45%)' },
+    { path: '/platform/risk', icon: Shield, title: language === 'vi' ? 'Rủi ro' : 'Risk', desc: 'VaR & correlation', color: 'hsl(38, 92%, 55%)' },
+    { path: '/platform/ai-insights', icon: Brain, title: 'AI Insights', desc: language === 'vi' ? 'Nhận diện mô hình' : 'Pattern detection', color: 'hsl(0, 72%, 55%)' },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Investment Intelligence Overview</p>
+          <p className="text-sm text-muted-foreground">
+            {language === 'vi' ? 'Tổng quan đầu tư thông minh' : 'Investment Intelligence Overview'}
+          </p>
         </div>
         <div className="text-right">
-          <p className="stat-label">Portfolio Value</p>
+          <p className="stat-label">{language === 'vi' ? 'Giá trị danh mục' : 'Portfolio Value'}</p>
           <p className="text-2xl font-semibold font-mono">${portfolioValue.toLocaleString()}</p>
           <p className={`text-xs font-mono ${dailyPnL >= 0 ? 'ticker-green' : 'ticker-red'}`}>
             {dailyPnL >= 0 ? '+' : ''}${dailyPnL.toLocaleString()} ({dailyPnLPct >= 0 ? '+' : ''}{dailyPnLPct}%)
@@ -118,17 +127,16 @@ export default function Dashboard() {
 
       {/* Top Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <MetricCard label="Sharpe Ratio" value="1.84" change={5.2} icon={Activity} color="hsl(185, 80%, 50%)" />
-        <MetricCard label="Max Drawdown" value="-12.3%" icon={TrendingDown} color="hsl(0, 72%, 55%)" />
-        <MetricCard label="VaR (95%)" value="$34,250" icon={Shield} color="hsl(38, 92%, 55%)" />
+        <MetricCard label="Sharpe Ratio" value={portfolioMetrics.sharpe.toFixed(2)} change={5.2} icon={Activity} color="hsl(185, 80%, 50%)" />
+        <MetricCard label="Max Drawdown" value={`${(portfolioMetrics.maxDD * 100).toFixed(1)}%`} icon={TrendingDown} color="hsl(0, 72%, 55%)" />
+        <MetricCard label="VaR (95%)" value={`${(portfolioMetrics.var95 * 100).toFixed(2)}%`} icon={Shield} color="hsl(38, 92%, 55%)" />
         <MetricCard label="Daily P&L" value={`$${dailyPnL.toLocaleString()}`} change={dailyPnLPct} icon={DollarSign} color="hsl(142, 76%, 45%)" />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Performance Chart */}
         <div className="quant-card lg:col-span-2">
-          <p className="stat-label mb-3">Portfolio Performance (90D)</p>
+          <p className="stat-label mb-3">{language === 'vi' ? 'Hiệu suất danh mục (90 ngày)' : 'Portfolio Performance (90D)'}</p>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={performanceData}>
               <defs>
@@ -148,9 +156,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Allocation */}
         <div className="quant-card">
-          <p className="stat-label mb-3">Asset Allocation</p>
+          <p className="stat-label mb-3">{language === 'vi' ? 'Phân bổ tài sản' : 'Asset Allocation'}</p>
           <div className="flex items-center justify-center">
             <PieChart width={160} height={160}>
               <Pie data={allocationData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={70} strokeWidth={0}>
@@ -176,11 +183,10 @@ export default function Dashboard() {
 
       {/* Market Tickers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Stocks */}
         <div className="quant-card">
-          <p className="stat-label mb-3">Equity Markets</p>
+          <p className="stat-label mb-3">{language === 'vi' ? 'Thị trường cổ phiếu' : 'Equity Markets'}</p>
           <div className="space-y-2">
-            {marketData.stockData.map((stock) => (
+            {stockData.map((stock) => (
               <div key={stock.symbol} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="font-mono text-sm font-medium w-14">{stock.symbol}</span>
@@ -197,25 +203,41 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Crypto */}
         <div className="quant-card">
-          <p className="stat-label mb-3">Crypto Markets</p>
-          <div className="space-y-2">
-            {marketData.cryptoData.map((crypto) => (
-              <div key={crypto.symbol} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-medium w-14">{crypto.symbol}</span>
-                  <MiniSparkline data={crypto.closes} color={crypto.change >= 0 ? TICKER_COLORS.up : TICKER_COLORS.down} />
+          <p className="stat-label mb-3">
+            {language === 'vi' ? 'Thị trường Crypto' : 'Crypto Markets'}
+            <span className="text-[10px] ml-2 text-primary font-normal">LIVE</span>
+          </p>
+          {cryptoLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cryptoMarkets?.map((crypto) => (
+                <div key={crypto.symbol} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 w-14">
+                      <img src={crypto.image} alt={crypto.name} className="w-5 h-5 rounded-full" />
+                      <span className="font-mono text-sm font-medium">{crypto.symbol}</span>
+                    </div>
+                    {crypto.sparkline7d.length > 0 && (
+                      <MiniSparkline
+                        data={crypto.sparkline7d.filter((_, i) => i % 4 === 0)}
+                        color={crypto.priceChangePercentage24h >= 0 ? TICKER_COLORS.up : TICKER_COLORS.down}
+                      />
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-mono">${crypto.currentPrice.toLocaleString(undefined, { maximumFractionDigits: crypto.currentPrice < 1 ? 4 : 2 })}</p>
+                    <p className={`text-[10px] font-mono ${crypto.priceChangePercentage24h >= 0 ? 'ticker-green' : 'ticker-red'}`}>
+                      {crypto.priceChangePercentage24h >= 0 ? '+' : ''}{crypto.priceChangePercentage24h?.toFixed(2)}%
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-mono">${crypto.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}</p>
-                  <p className={`text-[10px] font-mono ${crypto.change >= 0 ? 'ticker-green' : 'ticker-red'}`}>
-                    {crypto.change >= 0 ? '+' : ''}{crypto.change.toFixed(2)}%
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
