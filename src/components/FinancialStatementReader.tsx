@@ -1137,15 +1137,22 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
               </div>
 
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-                <h4 className="font-medium mb-2">Dòng tiền cơ sở từ báo cáo</h4>
-                <p className="text-sm text-muted-foreground">
-                  {financialData?.summary?.operatingCashFlow 
-                    ? `Dòng tiền hoạt động: ${formatNumber(financialData.summary.operatingCashFlow)}`
-                    : financialData?.summary?.netIncome
-                      ? `Lợi nhuận ròng: ${formatNumber(financialData.summary.netIncome)}`
-                      : "Chưa phát hiện dòng tiền cơ sở"
-                  }
-                </p>
+                <h4 className="font-medium mb-2">Chỉ số đã chọn ({selectedMetrics.filter(m => m.selected).length})</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMetrics.filter(m => m.selected).map((m, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {m.useAs || m.name}: {formatNumber(m.value)}
+                    </Badge>
+                  ))}
+                </div>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="mt-2 p-0 h-auto"
+                  onClick={() => setActiveTab("select-metrics")}
+                >
+                  Thay đổi chỉ số
+                </Button>
               </div>
 
               <Button 
