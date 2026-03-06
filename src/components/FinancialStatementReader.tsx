@@ -491,6 +491,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
     setFinancialData(null);
     setActiveSheet(0);
     setAnalysis(null);
+    setSelectedMetrics([]);
     setActiveTab("upload");
   }, []);
 
