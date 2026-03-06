@@ -234,6 +234,15 @@ const calculatePaybackPeriod = (cashFlows: number[]): number => {
   return cashFlows.length;
 };
 
+interface SelectedMetric {
+  name: string;
+  value: number;
+  unit: string;
+  category: string;
+  selected: boolean;
+  useAs?: string; // Which analysis field to map to
+}
+
 interface FinancialStatementReaderProps {
   onAnalysisComplete?: (analysis: CrystalBallAnalysis) => void;
 }
@@ -244,6 +253,9 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   const [progress, setProgress] = useState(0);
   const [activeSheet, setActiveSheet] = useState(0);
   const [activeTab, setActiveTab] = useState("upload");
+  
+  // Metric selection
+  const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetric[]>([]);
   
   // Crystal Ball analysis parameters
   const [discountRate, setDiscountRate] = useState(12);
