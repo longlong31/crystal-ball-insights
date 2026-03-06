@@ -612,11 +612,12 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 mb-6">
+        <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-6 mb-6">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="summary" disabled={!financialData}>Tổng quan</TabsTrigger>
+          <TabsTrigger value="select-metrics" disabled={!financialData}>Chọn chỉ số</TabsTrigger>
           <TabsTrigger value="data" disabled={!financialData}>Dữ liệu</TabsTrigger>
-          <TabsTrigger value="params" disabled={!financialData}>Tham số</TabsTrigger>
+          <TabsTrigger value="params" disabled={selectedMetrics.filter(m => m.selected).length === 0}>Tham số</TabsTrigger>
           <TabsTrigger value="crystal-ball" disabled={!analysis}>Crystal Ball</TabsTrigger>
         </TabsList>
 
