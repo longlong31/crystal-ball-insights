@@ -863,6 +863,115 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
           )}
         </TabsContent>
 
+        {/* Select Metrics Tab */}
+        <TabsContent value="select-metrics">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-primary" />
+                Chọn chỉ số cho phân tích
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Chọn các chỉ số tài chính bạn muốn sử dụng cho phân tích Crystal Ball. 
+                Bạn có thể bật/tắt từng chỉ số.
+              </p>
+              
+              <div className="flex gap-2 mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedMetrics(prev => prev.map(m => ({ ...m, selected: true })))}
+                >
+                  Chọn tất cả
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedMetrics(prev => prev.map(m => ({ ...m, selected: false })))}
+                >
+                  Bỏ chọn tất cả
+                </Button>
+                <Badge variant="secondary" className="ml-auto">
+                  {selectedMetrics.filter(m => m.selected).length}/{selectedMetrics.length} đã chọn
+                </Badge>
+              </div>
+
+              {/* Group metrics by category */}
+              {Object.entries(
+                selectedMetrics.reduce<Record<string, SelectedMetric[]>>((acc, m) => {
+                  const cat = m.category;
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(m);
+                  return acc;
+                }, {})
+              ).map(([category, metrics]) => (
+                <div key={category} className="space-y-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    {category}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {metrics.map((metric, idx) => {
+                      const globalIdx = selectedMetrics.findIndex(m => m === metric);
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setSelectedMetrics(prev => {
+                              const next = [...prev];
+                              next[globalIdx] = { ...next[globalIdx], selected: !next[globalIdx].selected };
+                              return next;
+                            });
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                            metric.selected
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-border/30 bg-muted/10 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              metric.selected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                            }`}>
+                              {metric.selected && <CheckCircle className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{metric.useAs || metric.name}</p>
+                              {metric.useAs && <p className="text-xs text-muted-foreground">{metric.name}</p>}
+                            </div>
+                          </div>
+                          <span className="font-mono text-sm font-semibold">
+                            {formatNumber(metric.value)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {selectedMetrics.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <p>Không phát hiện được chỉ số tài chính nào từ file</p>
+                </div>
+              )}
+
+              <Button 
+                onClick={() => setActiveTab("params")} 
+                className="w-full mt-4"
+                variant="glow"
+                disabled={selectedMetrics.filter(m => m.selected).length === 0}
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                Tiếp tục cấu hình tham số ({selectedMetrics.filter(m => m.selected).length} chỉ số đã chọn)
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Data Tab */}
         <TabsContent value="data">
           {financialData && (
