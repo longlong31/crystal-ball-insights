@@ -609,7 +609,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
     onAnalysisComplete?.(result);
     toast.success("Phân tích Crystal Ball hoàn tất!");
     setActiveTab("crystal-ball");
-  }, [financialData, discountRate, projectYears, initialInvestment, growthRate, onAnalysisComplete]);
+  }, [financialData, selectedMetrics, discountRate, projectYears, initialInvestment, growthRate, onAnalysisComplete]);
 
   const currentSheet = financialData?.sheets[activeSheet];
 
