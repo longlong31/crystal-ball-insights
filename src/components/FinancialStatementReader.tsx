@@ -234,6 +234,15 @@ const calculatePaybackPeriod = (cashFlows: number[]): number => {
   return cashFlows.length;
 };
 
+interface SelectedMetric {
+  name: string;
+  value: number;
+  unit: string;
+  category: string;
+  selected: boolean;
+  useAs?: string; // Which analysis field to map to
+}
+
 interface FinancialStatementReaderProps {
   onAnalysisComplete?: (analysis: CrystalBallAnalysis) => void;
 }
@@ -244,6 +253,9 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   const [progress, setProgress] = useState(0);
   const [activeSheet, setActiveSheet] = useState(0);
   const [activeTab, setActiveTab] = useState("upload");
+  
+  // Metric selection
+  const [selectedMetrics, setSelectedMetrics] = useState<SelectedMetric[]>([]);
   
   // Crystal Ball analysis parameters
   const [discountRate, setDiscountRate] = useState(12);
@@ -303,6 +315,56 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
           const summary = detectFinancialMetrics(sheets);
 
+          // Build selectable metrics from summary
+          const metrics: SelectedMetric[] = [];
+          const categoryMap: Record<string, string> = {
+            totalRevenue: "Doanh thu", totalExpenses: "Chi phí", netIncome: "Lợi nhuận",
+            totalAssets: "Tài sản", totalLiabilities: "Nợ", equity: "Vốn",
+            cashFlow: "Dòng tiền", operatingCashFlow: "Dòng tiền", investingCashFlow: "Dòng tiền",
+            depreciation: "Khấu hao", interestExpense: "Chi phí", taxExpense: "Thuế",
+            ebitda: "Lợi nhuận", grossProfit: "Lợi nhuận", operatingIncome: "Lợi nhuận",
+          };
+          const useAsMap: Record<string, string> = {
+            totalRevenue: "revenue", totalExpenses: "expenses", netIncome: "netIncome",
+            totalAssets: "assets", totalLiabilities: "liabilities", equity: "equity",
+            cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+            investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+            interestExpense: "interestExpense", taxExpense: "taxExpense",
+            ebitda: "ebitda", grossProfit: "grossProfit", operatingIncome: "operatingIncome",
+          };
+          
+          Object.entries(summary).forEach(([key, value]) => {
+            if (key === "detectedMetrics" || value === undefined || value === null) return;
+            if (typeof value === "number" && value !== 0) {
+              metrics.push({
+                name: key,
+                value: value as number,
+                unit: Math.abs(value as number) >= 1e6 ? "triệu" : "",
+                category: categoryMap[key] || "Khác",
+                selected: true, // Auto-select all
+                useAs: useAsMap[key],
+              });
+            }
+          });
+          
+          // Add detected metrics that weren't in summary
+          if (summary.detectedMetrics) {
+            summary.detectedMetrics.forEach((m) => {
+              if (!metrics.find(em => em.value === m.value && em.name === m.name)) {
+                metrics.push({
+                  name: m.name,
+                  value: m.value,
+                  unit: m.unit,
+                  category: "Phát hiện tự động",
+                  selected: false,
+                  useAs: undefined,
+                });
+              }
+            });
+          }
+
+          setSelectedMetrics(metrics);
+
           setFinancialData({
             fileName: file.name,
             fileType: "excel",
@@ -310,9 +372,8 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
             summary,
           });
 
-          // Auto-set initial investment từ tài sản cố định nếu có
           if (summary.totalAssets) {
-            setInitialInvestment(summary.totalAssets * 0.3); // Ước tính 30% tổng tài sản là đầu tư ban đầu
+            setInitialInvestment(summary.totalAssets * 0.3);
           }
 
           clearInterval(progressInterval);
@@ -430,6 +491,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
     setFinancialData(null);
     setActiveSheet(0);
     setAnalysis(null);
+    setSelectedMetrics([]);
     setActiveTab("upload");
   }, []);
 
@@ -439,10 +501,29 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       return;
     }
 
-    const summary = financialData.summary;
-    
-    // Tính toán dòng tiền dự kiến
-    const baseCashFlow = summary.operatingCashFlow || summary.netIncome || summary.cashFlow || 0;
+    const active = selectedMetrics.filter(m => m.selected);
+    if (active.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 chỉ số tài chính");
+      return;
+    }
+
+    // Build summary from selected metrics
+    const summary: Partial<FinancialSummary> = {};
+    const useAsToSummary: Record<string, keyof FinancialSummary> = {
+      revenue: "totalRevenue", expenses: "totalExpenses", netIncome: "netIncome",
+      assets: "totalAssets", liabilities: "totalLiabilities", equity: "equity",
+      cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+      investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+      interestExpense: "interestExpense", taxExpense: "taxExpense",
+      ebitda: "ebitda", grossProfit: "grossProfit", operatingIncome: "operatingIncome",
+    };
+    active.forEach(m => {
+      if (m.useAs && useAsToSummary[m.useAs]) {
+        (summary as Record<string, number>)[useAsToSummary[m.useAs]] = m.value;
+      }
+    });
+
+    const baseCashFlow = (summary as any).operatingCashFlow || (summary as any).netIncome || (summary as any).cashFlow || 0;
     const cashFlows: number[] = [-initialInvestment];
     
     for (let i = 1; i <= projectYears; i++) {
@@ -529,7 +610,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
     onAnalysisComplete?.(result);
     toast.success("Phân tích Crystal Ball hoàn tất!");
     setActiveTab("crystal-ball");
-  }, [financialData, discountRate, projectYears, initialInvestment, growthRate, onAnalysisComplete]);
+  }, [financialData, selectedMetrics, discountRate, projectYears, initialInvestment, growthRate, onAnalysisComplete]);
 
   const currentSheet = financialData?.sheets[activeSheet];
 
@@ -551,11 +632,12 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-5 mb-6">
+        <TabsList className="grid w-full max-w-3xl mx-auto grid-cols-6 mb-6">
           <TabsTrigger value="upload">Upload</TabsTrigger>
           <TabsTrigger value="summary" disabled={!financialData}>Tổng quan</TabsTrigger>
+          <TabsTrigger value="select-metrics" disabled={!financialData}>Chọn chỉ số</TabsTrigger>
           <TabsTrigger value="data" disabled={!financialData}>Dữ liệu</TabsTrigger>
-          <TabsTrigger value="params" disabled={!financialData}>Tham số</TabsTrigger>
+          <TabsTrigger value="params" disabled={selectedMetrics.filter(m => m.selected).length === 0}>Tham số</TabsTrigger>
           <TabsTrigger value="crystal-ball" disabled={!analysis}>Crystal Ball</TabsTrigger>
         </TabsList>
 
@@ -787,18 +869,127 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                     )}
 
                     <Button 
-                      onClick={() => setActiveTab("params")} 
+                      onClick={() => setActiveTab("select-metrics")} 
                       className="w-full mt-6"
                       variant="glow"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Tiếp tục phân tích Crystal Ball
+                      Chọn chỉ số để phân tích
                     </Button>
                   </CardContent>
                 </Card>
               )}
             </motion.div>
           )}
+        </TabsContent>
+
+        {/* Select Metrics Tab */}
+        <TabsContent value="select-metrics">
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-primary" />
+                Chọn chỉ số cho phân tích
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Chọn các chỉ số tài chính bạn muốn sử dụng cho phân tích Crystal Ball. 
+                Bạn có thể bật/tắt từng chỉ số.
+              </p>
+              
+              <div className="flex gap-2 mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedMetrics(prev => prev.map(m => ({ ...m, selected: true })))}
+                >
+                  Chọn tất cả
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSelectedMetrics(prev => prev.map(m => ({ ...m, selected: false })))}
+                >
+                  Bỏ chọn tất cả
+                </Button>
+                <Badge variant="secondary" className="ml-auto">
+                  {selectedMetrics.filter(m => m.selected).length}/{selectedMetrics.length} đã chọn
+                </Badge>
+              </div>
+
+              {/* Group metrics by category */}
+              {Object.entries(
+                selectedMetrics.reduce<Record<string, SelectedMetric[]>>((acc, m) => {
+                  const cat = m.category;
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(m);
+                  return acc;
+                }, {})
+              ).map(([category, metrics]) => (
+                <div key={category} className="space-y-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 text-primary" />
+                    {category}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {metrics.map((metric, idx) => {
+                      const globalIdx = selectedMetrics.findIndex(m => m === metric);
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setSelectedMetrics(prev => {
+                              const next = [...prev];
+                              next[globalIdx] = { ...next[globalIdx], selected: !next[globalIdx].selected };
+                              return next;
+                            });
+                          }}
+                          className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
+                            metric.selected
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-border/30 bg-muted/10 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                              metric.selected ? "bg-primary border-primary" : "border-muted-foreground/30"
+                            }`}>
+                              {metric.selected && <CheckCircle className="w-3 h-3 text-primary-foreground" />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium">{metric.useAs || metric.name}</p>
+                              {metric.useAs && <p className="text-xs text-muted-foreground">{metric.name}</p>}
+                            </div>
+                          </div>
+                          <span className="font-mono text-sm font-semibold">
+                            {formatNumber(metric.value)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {selectedMetrics.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <p>Không phát hiện được chỉ số tài chính nào từ file</p>
+                </div>
+              )}
+
+              <Button 
+                onClick={() => setActiveTab("params")} 
+                className="w-full mt-4"
+                variant="glow"
+                disabled={selectedMetrics.filter(m => m.selected).length === 0}
+              >
+                <Calculator className="w-4 h-4 mr-2" />
+                Tiếp tục cấu hình tham số ({selectedMetrics.filter(m => m.selected).length} chỉ số đã chọn)
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Data Tab */}
@@ -946,15 +1137,22 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
               </div>
 
               <div className="p-4 rounded-lg bg-muted/30 border border-border/50">
-                <h4 className="font-medium mb-2">Dòng tiền cơ sở từ báo cáo</h4>
-                <p className="text-sm text-muted-foreground">
-                  {financialData?.summary?.operatingCashFlow 
-                    ? `Dòng tiền hoạt động: ${formatNumber(financialData.summary.operatingCashFlow)}`
-                    : financialData?.summary?.netIncome
-                      ? `Lợi nhuận ròng: ${formatNumber(financialData.summary.netIncome)}`
-                      : "Chưa phát hiện dòng tiền cơ sở"
-                  }
-                </p>
+                <h4 className="font-medium mb-2">Chỉ số đã chọn ({selectedMetrics.filter(m => m.selected).length})</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedMetrics.filter(m => m.selected).map((m, i) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {m.useAs || m.name}: {formatNumber(m.value)}
+                    </Badge>
+                  ))}
+                </div>
+                <Button 
+                  variant="link" 
+                  size="sm" 
+                  className="mt-2 p-0 h-auto"
+                  onClick={() => setActiveTab("select-metrics")}
+                >
+                  Thay đổi chỉ số
+                </Button>
               </div>
 
               <Button 

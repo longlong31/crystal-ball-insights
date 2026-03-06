@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.ai-market-analysis]
 verify_jwt = false
+
+[functions.fetch-stock-data]
+verify_jwt = false
