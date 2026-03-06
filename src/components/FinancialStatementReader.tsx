@@ -849,12 +849,12 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                     )}
 
                     <Button 
-                      onClick={() => setActiveTab("params")} 
+                      onClick={() => setActiveTab("select-metrics")} 
                       className="w-full mt-6"
                       variant="glow"
                     >
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Tiếp tục phân tích Crystal Ball
+                      Chọn chỉ số để phân tích
                     </Button>
                   </CardContent>
                 </Card>
