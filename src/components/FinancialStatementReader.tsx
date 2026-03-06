@@ -500,10 +500,27 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       return;
     }
 
-    const summary = financialData.summary;
-    
-    // Tính toán dòng tiền dự kiến
-    const baseCashFlow = summary.operatingCashFlow || summary.netIncome || summary.cashFlow || 0;
+    const active = selectedMetrics.filter(m => m.selected);
+    if (active.length === 0) {
+      toast.error("Vui lòng chọn ít nhất 1 chỉ số tài chính");
+      return;
+    }
+
+    // Build summary from selected metrics
+    const summary: Partial<FinancialSummary> = {};
+    const useAsToSummary: Record<string, keyof FinancialSummary> = {
+      revenue: "totalRevenue", expenses: "totalExpenses", netIncome: "netIncome",
+      assets: "totalAssets", liabilities: "totalLiabilities", equity: "equity",
+      cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+      investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+      interestExpense: "interestExpense", taxExpense: "taxExpense",
+      ebitda: "ebitda", grossProfit: "grossProfit", operatingIncome: "operatingIncome",
+    };
+    active.forEach(m => {
+      if (m.useAs && useAsToSummary[m.useAs]) {
+        (summary as Record<string, number>)[useAsToSummary[m.useAs]] = m.value;
+      }
+    });
     const cashFlows: number[] = [-initialInvestment];
     
     for (let i = 1; i <= projectYears; i++) {
