@@ -521,6 +521,8 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         (summary as Record<string, number>)[useAsToSummary[m.useAs]] = m.value;
       }
     });
+
+    const baseCashFlow = (summary as any).operatingCashFlow || (summary as any).netIncome || (summary as any).cashFlow || 0;
     const cashFlows: number[] = [-initialInvestment];
     
     for (let i = 1; i <= projectYears; i++) {
