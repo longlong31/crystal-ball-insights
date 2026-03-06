@@ -315,6 +315,56 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
           const summary = detectFinancialMetrics(sheets);
 
+          // Build selectable metrics from summary
+          const metrics: SelectedMetric[] = [];
+          const categoryMap: Record<string, string> = {
+            totalRevenue: "Doanh thu", totalExpenses: "Chi phí", netIncome: "Lợi nhuận",
+            totalAssets: "Tài sản", totalLiabilities: "Nợ", equity: "Vốn",
+            cashFlow: "Dòng tiền", operatingCashFlow: "Dòng tiền", investingCashFlow: "Dòng tiền",
+            depreciation: "Khấu hao", interestExpense: "Chi phí", taxExpense: "Thuế",
+            ebitda: "Lợi nhuận", grossProfit: "Lợi nhuận", operatingIncome: "Lợi nhuận",
+          };
+          const useAsMap: Record<string, string> = {
+            totalRevenue: "revenue", totalExpenses: "expenses", netIncome: "netIncome",
+            totalAssets: "assets", totalLiabilities: "liabilities", equity: "equity",
+            cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+            investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+            interestExpense: "interestExpense", taxExpense: "taxExpense",
+            ebitda: "ebitda", grossProfit: "grossProfit", operatingIncome: "operatingIncome",
+          };
+          
+          Object.entries(summary).forEach(([key, value]) => {
+            if (key === "detectedMetrics" || value === undefined || value === null) return;
+            if (typeof value === "number" && value !== 0) {
+              metrics.push({
+                name: key,
+                value: value as number,
+                unit: Math.abs(value as number) >= 1e6 ? "triệu" : "",
+                category: categoryMap[key] || "Khác",
+                selected: true, // Auto-select all
+                useAs: useAsMap[key],
+              });
+            }
+          });
+          
+          // Add detected metrics that weren't in summary
+          if (summary.detectedMetrics) {
+            summary.detectedMetrics.forEach((m) => {
+              if (!metrics.find(em => em.value === m.value && em.name === m.name)) {
+                metrics.push({
+                  name: m.name,
+                  value: m.value,
+                  unit: m.unit,
+                  category: "Phát hiện tự động",
+                  selected: false,
+                  useAs: undefined,
+                });
+              }
+            });
+          }
+
+          setSelectedMetrics(metrics);
+
           setFinancialData({
             fileName: file.name,
             fileType: "excel",
@@ -322,9 +372,8 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
             summary,
           });
 
-          // Auto-set initial investment từ tài sản cố định nếu có
           if (summary.totalAssets) {
-            setInitialInvestment(summary.totalAssets * 0.3); // Ước tính 30% tổng tài sản là đầu tư ban đầu
+            setInitialInvestment(summary.totalAssets * 0.3);
           }
 
           clearInterval(progressInterval);
