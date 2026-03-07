@@ -6,6 +6,7 @@ import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, 
 import { generateSampleStockData, calculateSharpeRatio, calculateMaxDrawdown, calculateVolatility, calculateVaR } from "@/lib/technicalIndicators";
 import { useCryptoMarkets, useCryptoGlobal } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 
 const TICKER_COLORS = {
   up: "hsl(142, 76%, 45%)",
@@ -240,6 +241,14 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Watchlist */}
+      <WatchlistPanel
+        currentPrices={Object.fromEntries([
+          ...stockData.map(s => [s.symbol, s.price]),
+          ...(cryptoMarkets?.map(c => [c.symbol.toUpperCase(), c.currentPrice]) || []),
+        ])}
+      />
 
       {/* Module Quick Access */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
