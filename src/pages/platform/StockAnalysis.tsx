@@ -559,6 +559,17 @@ export default function StockAnalysis() {
             )}
           </div>
           <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (isInWatchlist(selected)) removeFromWatchlist(selected);
+                else addToWatchlist(selected, isVNStock(selected) ? 'stock' : 'stock', quote?.name);
+              }}
+              className={isInWatchlist(selected) ? 'text-yellow-500 border-yellow-500/30' : ''}
+            >
+              <Star className={`w-3.5 h-3.5 ${isInWatchlist(selected) ? 'fill-yellow-500' : ''}`} />
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!quote}>
               <Download className="w-3.5 h-3.5 mr-1" />
               Excel
