@@ -973,6 +973,17 @@ export default function StockAnalysis() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Watchlist Panel */}
+      <WatchlistPanel
+        currentPrices={quote ? { [selected]: quote.currentPrice } : {}}
+        onSelectSymbol={(sym) => {
+          const el = document.querySelector<HTMLButtonElement>(`[data-value="${sym}"]`);
+          if (el) el.click();
+          // Fallback: directly set
+          setSelected(sym);
+        }}
+      />
     </div>
   );
 }
