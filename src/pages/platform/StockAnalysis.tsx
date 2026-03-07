@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, ScatterChart, Scatter, CartesianGrid, Cell } from "recharts";
 import { calculateRSI, calculateMACD, calculateEMA, calculateSMA, calculateBollingerBands, calculateVolatility, calculateBeta, calculateSharpeRatio, calculateMaxDrawdown, calculateVaR, calculateCVaR } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStockQuote, useStockHistory } from "@/hooks/useStockData";
 import { toast } from "sonner";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 
 // Vietnamese stocks grouped by category
 const STOCK_CATEGORIES = {
@@ -387,6 +389,7 @@ export default function StockAnalysis() {
   const [selected, setSelected] = useState('VNM.VN');
   const [historyRange, setHistoryRange] = useState('1y');
   const [searchTerm, setSearchTerm] = useState('');
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
   const { data: history, isLoading: historyLoading } = useStockHistory(selected, historyRange);
