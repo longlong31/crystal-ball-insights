@@ -66,6 +66,8 @@ export default function Profiles() {
   const [projectScenarios, setProjectScenarios] = useState<ProjectScenario[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
   const [activityStats, setActivityStats] = useState<ActivityStats>({ postsCount: 0, commentsCount: 0, reactionsCount: 0 });
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { history: analysisHistory, loading: historyLoading, deleteAnalysis } = useProjectAnalysisHistory();
