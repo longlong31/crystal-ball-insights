@@ -29,6 +29,11 @@ interface OptimalPortfolio {
   sharpe: number;
 }
 
+interface WeightConstraint {
+  min: number;
+  max: number;
+}
+
 interface PortfolioOptimizerPanelProps {
   symbols: string[];
   assetsData: AssetData[];
