@@ -152,9 +152,22 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
               size="sm"
               variant="outline"
               className="text-xs gap-1"
-              onClick={() => {
-                exportComparisonPDF({ assets: validData, correlationMatrix, chartData });
-                toast.success("Đã xuất báo cáo PDF");
+              onClick={async () => {
+                toast.info("Đang tạo báo cáo PDF...");
+                let chartImage: string | undefined;
+                let corrImage: string | undefined;
+                try {
+                  if (chartRef.current) {
+                    const canvas = await html2canvas(chartRef.current, { backgroundColor: '#1a1a2e', scale: 2 });
+                    chartImage = canvas.toDataURL('image/png');
+                  }
+                  if (correlationRef.current) {
+                    const canvas = await html2canvas(correlationRef.current, { backgroundColor: '#1a1a2e', scale: 2 });
+                    corrImage = canvas.toDataURL('image/png');
+                  }
+                } catch (e) { console.warn('Chart capture failed', e); }
+                exportComparisonPDF({ assets: validData, correlationMatrix, chartData, chartImage, correlationImage: corrImage });
+                toast.success("Đã xuất báo cáo PDF với biểu đồ");
               }}
             >
               <Download className="w-3.5 h-3.5" /> PDF
