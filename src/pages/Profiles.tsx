@@ -709,7 +709,7 @@ export default function Profiles() {
                                         <div className="p-2.5 rounded-lg bg-background/50 border border-border/20">
                                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">NPV</p>
                                           <p className="font-mono font-semibold text-sm text-primary">
-                                            {item.results?.npv != null ? formatNumber(Math.round(item.results.npv as number)) : "—"} tr
+                                            {item.results?.npvTIPV != null ? formatNumber(Math.round(item.results.npvTIPV as number)) : "—"} tr
                                           </p>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-background/50 border border-border/20">
