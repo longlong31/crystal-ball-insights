@@ -693,6 +693,20 @@ const algorithms: Algorithm[] = [
     ],
     run: arimaForecast,
   },
+  {
+    id: "neural-network", name: "Neural Network", nameVi: "Neural Network (Mạng nơ-ron)",
+    category: "ml", description: "Simple feedforward NN for 2D XOR classification",
+    descriptionVi: "Mạng nơ-ron đơn giản phân loại XOR 2 chiều với backpropagation",
+    icon: Brain,
+    params: [
+      { key: "hiddenNodes", label: "Hidden nodes", defaultValue: 8, min: 2, max: 32, step: 1 },
+      { key: "learningRate", label: "Learning Rate", defaultValue: 0.5, min: 0.01, max: 5, step: 0.1 },
+      { key: "epochs", label: "Epochs", defaultValue: 200, min: 10, max: 2000, step: 10 },
+      { key: "dataPoints", label: "Số điểm dữ liệu", defaultValue: 200, min: 50, max: 1000, step: 50 },
+      { key: "noise", label: "Tỷ lệ nhiễu", defaultValue: 0.05, min: 0, max: 0.5, step: 0.01 },
+    ],
+    run: neuralNetwork,
+  },
 ];
 
 const categoryInfo = {
