@@ -7,6 +7,7 @@ import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
 import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
 import { exportComparisonPDF, exportComparisonExcel } from "@/lib/comparisonExporter";
+import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 const COLORS = [
