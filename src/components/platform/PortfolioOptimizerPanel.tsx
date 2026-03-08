@@ -230,6 +230,42 @@ export function PortfolioOptimizerPanel({ symbols, assetsData }: PortfolioOptimi
         </p>
       )}
 
+      {/* Weight Constraints */}
+      {canOptimize && (
+        <div className="quant-card space-y-2">
+          <h4 className="text-xs font-semibold text-muted-foreground">Ràng buộc tỷ trọng (%)</h4>
+          <div className="grid gap-2">
+            {symbols.map(symbol => {
+              const c = getConstraint(symbol);
+              return (
+                <div key={symbol} className="flex items-center gap-3 text-xs">
+                  <span className="font-mono w-16 shrink-0">{symbol}</span>
+                  <label className="text-muted-foreground w-8">Min</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={c.min}
+                    onChange={e => updateConstraint(symbol, 'min', Math.max(0, Math.min(100, Number(e.target.value))))}
+                    className="w-16 h-7 rounded border border-border bg-background px-2 text-xs font-mono text-foreground"
+                  />
+                  <label className="text-muted-foreground w-8">Max</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={c.max}
+                    onChange={e => updateConstraint(symbol, 'max', Math.max(0, Math.min(100, Number(e.target.value))))}
+                    className="w-16 h-7 rounded border border-border bg-background px-2 text-xs font-mono text-foreground"
+                  />
+                  <span className="text-muted-foreground">%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {result && (
         <>
           {/* Optimal portfolios summary */}
