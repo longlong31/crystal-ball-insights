@@ -11,6 +11,7 @@ const navItemsDef = [
   { href: "/project", labelKey: "nav.project", icon: FileText },
   { href: "/platform", labelKey: "nav.platform", icon: BarChart3 },
   { href: "/community", labelKey: "nav.community", icon: Users },
+  { href: "/algorithms", labelKey: "nav.algorithms", icon: FlaskConical },
   { href: "/docs", labelKey: "nav.docs", icon: FileText },
 ];
 

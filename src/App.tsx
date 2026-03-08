@@ -38,6 +38,7 @@ const App = () => (
             <Route path="/profiles" element={<Profiles />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/algorithms" element={<AlgorithmLab />} />
             <Route path="/news/:id" element={<NewsDetail />} />
             {/* Platform Routes */}
             <Route path="/platform" element={<PlatformLayout><Dashboard /></PlatformLayout>} />

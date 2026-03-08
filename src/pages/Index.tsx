@@ -205,8 +205,8 @@ const Index = () => {
         </motion.div>
       </main>
 
-      {/* Footer */}
       <Footer />
+      <BackToTop />
     </div>
   );
 };

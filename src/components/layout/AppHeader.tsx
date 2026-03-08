@@ -37,6 +37,7 @@ export const AppHeader = () => {
     { path: "/project", label: t("nav.project") },
     { path: "/platform", label: t("nav.platform"), highlight: true },
     { path: "/community", label: t("nav.community") },
+    { path: "/algorithms", label: language === "vi" ? "Thuật toán" : "Algorithms", highlight: false },
     { path: "/docs", label: t("nav.docs") },
   ];
 
