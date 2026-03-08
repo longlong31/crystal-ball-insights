@@ -14,7 +14,9 @@ import { useState, useEffect } from "react";
   Zap,
   PanelLeftClose,
   PanelLeft,
-  ChevronRight
+  ChevronRight,
+  Cpu,
+  User
 } from "lucide-react";
 import { ProjectDocumentation } from "@/components/ProjectDocumentation";
 import { Footer } from "@/components/Footer";
