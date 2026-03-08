@@ -65,8 +65,8 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
   const anyLoading = historyQueries.some(q => q.isLoading);
 
   // Build normalized chart data (base 100)
-  const { chartData, correlationMatrix } = useMemo(() => {
-    if (!allLoaded) return { chartData: [], correlationMatrix: null };
+  const { chartData, correlationMatrix, validData } = useMemo(() => {
+    if (!allLoaded) return { chartData: [], correlationMatrix: null, validData: [] };
 
     const validData: { symbol: string; dates: string[]; closes: number[]; returns: number[] }[] = [];
 
