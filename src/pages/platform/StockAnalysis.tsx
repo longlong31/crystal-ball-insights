@@ -1283,6 +1283,11 @@ export default function StockAnalysis() {
             ) : <div className="flex items-center justify-center h-40"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
           </div>
         </TabsContent>
+
+        {/* Compare Tab */}
+        <TabsContent value="compare">
+          <StockComparison currentSymbol={selected} />
+        </TabsContent>
       </Tabs>
 
       {/* Watchlist */}
