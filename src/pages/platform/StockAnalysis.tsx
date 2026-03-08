@@ -824,6 +824,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
           <TabsTrigger value="risk" className="text-xs">⚠️ Risk</TabsTrigger>
           <TabsTrigger value="company" className="text-xs">🏢 Company</TabsTrigger>
+          <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
 
         {/* Price Tab */}
