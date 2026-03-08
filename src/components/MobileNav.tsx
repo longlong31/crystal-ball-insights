@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, Sparkles, BarChart2, FileText, Users, BarChart3 } from "lucide-react";
+import { Menu, X, Sparkles, BarChart2, FileText, Users, BarChart3, FlaskConical } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
