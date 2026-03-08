@@ -158,9 +158,9 @@ async function fetchFinancials(symbol: string) {
     console.warn(`Yahoo Finance financials returned ${summaryResp.status} for ${symbol}`);
     return { incomeAnnual: [], incomeQuarterly: [], balanceAnnual: [], balanceQuarterly: [], cashflowAnnual: [], cashflowQuarterly: [], earnings: { quarterly: [], yearly: [] } };
   }
-  const data = await resp.json();
+  const data = await summaryResp.json();
   const r = data.quoteSummary?.result?.[0];
-  if (!r) throw new Error(`No financials for ${symbol}`);
+  if (!r) return { incomeAnnual: [], incomeQuarterly: [], balanceAnnual: [], balanceQuarterly: [], cashflowAnnual: [], cashflowQuarterly: [], earnings: { quarterly: [], yearly: [] } };
 
   const mapStatement = (stmt: any) => {
     if (!stmt) return {};
