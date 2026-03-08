@@ -261,28 +261,32 @@ export const ProjectDocumentation = () => {
             <div className="mb-6 p-4 rounded-2xl bg-primary/20 backdrop-blur-sm border border-primary/30">
               <Sparkles className="w-12 h-12 text-primary animate-pulse-glow" />
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent">
-              Crystal Ball Documentation
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8">
-              Hướng dẫn toàn diện về phân tích tài chính dự án đầu tư với các công cụ chuyên nghiệp
-            </p>
-            
-            {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <Calculator className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">5+ Chỉ số tài chính</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <BarChart3 className="w-4 h-4 text-chart-2" />
-                <span className="text-sm font-medium">3 Loại phân tích độ nhạy</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <Dice5 className="w-4 h-4 text-chart-3" />
-                <span className="text-sm font-medium">Monte Carlo Simulation</span>
-              </div>
-            </div>
+             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent">
+               Crystal Quant Documentation
+             </h1>
+             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8">
+               Hướng dẫn toàn diện về nền tảng phân tích tài chính & đầu tư định lượng chuyên nghiệp
+             </p>
+             
+             {/* Quick Stats */}
+             <div className="flex flex-wrap justify-center gap-6 mt-4">
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Cpu className="w-4 h-4 text-primary" />
+                 <span className="text-sm font-medium">5 Mô-đun Quant</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Calculator className="w-4 h-4 text-chart-1" />
+                 <span className="text-sm font-medium">5+ Chỉ số tài chính</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <BarChart3 className="w-4 h-4 text-chart-2" />
+                 <span className="text-sm font-medium">Portfolio Optimization</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Brain className="w-4 h-4 text-chart-3" />
+                 <span className="text-sm font-medium">AI-Powered Insights</span>
+               </div>
+             </div>
           </motion.div>
         </div>
       </motion.div>
