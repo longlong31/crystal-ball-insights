@@ -11,9 +11,10 @@ import { SimulationCard } from "@/components/SimulationCard";
 import {
   FlaskConical, Play, RotateCcw, TrendingUp, Brain, Sigma, Settings2,
   ArrowRight, ChevronDown, ChevronUp, Cpu, BarChart3, Target, Zap,
-  GitBranch, Layers, Download
+  GitBranch, Layers, Download, Workflow
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PipelineBuilder } from "@/components/PipelineBuilder";
 
 // ─── Algorithm Registry ───────────────────────────────────────────
 interface AlgorithmParam {
