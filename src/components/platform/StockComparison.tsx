@@ -79,7 +79,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
       }
     });
 
-    if (validData.length === 0) return { chartData: [], correlationMatrix: null };
+    if (validData.length === 0) return { chartData: [], correlationMatrix: null, validData: [] };
 
     // Use shortest common date range
     const minLen = Math.min(...validData.map(d => d.closes.length));
