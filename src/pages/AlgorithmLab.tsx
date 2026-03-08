@@ -719,6 +719,7 @@ const categoryInfo = {
 // ─── Page Component ───────────────────────────────────────────────
 const AlgorithmLab = () => {
   const { language } = useLanguage();
+  const [mode, setMode] = useState<"single" | "pipeline">("single");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAlgo, setSelectedAlgo] = useState<Algorithm>(algorithms[0]);
   const [params, setParams] = useState<Record<string, number>>(() => {
