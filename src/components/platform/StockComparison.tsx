@@ -222,7 +222,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
 
       {/* Correlation Matrix */}
       {correlationMatrix && correlationMatrix.labels.length >= 2 && (
-        <div className="quant-card">
+        <div className="quant-card" ref={correlationRef}>
           <h3 className="text-sm font-semibold mb-3">Ma trận tương quan (Correlation Matrix)</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
