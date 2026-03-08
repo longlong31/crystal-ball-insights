@@ -7,6 +7,11 @@ export interface StockQuote {
   symbol: string;
   name: string;
   sector: string;
+  industry: string;
+  website: string;
+  description: string;
+  country: string;
+  employees: number;
   marketCap: string;
   currentPrice: number;
   previousClose: number;
@@ -18,15 +23,26 @@ export interface StockQuote {
   fiftyTwoWeekHigh: number;
   fiftyTwoWeekLow: number;
   pe: number;
+  forwardPe: number;
   pb: number;
   ps: number;
   roe: number;
+  roa: number;
   deRatio: number;
   currentRatio: number;
   divYield: number;
   eps: number;
   revenueGrowth: number;
   earningsGrowth: number;
+  profitMargin: number;
+  operatingMargin: number;
+  grossMargin: number;
+  freeCashflow: number;
+  operatingCashflow: number;
+  totalRevenue: number;
+  totalDebt: number;
+  totalCash: number;
+  bookValue: number;
   priceChange1d: number;
   priceChange1w: number;
   priceChange1m: number;
@@ -39,6 +55,19 @@ export interface StockHistory {
   lows: number[];
   opens: number[];
   volumes: number[];
+}
+
+export interface StockFinancials {
+  incomeAnnual: Record<string, number>[];
+  incomeQuarterly: Record<string, number>[];
+  balanceAnnual: Record<string, number>[];
+  balanceQuarterly: Record<string, number>[];
+  cashflowAnnual: Record<string, number>[];
+  cashflowQuarterly: Record<string, number>[];
+  earnings: {
+    quarterly: { date: string; revenue: number; earnings: number }[];
+    yearly: { date: string; revenue: number; earnings: number }[];
+  };
 }
 
 async function fetchStockAPI(body: Record<string, unknown>) {
@@ -60,8 +89,8 @@ export function useStockQuote(symbol: string) {
   return useQuery<StockQuote>({
     queryKey: ["stock-quote", symbol],
     queryFn: () => fetchStockAPI({ type: "quote", symbol }),
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 30000,
+    staleTime: 15000,
     retry: 2,
   });
 }
@@ -70,8 +99,8 @@ export function useStockQuotes(symbols: string[]) {
   return useQuery<StockQuote[]>({
     queryKey: ["stock-quotes", symbols.join(",")],
     queryFn: () => fetchStockAPI({ type: "quotes", symbols }),
-    refetchInterval: 60000,
-    staleTime: 30000,
+    refetchInterval: 30000,
+    staleTime: 15000,
     retry: 2,
   });
 }
@@ -81,6 +110,15 @@ export function useStockHistory(symbol: string, range: string = "1y") {
     queryKey: ["stock-history", symbol, range],
     queryFn: () => fetchStockAPI({ type: "history", symbol, range }),
     staleTime: 300000,
+    retry: 2,
+  });
+}
+
+export function useStockFinancials(symbol: string) {
+  return useQuery<StockFinancials>({
+    queryKey: ["stock-financials", symbol],
+    queryFn: () => fetchStockAPI({ type: "financials", symbol }),
+    staleTime: 600000, // 10 min
     retry: 2,
   });
 }
