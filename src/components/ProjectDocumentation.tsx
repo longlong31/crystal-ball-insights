@@ -1484,19 +1484,57 @@ export const ProjectDocumentation = () => {
               </div>
             </div>
             
+            {/* v2.0 */}
             <motion.div
               whileHover={{ scale: 1.01 }}
-              className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-secondary/10 relative overflow-hidden"
+              className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-secondary/10 relative overflow-hidden mb-6"
             >
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
               <div className="relative flex items-start gap-6">
                 <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-3xl font-bold text-primary">1.0</span>
+                  <span className="text-3xl font-bold text-primary">2.0</span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-bold text-xl">Crystal Ball v1.0</h3>
+                    <h3 className="font-bold text-xl">Crystal Quant Platform v2.0</h3>
                     <span className="px-3 py-1 rounded-full text-xs bg-primary/20 text-primary font-medium">Latest</span>
+                  </div>
+                  <p className="text-muted-foreground mb-4">Nâng cấp toàn diện với nền tảng Quant chuyên sâu và AI Insights</p>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      '✓ Stock Analysis real-time',
+                      '✓ Crypto Intelligence',
+                      '✓ Portfolio Optimizer (15K MC)',
+                      '✓ Risk Engine (VaR/CVaR)',
+                      '✓ AI Market Insights',
+                      '✓ So sánh đa cổ phiếu',
+                      '✓ Xuất PDF với biểu đồ',
+                      '✓ Ràng buộc tỷ trọng',
+                      '✓ Ma trận tương quan',
+                      '✓ Regime Shift Detection',
+                      '✓ Cộng đồng & Tin tức',
+                      '✓ Watchlist & Price Alerts',
+                    ].map((feature, i) => (
+                      <div key={i} className="text-sm text-muted-foreground px-3 py-2 rounded-lg bg-card/50">
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* v1.0 */}
+            <motion.div
+              className="p-6 rounded-2xl border border-border/30 bg-card/30 relative overflow-hidden opacity-80"
+            >
+              <div className="relative flex items-start gap-6">
+                <div className="w-20 h-20 rounded-2xl bg-muted/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-3xl font-bold text-muted-foreground">1.0</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-bold text-xl text-muted-foreground">Crystal Ball v1.0</h3>
                   </div>
                   <p className="text-muted-foreground mb-4">Phiên bản đầu tiên với đầy đủ tính năng phân tích tài chính dự án</p>
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1518,6 +1556,48 @@ export const ProjectDocumentation = () => {
                 </div>
               </div>
             </motion.div>
+          </GlassCard>
+        </section>
+
+        {/* Section: Founder */}
+        <section id="founder">
+          <GlassCard delay={1.2}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-xl bg-primary/20">
+                <User className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Người sáng lập</h2>
+                <p className="text-muted-foreground">Đội ngũ phát triển Crystal Quant Platform</p>
+              </div>
+            </div>
+            
+            <CreatorInfo />
+
+            <div className="mt-6 p-5 rounded-2xl bg-muted/30 border border-border/30">
+              <h4 className="font-semibold mb-3">Về dự án</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Crystal Quant Platform được phát triển bởi <strong className="text-foreground">Quách Thành Long</strong> — 
+                một nhà phát triển full-stack với niềm đam mê về công nghệ tài chính và phân tích định lượng. 
+                Nền tảng kết hợp kiến thức chuyên sâu về tài chính doanh nghiệp, 
+                phương pháp mô phỏng Monte Carlo và công nghệ AI hiện đại để tạo ra bộ công cụ 
+                phân tích đầu tư toàn diện cho thị trường Việt Nam và quốc tế.
+              </p>
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">5+</div>
+                  <div className="text-xs text-muted-foreground">Mô-đun phân tích</div>
+                </div>
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">15K+</div>
+                  <div className="text-xs text-muted-foreground">MC simulations</div>
+                </div>
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">AI</div>
+                  <div className="text-xs text-muted-foreground">Powered insights</div>
+                </div>
+              </div>
+            </div>
           </GlassCard>
         </section>
       </motion.div>
