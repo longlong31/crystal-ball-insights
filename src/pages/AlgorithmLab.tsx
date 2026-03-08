@@ -1038,6 +1038,8 @@ const AlgorithmLab = () => {
             </AnimatePresence>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       <Footer />
