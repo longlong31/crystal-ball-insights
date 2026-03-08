@@ -148,9 +148,8 @@ export function exportComparisonPDF(data: ComparisonExportData) {
 
   // Normalized performance table (sampled)
   if (data.chartData.length > 0) {
-    const y2 = (doc as any).lastAutoTable?.finalY || 140;
-    if (y2 > 160) doc.addPage();
-    const startY = y2 > 160 ? 20 : y2 + 12;
+    if (nextY > 130) { doc.addPage(); nextY = 15; }
+    const startY = nextY + 8;
 
     doc.setFontSize(12);
     doc.setTextColor(30, 58, 138);
