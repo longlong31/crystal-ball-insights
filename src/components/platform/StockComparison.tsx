@@ -143,6 +143,32 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
           </Button>
         </form>
         {anyLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        {validData.length >= 2 && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1"
+              onClick={() => {
+                exportComparisonPDF({ assets: validData, correlationMatrix, chartData });
+                toast.success("Đã xuất báo cáo PDF");
+              }}
+            >
+              <Download className="w-3.5 h-3.5" /> PDF
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1"
+              onClick={() => {
+                exportComparisonExcel({ assets: validData, correlationMatrix, chartData });
+                toast.success("Đã xuất báo cáo Excel");
+              }}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Normalized price chart */}
