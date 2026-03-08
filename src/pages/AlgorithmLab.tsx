@@ -11,9 +11,10 @@ import { SimulationCard } from "@/components/SimulationCard";
 import {
   FlaskConical, Play, RotateCcw, TrendingUp, Brain, Sigma, Settings2,
   ArrowRight, ChevronDown, ChevronUp, Cpu, BarChart3, Target, Zap,
-  GitBranch, Layers, Download
+  GitBranch, Layers, Download, Workflow
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { PipelineBuilder } from "@/components/PipelineBuilder";
 
 // ─── Algorithm Registry ───────────────────────────────────────────
 interface AlgorithmParam {
@@ -718,6 +719,7 @@ const categoryInfo = {
 // ─── Page Component ───────────────────────────────────────────────
 const AlgorithmLab = () => {
   const { language } = useLanguage();
+  const [mode, setMode] = useState<"single" | "pipeline">("single");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAlgo, setSelectedAlgo] = useState<Algorithm>(algorithms[0]);
   const [params, setParams] = useState<Record<string, number>>(() => {
@@ -788,6 +790,36 @@ const AlgorithmLab = () => {
       </section>
 
       <main className="container pb-16">
+        {/* Mode tabs */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <button
+            onClick={() => setMode("single")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              mode === "single"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <FlaskConical className="w-4 h-4" />
+            {language === "vi" ? "Chạy đơn lẻ" : "Single Run"}
+          </button>
+          <button
+            onClick={() => setMode("pipeline")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              mode === "pipeline"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <Workflow className="w-4 h-4" />
+            {language === "vi" ? "Pipeline Builder" : "Pipeline Builder"}
+          </button>
+        </div>
+
+        {mode === "pipeline" ? (
+          <PipelineBuilder algorithms={algorithms} />
+        ) : (
+        <>
         {/* Category filter */}
         <div className="flex items-center justify-center gap-3 mb-8 flex-wrap">
           <button
@@ -1006,6 +1038,8 @@ const AlgorithmLab = () => {
             </AnimatePresence>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       <Footer />
