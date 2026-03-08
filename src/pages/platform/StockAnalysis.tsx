@@ -769,11 +769,11 @@ export default function StockAnalysis() {
             { label: '1D', value: quote.priceChange1d, fmt: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` },
             { label: '1W', value: quote.priceChange1w, fmt: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` },
             { label: '1M', value: quote.priceChange1m, fmt: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` },
-            { label: 'RSI', value: analysis?.rsi ?? 0, fmt: (v: number) => v.toFixed(1), neutral: true },
-            { label: 'Beta', value: analysis?.beta ?? 0, fmt: (v: number) => v.toFixed(2), neutral: true },
-            { label: 'Vol', value: (analysis?.vol ?? 0) * 100, fmt: (v: number) => `${v.toFixed(1)}%`, neutral: true },
-            { label: 'Margin', value: quote.profitMargin, fmt: (v: number) => `${v.toFixed(1)}%`, neutral: true },
-            { label: 'FCF', value: quote.freeCashflow, fmt: (v: number) => formatLargeNumber(v) },
+            { label: 'RSI', value: analysis?.rsi ?? 0, fmt: (v: number) => (v ?? 0).toFixed(1), neutral: true },
+            { label: 'Beta', value: analysis?.beta ?? 0, fmt: (v: number) => (v ?? 0).toFixed(2), neutral: true },
+            { label: 'Vol', value: (analysis?.vol ?? 0) * 100, fmt: (v: number) => `${(v ?? 0).toFixed(1)}%`, neutral: true },
+            { label: 'Margin', value: quote.profitMargin ?? 0, fmt: (v: number) => `${(v ?? 0).toFixed(1)}%`, neutral: true },
+            { label: 'FCF', value: quote.freeCashflow ?? 0, fmt: (v: number) => formatLargeNumber(v ?? 0) },
           ].map((stat) => (
             <div key={stat.label} className="quant-card text-center py-3">
               <p className="stat-label">{stat.label}</p>
