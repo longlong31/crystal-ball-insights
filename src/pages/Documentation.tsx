@@ -26,10 +26,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type SectionId = 'overview' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version';
+type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const tocSections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen, description: 'Giới thiệu Crystal Ball' },
+  { id: 'platform', label: 'Nền tảng Quant', icon: Cpu, description: '5 mô-đun phân tích chuyên sâu' },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp, description: 'NPV, IRR, DPP, DSCR' },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3, description: 'Tornado, Spider, Ma trận' },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5, description: 'Mô phỏng xác suất' },
@@ -41,6 +42,7 @@ const tocSections = [
   { id: 'standards', label: 'Tiêu chuẩn', icon: Shield, description: 'Đánh giá dự án' },
   { id: 'references', label: 'Tham khảo', icon: ExternalLink, description: 'Tài liệu tham khảo' },
   { id: 'version', label: 'Phiên bản', icon: Zap, description: 'Lịch sử cập nhật' },
+  { id: 'founder', label: 'Người sáng lập', icon: User, description: 'Quách Thành Long' },
 ] as const;
 
 const Documentation = () => {
