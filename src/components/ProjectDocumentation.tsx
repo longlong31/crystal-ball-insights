@@ -48,10 +48,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CreatorInfo } from "@/components/CreatorInfo";
 
-type SectionId = 'overview' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version';
+type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const sections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen },
+  { id: 'platform', label: 'Nền tảng Quant', icon: Cpu },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3 },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5 },
@@ -63,6 +64,7 @@ const sections = [
   { id: 'standards', label: 'Tiêu chuẩn', icon: Shield },
   { id: 'references', label: 'Tham khảo', icon: ExternalLink },
   { id: 'version', label: 'Phiên bản', icon: Zap },
+  { id: 'founder', label: 'Người sáng lập', icon: User },
 ] as const;
 
 const containerVariants = {
