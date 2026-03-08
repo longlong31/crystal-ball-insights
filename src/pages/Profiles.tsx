@@ -66,6 +66,8 @@ export default function Profiles() {
   const [projectScenarios, setProjectScenarios] = useState<ProjectScenario[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
   const [activityStats, setActivityStats] = useState<ActivityStats>({ postsCount: 0, commentsCount: 0, reactionsCount: 0 });
+  const [passwordData, setPasswordData] = useState({ current: "", new: "", confirm: "" });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { history: analysisHistory, loading: historyLoading, deleteAnalysis } = useProjectAnalysisHistory();
@@ -750,9 +752,93 @@ export default function Profiles() {
                       </CardTitle>
                       <CardDescription>Quản lý bảo mật và tùy chọn cá nhân</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-6 space-y-4">
+                    <CardContent className="pt-6 space-y-6">
+                      {/* Password Change Form */}
+                      <div className="p-5 rounded-xl border border-border/30 bg-background/30 space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="p-2.5 rounded-xl bg-muted/30 border border-border/20">
+                            <Lock className="w-5 h-5 text-[hsl(var(--quant-red))]" />
+                          </div>
+                          <div>
+                            <p className="font-medium">Đổi mật khẩu</p>
+                            <p className="text-sm text-muted-foreground">Cập nhật mật khẩu đăng nhập của bạn</p>
+                          </div>
+                        </div>
+                        <div className="grid gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm">Mật khẩu hiện tại</Label>
+                            <Input
+                              type="password"
+                              placeholder="••••••••"
+                              value={passwordData.current}
+                              onChange={e => setPasswordData(prev => ({ ...prev, current: e.target.value }))}
+                              className="border-border/30 bg-background/50"
+                            />
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label className="text-sm">Mật khẩu mới</Label>
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                value={passwordData.new}
+                                onChange={e => setPasswordData(prev => ({ ...prev, new: e.target.value }))}
+                                className="border-border/30 bg-background/50"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Xác nhận mật khẩu mới</Label>
+                              <Input
+                                type="password"
+                                placeholder="••••••••"
+                                value={passwordData.confirm}
+                                onChange={e => setPasswordData(prev => ({ ...prev, confirm: e.target.value }))}
+                                className="border-border/30 bg-background/50"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            className="w-full bg-gradient-to-r from-primary to-secondary"
+                            disabled={isChangingPassword || !passwordData.current || !passwordData.new || !passwordData.confirm}
+                            onClick={async () => {
+                              if (passwordData.new.length < 6) {
+                                toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+                                return;
+                              }
+                              if (passwordData.new !== passwordData.confirm) {
+                                toast.error("Mật khẩu xác nhận không khớp");
+                                return;
+                              }
+                              setIsChangingPassword(true);
+                              try {
+                                // Verify current password by re-signing in
+                                const { error: signInError } = await supabase.auth.signInWithPassword({
+                                  email: profile?.email || "",
+                                  password: passwordData.current,
+                                });
+                                if (signInError) {
+                                  toast.error("Mật khẩu hiện tại không đúng");
+                                  return;
+                                }
+                                // Update password
+                                const { error } = await supabase.auth.updateUser({ password: passwordData.new });
+                                if (error) throw error;
+                                toast.success("Đã đổi mật khẩu thành công!");
+                                setPasswordData({ current: "", new: "", confirm: "" });
+                              } catch (error: any) {
+                                toast.error(error.message || "Không thể đổi mật khẩu");
+                              } finally {
+                                setIsChangingPassword(false);
+                              }
+                            }}
+                          >
+                            {isChangingPassword ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Đang xử lý...</> : <><Lock className="w-4 h-4 mr-2" /> Đổi mật khẩu</>}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Other Settings */}
                       {[
-                        { icon: Lock, label: "Đổi mật khẩu", desc: "Cập nhật mật khẩu đăng nhập", action: "Thay đổi", color: "text-[hsl(var(--quant-red))]" },
                         { icon: Bell, label: "Thông báo", desc: "Quản lý thông báo email và push", action: "Cài đặt", color: "text-[hsl(var(--quant-amber))]" },
                         { icon: Palette, label: "Giao diện", desc: "Tùy chỉnh theme và hiển thị", action: "Tùy chỉnh", color: "text-secondary" },
                         { icon: Download, label: "Xuất dữ liệu", desc: "Tải xuống toàn bộ dữ liệu cá nhân", action: "Xuất", color: "text-[hsl(var(--quant-green))]" },
