@@ -10,6 +10,7 @@ import { useStockQuote, useStockHistory, useStockFinancials } from "@/hooks/useS
 import { toast } from "sonner";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
+import { StockComparison } from "@/components/platform/StockComparison";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Global stock categories
