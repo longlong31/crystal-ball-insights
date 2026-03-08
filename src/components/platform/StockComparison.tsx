@@ -41,6 +41,8 @@ interface StockComparisonProps {
 export function StockComparison({ currentSymbol }: StockComparisonProps) {
   const [symbols, setSymbols] = useState<string[]>([currentSymbol]);
   const [newSymbol, setNewSymbol] = useState("");
+  const chartRef = useRef<HTMLDivElement>(null);
+  const correlationRef = useRef<HTMLDivElement>(null);
 
   const addSymbol = () => {
     const sym = newSymbol.trim().toUpperCase();
