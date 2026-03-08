@@ -162,19 +162,19 @@ const Documentation = () => {
                   </nav>
 
                   {/* Quick Stats */}
-                  <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30">
-                    <div className="text-xs text-muted-foreground mb-2">Nội dung tài liệu</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span>12 mục</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-chart-2" />
-                        <span>5+ ví dụ</span>
-                      </div>
-                    </div>
-                  </div>
+                   <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30">
+                     <div className="text-xs text-muted-foreground mb-2">Nội dung tài liệu</div>
+                     <div className="grid grid-cols-2 gap-2 text-sm">
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-primary" />
+                         <span>14 mục</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-chart-2" />
+                         <span>5+ ví dụ</span>
+                       </div>
+                     </div>
+                   </div>
                 </div>
               </ScrollArea>
             </motion.aside>
