@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Community from "./pages/Community";
 import NewsDetail from "./pages/NewsDetail";
 import NotFound from "./pages/NotFound";
+import AlgorithmLab from "./pages/AlgorithmLab";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { PlatformLayout } from "@/components/platform/PlatformLayout";
 import Dashboard from "./pages/platform/Dashboard";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/profiles" element={<Profiles />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/algorithms" element={<AlgorithmLab />} />
             <Route path="/news/:id" element={<NewsDetail />} />
             {/* Platform Routes */}
             <Route path="/platform" element={<PlatformLayout><Dashboard /></PlatformLayout>} />

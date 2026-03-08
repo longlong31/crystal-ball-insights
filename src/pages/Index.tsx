@@ -8,6 +8,7 @@ import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { ScenarioManager } from "@/components/ScenarioManager";
 import { ExcelUploader } from "@/components/ExcelUploader";
 import { Footer } from "@/components/Footer";
+import { BackToTop } from "@/components/BackToTop";
 import { runSimulation, DistributionType, DistributionParams } from "@/lib/distributions";
 import { calculateStatistics } from "@/lib/monteCarlo";
 import { SimulationScenario } from "@/lib/scenarioManager";
@@ -204,8 +205,8 @@ const Index = () => {
         </motion.div>
       </main>
 
-      {/* Footer */}
       <Footer />
+      <BackToTop />
     </div>
   );
 };
