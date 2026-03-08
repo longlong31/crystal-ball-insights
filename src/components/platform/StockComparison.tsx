@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Loader2, BarChart3 } from "lucide-react";
+import { Plus, X, Loader2, BarChart3, Download, FileSpreadsheet } from "lucide-react";
 import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
 import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
+import { exportComparisonPDF, exportComparisonExcel } from "@/lib/comparisonExporter";
+import { toast } from "sonner";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -141,6 +143,32 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
           </Button>
         </form>
         {anyLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+        {validData.length >= 2 && (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1"
+              onClick={() => {
+                exportComparisonPDF({ assets: validData, correlationMatrix, chartData });
+                toast.success("Đã xuất báo cáo PDF");
+              }}
+            >
+              <Download className="w-3.5 h-3.5" /> PDF
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1"
+              onClick={() => {
+                exportComparisonExcel({ assets: validData, correlationMatrix, chartData });
+                toast.success("Đã xuất báo cáo Excel");
+              }}
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Normalized price chart */}
