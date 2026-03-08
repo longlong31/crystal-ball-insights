@@ -113,7 +113,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
       correlationMatrix = { labels, matrix };
     }
 
-    return { chartData, correlationMatrix };
+    return { chartData, correlationMatrix, validData };
   }, [allLoaded, symbols, historyQueries]);
 
   return (
