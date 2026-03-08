@@ -33,12 +33,20 @@ import {
   ArrowRight,
   Search,
   ArrowUp,
-  X
+  X,
+  Cpu,
+  BarChart2,
+  Brain,
+  Coins,
+  Briefcase,
+  ShieldCheck,
+  User
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { CreatorInfo } from "@/components/CreatorInfo";
 
 type SectionId = 'overview' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version';
 
