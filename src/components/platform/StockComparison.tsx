@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, X, Loader2, BarChart3 } from "lucide-react";
 import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
+import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
 
 const COLORS = [
   "hsl(var(--primary))",
