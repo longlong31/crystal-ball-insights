@@ -17,6 +17,7 @@ const translations: Translations = {
   "nav.community": { vi: "Cộng đồng", en: "Community" },
   "nav.platform": { vi: "Nền tảng", en: "Platform" },
   "nav.admin": { vi: "Quản trị", en: "Admin" },
+  "nav.algorithms": { vi: "Thuật toán", en: "Algorithms" },
   "nav.profile": { vi: "Hồ sơ", en: "Profile" },
   "nav.login": { vi: "Đăng nhập", en: "Login" },
   "nav.logout": { vi: "Đăng xuất", en: "Logout" },
