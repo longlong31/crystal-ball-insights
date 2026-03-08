@@ -214,9 +214,17 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
         </div>
       )}
 
+      {/* Portfolio Optimizer */}
+      {validData.length >= 2 && (
+        <PortfolioOptimizerPanel
+          symbols={validData.map(d => d.symbol)}
+          assetsData={validData.map(d => ({ symbol: d.symbol, returns: d.returns, closes: d.closes }))}
+        />
+      )}
+
       {symbols.length < 2 && (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          Thêm ít nhất 2 mã cổ phiếu để so sánh hiệu suất và tính ma trận tương quan.
+          Thêm ít nhất 2 mã cổ phiếu để so sánh hiệu suất, tính ma trận tương quan và tối ưu hóa danh mục.
         </div>
       )}
     </div>
