@@ -86,14 +86,37 @@ export function exportComparisonPDF(data: ComparisonExportData) {
     styles: { cellPadding: 2 },
   });
 
-  // Correlation matrix
-  if (data.correlationMatrix && data.correlationMatrix.labels.length >= 2) {
-    const cm = data.correlationMatrix;
-    const y = (doc as any).lastAutoTable?.finalY || 80;
-    
+  let nextY = (doc as any).lastAutoTable?.finalY || 80;
+
+  // Performance chart image
+  if (data.chartImage) {
+    if (nextY > 100) { doc.addPage(); nextY = 15; }
     doc.setFontSize(12);
     doc.setTextColor(30, 58, 138);
-    doc.text('Correlation Matrix', 14, y + 12);
+    doc.text('Relative Performance Chart (Base = 100)', 14, nextY + 8);
+    const imgW = pageW - 28;
+    const imgH = imgW * 0.45;
+    doc.addImage(data.chartImage, 'PNG', 14, nextY + 12, imgW, imgH);
+    nextY = nextY + 12 + imgH + 6;
+  }
+
+  // Correlation matrix image or table
+  if (data.correlationImage) {
+    if (nextY > 120) { doc.addPage(); nextY = 15; }
+    doc.setFontSize(12);
+    doc.setTextColor(30, 58, 138);
+    doc.text('Correlation Matrix', 14, nextY + 8);
+    const imgW = Math.min(pageW - 28, 180);
+    const imgH = imgW * 0.5;
+    doc.addImage(data.correlationImage, 'PNG', 14, nextY + 12, imgW, imgH);
+    nextY = nextY + 12 + imgH + 6;
+  } else if (data.correlationMatrix && data.correlationMatrix.labels.length >= 2) {
+    // Fallback: table-based correlation
+    const cm = data.correlationMatrix;
+    if (nextY > 140) { doc.addPage(); nextY = 15; }
+    doc.setFontSize(12);
+    doc.setTextColor(30, 58, 138);
+    doc.text('Correlation Matrix', 14, nextY + 8);
 
     const corrHead = ['', ...cm.labels];
     const corrBody = cm.labels.map((label, i) => [
@@ -102,7 +125,7 @@ export function exportComparisonPDF(data: ComparisonExportData) {
     ]);
 
     autoTable(doc, {
-      startY: y + 16,
+      startY: nextY + 12,
       head: [corrHead],
       body: corrBody,
       theme: 'grid',
@@ -120,6 +143,7 @@ export function exportComparisonPDF(data: ComparisonExportData) {
         }
       },
     });
+    nextY = (doc as any).lastAutoTable?.finalY || nextY + 50;
   }
 
   // Normalized performance table (sampled)
