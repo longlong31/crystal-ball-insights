@@ -107,6 +107,7 @@ function buildCovMatrix(assets: AssetData[]): { meanReturns: number[]; covMatrix
 
 export function PortfolioOptimizerPanel({ symbols, assetsData }: PortfolioOptimizerPanelProps) {
   const [isRunning, setIsRunning] = useState(false);
+  const [constraints, setConstraints] = useState<Record<string, WeightConstraint>>({});
   const [result, setResult] = useState<{
     frontier: FrontierPoint[];
     optimal: OptimalPortfolio;
@@ -114,6 +115,51 @@ export function PortfolioOptimizerPanel({ symbols, assetsData }: PortfolioOptimi
   } | null>(null);
 
   const canOptimize = assetsData.length >= 2 && assetsData.every(a => a.returns.length >= 30);
+
+  const getConstraint = (symbol: string): WeightConstraint =>
+    constraints[symbol] || { min: 0, max: 100 };
+
+  const updateConstraint = (symbol: string, field: 'min' | 'max', value: number) => {
+    setConstraints(prev => ({
+      ...prev,
+      [symbol]: { ...getConstraint(symbol), [field]: value },
+    }));
+  };
+
+  const generateConstrainedWeights = (n: number): number[] | null => {
+    const mins = symbols.map(s => (getConstraint(s).min) / 100);
+    const maxs = symbols.map(s => (getConstraint(s).max) / 100);
+    const minSum = mins.reduce((a, b) => a + b, 0);
+    if (minSum > 1) return null;
+
+    // Start with minimums, distribute remainder randomly within bounds
+    const weights = [...mins];
+    let remaining = 1 - minSum;
+
+    // Randomly fill up to max
+    const indices = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
+    for (const i of indices) {
+      const room = Math.min(maxs[i] - weights[i], remaining);
+      if (room <= 0) continue;
+      const add = Math.random() * room;
+      weights[i] += add;
+      remaining -= add;
+    }
+
+    // Distribute any leftover evenly where possible
+    if (remaining > 1e-6) {
+      for (const i of indices) {
+        const room = maxs[i] - weights[i];
+        const add = Math.min(room, remaining);
+        weights[i] += add;
+        remaining -= add;
+        if (remaining < 1e-6) break;
+      }
+    }
+
+    if (remaining > 1e-4) return null;
+    return weights;
+  };
 
   const runOptimization = () => {
     if (!canOptimize) return;
@@ -128,18 +174,20 @@ export function PortfolioOptimizerPanel({ symbols, assetsData }: PortfolioOptimi
       let bestMinVol: FrontierPoint | null = null;
 
       for (let iter = 0; iter < iterations; iter++) {
-        // Generate random weights summing to 1
-        const raw = Array.from({ length: n }, () => Math.random());
-        const sum = raw.reduce((a, b) => a + b, 0);
-        const weights = raw.map(w => w / sum);
+        const weights = generateConstrainedWeights(n);
+        if (!weights) continue;
 
         const { ret, vol, sharpe } = portfolioStats(weights, meanReturns, covMatrix);
-
         const point: FrontierPoint = { risk: vol, return_: ret, weights, sharpe };
         frontier.push(point);
 
         if (!bestSharpe || sharpe > bestSharpe.sharpe) bestSharpe = point;
         if (!bestMinVol || vol < bestMinVol.risk) bestMinVol = point;
+      }
+
+      if (!bestSharpe || !bestMinVol || frontier.length === 0) {
+        setIsRunning(false);
+        return;
       }
 
       const toOptimal = (p: FrontierPoint): OptimalPortfolio => ({
@@ -151,8 +199,8 @@ export function PortfolioOptimizerPanel({ symbols, assetsData }: PortfolioOptimi
 
       setResult({
         frontier: frontier.sort((a, b) => a.risk - b.risk),
-        optimal: toOptimal(bestSharpe!),
-        minVol: toOptimal(bestMinVol!),
+        optimal: toOptimal(bestSharpe),
+        minVol: toOptimal(bestMinVol),
       });
       setIsRunning(false);
     }, 100);
