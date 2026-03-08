@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Sparkles, Bell, BarChart3 } from "lucide-react";
+import { Sparkles, Bell, BarChart3, FlaskConical } from "lucide-react";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { MobileNav } from "@/components/MobileNav";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
