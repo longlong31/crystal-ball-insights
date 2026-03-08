@@ -2,10 +2,12 @@ import { useState, useMemo } from "react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Loader2, BarChart3 } from "lucide-react";
+import { Plus, X, Loader2, BarChart3, Download, FileSpreadsheet } from "lucide-react";
 import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
 import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
+import { exportComparisonPDF, exportComparisonExcel } from "@/lib/comparisonExporter";
+import { toast } from "sonner";
 
 const COLORS = [
   "hsl(var(--primary))",
