@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
 import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
 import { exportComparisonPDF, exportComparisonExcel } from "@/lib/comparisonExporter";
+import html2canvas from "html2canvas";
 import { toast } from "sonner";
 
 const COLORS = [
@@ -40,6 +41,8 @@ interface StockComparisonProps {
 export function StockComparison({ currentSymbol }: StockComparisonProps) {
   const [symbols, setSymbols] = useState<string[]>([currentSymbol]);
   const [newSymbol, setNewSymbol] = useState("");
+  const chartRef = useRef<HTMLDivElement>(null);
+  const correlationRef = useRef<HTMLDivElement>(null);
 
   const addSymbol = () => {
     const sym = newSymbol.trim().toUpperCase();
@@ -149,9 +152,22 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
               size="sm"
               variant="outline"
               className="text-xs gap-1"
-              onClick={() => {
-                exportComparisonPDF({ assets: validData, correlationMatrix, chartData });
-                toast.success("Đã xuất báo cáo PDF");
+              onClick={async () => {
+                toast.info("Đang tạo báo cáo PDF...");
+                let chartImage: string | undefined;
+                let corrImage: string | undefined;
+                try {
+                  if (chartRef.current) {
+                    const canvas = await html2canvas(chartRef.current, { backgroundColor: '#1a1a2e', scale: 2 });
+                    chartImage = canvas.toDataURL('image/png');
+                  }
+                  if (correlationRef.current) {
+                    const canvas = await html2canvas(correlationRef.current, { backgroundColor: '#1a1a2e', scale: 2 });
+                    corrImage = canvas.toDataURL('image/png');
+                  }
+                } catch (e) { console.warn('Chart capture failed', e); }
+                exportComparisonPDF({ assets: validData, correlationMatrix, chartData, chartImage, correlationImage: corrImage });
+                toast.success("Đã xuất báo cáo PDF với biểu đồ");
               }}
             >
               <Download className="w-3.5 h-3.5" /> PDF
@@ -173,7 +189,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
 
       {/* Normalized price chart */}
       {chartData.length > 0 && (
-        <div className="quant-card">
+        <div className="quant-card" ref={chartRef}>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
             Hiệu suất tương đối (Base = 100)
@@ -206,7 +222,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
 
       {/* Correlation Matrix */}
       {correlationMatrix && correlationMatrix.labels.length >= 2 && (
-        <div className="quant-card">
+        <div className="quant-card" ref={correlationRef}>
           <h3 className="text-sm font-semibold mb-3">Ma trận tương quan (Correlation Matrix)</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
