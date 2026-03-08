@@ -140,10 +140,24 @@ async function fetchHistory(symbol: string, range: string = "1y") {
 async function fetchFinancials(symbol: string) {
   const modules = "incomeStatementHistory,incomeStatementHistoryQuarterly,balanceSheetHistory,balanceSheetHistoryQuarterly,cashflowStatementHistory,cashflowStatementHistoryQuarterly,earnings";
   const resp = await fetch(
-    `${YAHOO_QUOTESUMMARY_URL}/${symbol}?modules=${modules}`,
+    `${YAHOO_QUOTE_URL}/${symbol}?interval=1d&range=5d&includePrePost=false`,
     { headers: { "User-Agent": "Mozilla/5.0" } }
   );
-  if (!resp.ok) throw new Error(`Yahoo Finance financials error: ${resp.status}`);
+  // Try quoteSummary with a crumb/cookie approach
+  let summaryResp: Response;
+  try {
+    summaryResp = await fetch(
+      `${YAHOO_QUOTESUMMARY_URL}/${symbol}?modules=${modules}`,
+      { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" } }
+    );
+  } catch (e) {
+    console.warn("Financials fetch failed for", symbol, e);
+    return { incomeAnnual: [], incomeQuarterly: [], balanceAnnual: [], balanceQuarterly: [], cashflowAnnual: [], cashflowQuarterly: [], earnings: { quarterly: [], yearly: [] } };
+  }
+  if (!summaryResp.ok) {
+    console.warn(`Yahoo Finance financials returned ${summaryResp.status} for ${symbol}`);
+    return { incomeAnnual: [], incomeQuarterly: [], balanceAnnual: [], balanceQuarterly: [], cashflowAnnual: [], cashflowQuarterly: [], earnings: { quarterly: [], yearly: [] } };
+  }
   const data = await resp.json();
   const r = data.quoteSummary?.result?.[0];
   if (!r) throw new Error(`No financials for ${symbol}`);
