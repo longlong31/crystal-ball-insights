@@ -19,6 +19,8 @@ interface ComparisonExportData {
   assets: ComparisonAsset[];
   correlationMatrix: CorrelationData | null;
   chartData: Record<string, any>[];
+  chartImage?: string;
+  correlationImage?: string;
 }
 
 const fmt = (n: number, d = 2) => Number(n.toFixed(d));
