@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, X, Loader2, BarChart3 } from "lucide-react";
 import { useStockHistory, useStockQuote } from "@/hooks/useStockData";
 import { useQueries } from "@tanstack/react-query";
+import { PortfolioOptimizerPanel } from "./PortfolioOptimizerPanel";
 
 const COLORS = [
   "hsl(var(--primary))",
@@ -64,8 +65,8 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
   const anyLoading = historyQueries.some(q => q.isLoading);
 
   // Build normalized chart data (base 100)
-  const { chartData, correlationMatrix } = useMemo(() => {
-    if (!allLoaded) return { chartData: [], correlationMatrix: null };
+  const { chartData, correlationMatrix, validData } = useMemo(() => {
+    if (!allLoaded) return { chartData: [], correlationMatrix: null, validData: [] };
 
     const validData: { symbol: string; dates: string[]; closes: number[]; returns: number[] }[] = [];
 
@@ -78,7 +79,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
       }
     });
 
-    if (validData.length === 0) return { chartData: [], correlationMatrix: null };
+    if (validData.length === 0) return { chartData: [], correlationMatrix: null, validData: [] };
 
     // Use shortest common date range
     const minLen = Math.min(...validData.map(d => d.closes.length));
@@ -112,7 +113,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
       correlationMatrix = { labels, matrix };
     }
 
-    return { chartData, correlationMatrix };
+    return { chartData, correlationMatrix, validData };
   }, [allLoaded, symbols, historyQueries]);
 
   return (
@@ -213,9 +214,17 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
         </div>
       )}
 
+      {/* Portfolio Optimizer */}
+      {validData.length >= 2 && (
+        <PortfolioOptimizerPanel
+          symbols={validData.map(d => d.symbol)}
+          assetsData={validData.map(d => ({ symbol: d.symbol, returns: d.returns, closes: d.closes }))}
+        />
+      )}
+
       {symbols.length < 2 && (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          Thêm ít nhất 2 mã cổ phiếu để so sánh hiệu suất và tính ma trận tương quan.
+          Thêm ít nhất 2 mã cổ phiếu để so sánh hiệu suất, tính ma trận tương quan và tối ưu hóa danh mục.
         </div>
       )}
     </div>
