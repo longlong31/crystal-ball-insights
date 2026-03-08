@@ -47,6 +47,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CreatorInfo } from "@/components/CreatorInfo";
+import { QuantPlatformGuide } from "@/components/QuantPlatformGuide";
 
 type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
@@ -1074,6 +1075,9 @@ export const ProjectDocumentation = () => {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Quant Platform Module Guides */}
+            <QuantPlatformGuide />
           </GlassCard>
         </section>
 
