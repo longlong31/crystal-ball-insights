@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/community" element={<Community />} />
             <Route path="/algorithms" element={<AlgorithmLab />} />
             <Route path="/news/:id" element={<NewsDetail />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Platform Routes */}
             <Route path="/platform" element={<PlatformLayout><Dashboard /></PlatformLayout>} />
             <Route path="/platform/stocks" element={<PlatformLayout><StockAnalysis /></PlatformLayout>} />
