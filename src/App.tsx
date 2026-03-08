@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Community from "./pages/Community";
 import NewsDetail from "./pages/NewsDetail";
 import NotFound from "./pages/NotFound";
+import AlgorithmLab from "./pages/AlgorithmLab";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { PlatformLayout } from "@/components/platform/PlatformLayout";
 import Dashboard from "./pages/platform/Dashboard";
