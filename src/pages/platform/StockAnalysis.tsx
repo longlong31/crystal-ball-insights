@@ -10,6 +10,7 @@ import { useStockQuote, useStockHistory, useStockFinancials } from "@/hooks/useS
 import { toast } from "sonner";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
+import { StockComparison } from "@/components/platform/StockComparison";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Global stock categories
@@ -823,6 +824,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
           <TabsTrigger value="risk" className="text-xs">⚠️ Risk</TabsTrigger>
           <TabsTrigger value="company" className="text-xs">🏢 Company</TabsTrigger>
+          <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
 
         {/* Price Tab */}
@@ -1280,6 +1282,11 @@ export default function StockAnalysis() {
               </div>
             ) : <div className="flex items-center justify-center h-40"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>}
           </div>
+        </TabsContent>
+
+        {/* Compare Tab */}
+        <TabsContent value="compare">
+          <StockComparison currentSymbol={selected} />
         </TabsContent>
       </Tabs>
 
