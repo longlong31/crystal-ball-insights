@@ -607,6 +607,7 @@ export default function StockAnalysis() {
   const [selected, setSelected] = useState('VNM.VN');
   const [historyRange, setHistoryRange] = useState('1y');
   const [searchTerm, setSearchTerm] = useState('');
+  const [customSymbol, setCustomSymbol] = useState('');
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
@@ -696,28 +697,42 @@ export default function StockAnalysis() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-56">
-            <Select value={selected} onValueChange={setSelected}>
-              <SelectTrigger className="bg-card border-border/30">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-80">
-                <div className="p-2 sticky top-0 bg-popover z-10">
-                  <Input placeholder="Tìm mã CK (VN, US, EU, Asia)..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-8 text-xs" />
-                </div>
-                {Object.entries(filteredStocks).map(([category, stocks]) => (
-                  <div key={category}>
-                    <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{category}</div>
-                    {stocks.map(s => (
-                      <SelectItem key={s.symbol} value={s.symbol}>
-                        <span className="font-mono font-medium">{s.symbol}</span>
-                        <span className="text-muted-foreground ml-2 text-xs">{s.name}</span>
-                      </SelectItem>
-                    ))}
+          <div className="flex items-center gap-2">
+            <div className="w-56">
+              <Select value={selected} onValueChange={(v) => { setSelected(v); setCustomSymbol(''); }}>
+                <SelectTrigger className="bg-card border-border/30">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <div className="p-2 sticky top-0 bg-popover z-10">
+                    <Input placeholder="Tìm mã CK (VN, US, EU, Asia)..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-8 text-xs" />
                   </div>
-                ))}
-              </SelectContent>
-            </Select>
+                  {Object.entries(filteredStocks).map(([category, stocks]) => (
+                    <div key={category}>
+                      <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{category}</div>
+                      {stocks.map(s => (
+                        <SelectItem key={s.symbol} value={s.symbol}>
+                          <span className="font-mono font-medium">{s.symbol}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">{s.name}</span>
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="text-xs text-muted-foreground">hoặc</span>
+            <form onSubmit={(e) => { e.preventDefault(); const sym = customSymbol.trim().toUpperCase(); if (sym) setSelected(sym); }} className="flex items-center gap-1">
+              <Input
+                placeholder="Nhập mã bất kỳ (VD: TSLA, 005930.KS)"
+                value={customSymbol}
+                onChange={(e) => setCustomSymbol(e.target.value)}
+                className="h-9 w-52 text-xs font-mono bg-card border-border/30"
+              />
+              <Button type="submit" size="sm" variant="secondary" disabled={!customSymbol.trim()}>
+                <Search className="w-3.5 h-3.5" />
+              </Button>
+            </form>
           </div>
           <div>
             {quote ? (
