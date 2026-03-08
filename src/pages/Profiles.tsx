@@ -715,7 +715,7 @@ export default function Profiles() {
                                         <div className="p-2.5 rounded-lg bg-background/50 border border-border/20">
                                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">IRR</p>
                                           <p className="font-mono font-semibold text-sm text-[hsl(var(--quant-green))]">
-                                            {item.results?.irr != null ? `${((item.results.irr as number) * 100).toFixed(2)}%` : "—"}
+                                            {item.results?.irrTIPV != null ? `${((item.results.irrTIPV as number) * 100).toFixed(2)}%` : "—"}
                                           </p>
                                         </div>
                                         <div className="p-2.5 rounded-lg bg-background/50 border border-border/20">
