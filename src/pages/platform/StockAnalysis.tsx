@@ -607,6 +607,7 @@ export default function StockAnalysis() {
   const [selected, setSelected] = useState('VNM.VN');
   const [historyRange, setHistoryRange] = useState('1y');
   const [searchTerm, setSearchTerm] = useState('');
+  const [customSymbol, setCustomSymbol] = useState('');
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
