@@ -14,7 +14,9 @@ import { useState, useEffect } from "react";
   Zap,
   PanelLeftClose,
   PanelLeft,
-  ChevronRight
+  ChevronRight,
+  Cpu,
+  User
 } from "lucide-react";
 import { ProjectDocumentation } from "@/components/ProjectDocumentation";
 import { Footer } from "@/components/Footer";
@@ -24,10 +26,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type SectionId = 'overview' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version';
+type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const tocSections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen, description: 'Giới thiệu Crystal Ball' },
+  { id: 'platform', label: 'Nền tảng Quant', icon: Cpu, description: '5 mô-đun phân tích chuyên sâu' },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp, description: 'NPV, IRR, DPP, DSCR' },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3, description: 'Tornado, Spider, Ma trận' },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5, description: 'Mô phỏng xác suất' },
@@ -39,6 +42,7 @@ const tocSections = [
   { id: 'standards', label: 'Tiêu chuẩn', icon: Shield, description: 'Đánh giá dự án' },
   { id: 'references', label: 'Tham khảo', icon: ExternalLink, description: 'Tài liệu tham khảo' },
   { id: 'version', label: 'Phiên bản', icon: Zap, description: 'Lịch sử cập nhật' },
+  { id: 'founder', label: 'Người sáng lập', icon: User, description: 'Quách Thành Long' },
 ] as const;
 
 const Documentation = () => {
@@ -158,19 +162,19 @@ const Documentation = () => {
                   </nav>
 
                   {/* Quick Stats */}
-                  <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30">
-                    <div className="text-xs text-muted-foreground mb-2">Nội dung tài liệu</div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                        <span>12 mục</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-chart-2" />
-                        <span>5+ ví dụ</span>
-                      </div>
-                    </div>
-                  </div>
+                   <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border/30">
+                     <div className="text-xs text-muted-foreground mb-2">Nội dung tài liệu</div>
+                     <div className="grid grid-cols-2 gap-2 text-sm">
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-primary" />
+                         <span>14 mục</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                         <div className="w-2 h-2 rounded-full bg-chart-2" />
+                         <span>5+ ví dụ</span>
+                       </div>
+                     </div>
+                   </div>
                 </div>
               </ScrollArea>
             </motion.aside>
