@@ -721,7 +721,7 @@ export default function Profiles() {
                                         <div className="p-2.5 rounded-lg bg-background/50 border border-border/20">
                                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">DPP</p>
                                           <p className="font-mono font-semibold text-sm text-[hsl(var(--quant-amber))]">
-                                            {item.results?.dpp != null ? `${(item.results.dpp as number).toFixed(1)} năm` : "—"}
+                                            {item.results?.dppTIPV != null ? `${(item.results.dppTIPV as number).toFixed(1)} năm` : "—"}
                                           </p>
                                         </div>
                                       </div>
