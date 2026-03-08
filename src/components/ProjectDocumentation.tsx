@@ -446,6 +446,120 @@ export const ProjectDocumentation = () => {
           </GlassCard>
         </section>
 
+        {/* Section: Quant Platform */}
+        <section id="platform">
+          <GlassCard delay={0.05}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-xl bg-primary/20">
+                <Cpu className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Nền tảng Quant Platform</h2>
+                <p className="text-muted-foreground">5 mô-đun phân tích chuyên sâu cho nhà đầu tư chuyên nghiệp</p>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
+              Crystal Quant Platform là hệ thống phân tích định lượng tích hợp, cung cấp dữ liệu thời gian thực, 
+              các chỉ báo kỹ thuật chuyên sâu, và công cụ quản lý danh mục đầu tư hiện đại.
+            </p>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+              {[
+                {
+                  icon: BarChart2,
+                  title: 'Stock Analysis',
+                  desc: 'Phân tích cổ phiếu toàn diện với dữ liệu giá thời gian thực, chỉ báo kỹ thuật (RSI, MACD, Bollinger Bands, EMA), biểu đồ nến và so sánh đa cổ phiếu.',
+                  color: 'primary',
+                  features: ['Báo giá real-time', 'RSI / MACD / EMA', 'So sánh tối đa 8 mã', 'Xuất PDF & Excel'],
+                },
+                {
+                  icon: Coins,
+                  title: 'Crypto Intelligence',
+                  desc: 'Theo dõi thị trường crypto thời gian thực, phân tích chu kỳ thị trường (Fear & Greed Index), hỗ trợ các đồng coin chính.',
+                  color: 'chart-2',
+                  features: ['Giá real-time', 'Fear & Greed Index', 'Phân tích xu hướng', 'Market cap tracking'],
+                },
+                {
+                  icon: Briefcase,
+                  title: 'Portfolio Optimizer',
+                  desc: 'Tối ưu hóa danh mục đầu tư bằng mô phỏng Monte Carlo 15.000 kịch bản, tính toán Efficient Frontier và phân bổ tỷ trọng tối ưu.',
+                  color: 'chart-3',
+                  features: ['Efficient Frontier', 'Max Sharpe / Min Vol', 'Ràng buộc tỷ trọng', 'Monte Carlo 15K'],
+                },
+                {
+                  icon: ShieldCheck,
+                  title: 'Risk Engine',
+                  desc: 'Đo lường rủi ro danh mục với VaR, CVaR, Max Drawdown, ma trận tương quan Pearson và phát hiện Regime Shift.',
+                  color: 'chart-4',
+                  features: ['VaR / CVaR', 'Sharpe / Sortino', 'Correlation Matrix', 'Regime Detection'],
+                },
+                {
+                  icon: Brain,
+                  title: 'AI Insights',
+                  desc: 'Phân tích thị trường bằng AI, nhận diện mô hình giá, gợi ý phân bổ vốn và đánh giá sentiment tự động.',
+                  color: 'chart-5',
+                  features: ['Nhận diện mô hình', 'Gợi ý phân bổ', 'Phân tích sentiment', 'Báo cáo AI'],
+                },
+                {
+                  icon: GitCompare,
+                  title: 'Stock Comparison',
+                  desc: 'So sánh hiệu suất tối đa 8 mã chứng khoán với biểu đồ chuẩn hóa, ma trận tương quan và xuất báo cáo chuyên nghiệp.',
+                  color: 'primary',
+                  features: ['Base-100 chart', 'Pearson correlation', 'PDF với biểu đồ', 'Excel đa sheet'],
+                },
+              ].map((mod, i) => {
+                const Icon = mod.icon;
+                return (
+                  <motion.div
+                    key={mod.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.08 }}
+                    whileHover={{ scale: 1.02, y: -4 }}
+                    className="relative p-5 rounded-2xl border border-border/30 bg-card/40 backdrop-blur overflow-hidden group cursor-pointer"
+                  >
+                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"
+                      style={{ background: `hsl(var(--${mod.color}))` }} />
+                    <div className="relative">
+                      <Icon className="w-8 h-8 mb-3" style={{ color: `hsl(var(--${mod.color}))` }} />
+                      <h3 className="font-bold text-base mb-1">{mod.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">{mod.desc}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mod.features.map(f => (
+                          <span key={f} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/50 text-muted-foreground border border-border/30">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-card to-chart-3/10 border border-border/30">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Tính năng nổi bật
+              </h4>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'Dữ liệu real-time', desc: 'Cập nhật mỗi 30 giây' },
+                  { label: 'Xuất báo cáo', desc: 'PDF với biểu đồ + Excel' },
+                  { label: 'AI-powered', desc: 'Phân tích tự động bằng AI' },
+                  { label: 'Multi-asset', desc: 'Stocks, Crypto, Portfolio' },
+                ].map(item => (
+                  <div key={item.label} className="p-3 rounded-xl bg-card/50 border border-border/30">
+                    <div className="font-medium text-sm text-foreground">{item.label}</div>
+                    <div className="text-xs text-muted-foreground">{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GlassCard>
+        </section>
+
         {/* Section: Financial Metrics */}
         <section id="metrics">
           <GlassCard delay={0.1}>
