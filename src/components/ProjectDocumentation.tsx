@@ -1075,6 +1075,9 @@ export const ProjectDocumentation = () => {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Quant Platform Module Guides */}
+            <QuantPlatformGuide />
           </GlassCard>
         </section>
 
