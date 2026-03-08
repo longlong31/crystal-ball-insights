@@ -189,7 +189,7 @@ export function StockComparison({ currentSymbol }: StockComparisonProps) {
 
       {/* Normalized price chart */}
       {chartData.length > 0 && (
-        <div className="quant-card">
+        <div className="quant-card" ref={chartRef}>
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-primary" />
             Hiệu suất tương đối (Base = 100)
