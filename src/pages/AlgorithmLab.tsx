@@ -346,6 +346,194 @@ function arimaForecast(p: Record<string, number>): AlgorithmResult {
   };
 }
 
+// ─── Binomial Tree ────────────────────────────────────────────────
+function binomialTree(p: Record<string, number>): AlgorithmResult {
+  const { S, K, T, r, sigma, steps, optionType } = p;
+  const dt = T / steps;
+  const u = Math.exp(sigma * Math.sqrt(dt));
+  const d = 1 / u;
+  const pUp = (Math.exp(r * dt) - d) / (u - d);
+  const isCall = optionType >= 0.5;
+
+  // Build price tree
+  const prices: number[][] = [];
+  for (let i = 0; i <= steps; i++) {
+    prices[i] = [];
+    for (let j = 0; j <= i; j++) {
+      prices[i][j] = S * Math.pow(u, i - j) * Math.pow(d, j);
+    }
+  }
+
+  // Terminal payoffs
+  const optionValues: number[][] = [];
+  optionValues[steps] = [];
+  for (let j = 0; j <= steps; j++) {
+    optionValues[steps][j] = isCall
+      ? Math.max(prices[steps][j] - K, 0)
+      : Math.max(K - prices[steps][j], 0);
+  }
+
+  // Backward induction
+  for (let i = steps - 1; i >= 0; i--) {
+    optionValues[i] = [];
+    for (let j = 0; j <= i; j++) {
+      optionValues[i][j] = Math.exp(-r * dt) * (pUp * optionValues[i + 1][j] + (1 - pUp) * optionValues[i + 1][j + 1]);
+    }
+  }
+
+  const price = optionValues[0][0];
+  // Delta & Gamma from tree
+  const delta = (optionValues[1][0] - optionValues[1][1]) / (prices[1][0] - prices[1][1]);
+  let gamma = 0;
+  if (steps >= 2) {
+    const d1 = (optionValues[2][0] - optionValues[2][1]) / (prices[2][0] - prices[2][1]);
+    const d2 = (optionValues[2][1] - optionValues[2][2]) / (prices[2][1] - prices[2][2]);
+    gamma = (d1 - d2) / ((prices[2][0] - prices[2][2]) / 2);
+  }
+
+  // Chart: option value vs stock price at expiry
+  const chartData: { name: string; value: number }[] = [];
+  for (let j = 0; j <= Math.min(steps, 20); j++) {
+    const sp = prices[Math.min(steps, 20)][j];
+    const payoff = isCall ? Math.max(sp - K, 0) : Math.max(K - sp, 0);
+    chartData.push({ name: sp.toFixed(0), value: payoff });
+  }
+
+  return {
+    outputs: {
+      optionPrice: { label: `${isCall ? 'Call' : 'Put'} Price`, value: price.toFixed(4), unit: "$" },
+      delta: { label: "Delta (Δ)", value: delta.toFixed(4) },
+      gamma: { label: "Gamma (Γ)", value: gamma.toFixed(6) },
+      upFactor: { label: "Up factor (u)", value: u.toFixed(4) },
+      downFactor: { label: "Down factor (d)", value: d.toFixed(4) },
+      riskNeutralP: { label: "Risk-neutral p", value: pUp.toFixed(4) },
+    },
+    chartData,
+    interpretation: `Binomial Tree (${steps} bước): ${isCall ? 'Call' : 'Put'} = ${price.toFixed(4)}$, Delta = ${delta.toFixed(4)}, u = ${u.toFixed(3)}, d = ${d.toFixed(3)}.`,
+  };
+}
+
+// ─── Fama-French 3-Factor ─────────────────────────────────────────
+function famaFrench(p: Record<string, number>): AlgorithmResult {
+  const { riskFree, beta, smb, hml, marketPremium, smbPremium, hmlPremium } = p;
+  const expectedReturn = riskFree + beta * marketPremium + smb * smbPremium + hml * hmlPremium;
+  const capmReturn = riskFree + beta * marketPremium;
+  const sizeEffect = smb * smbPremium;
+  const valueEffect = hml * hmlPremium;
+  const alpha = expectedReturn - capmReturn;
+
+  const chartData = [
+    { name: "Risk-Free", value: riskFree * 100 },
+    { name: "Market β", value: beta * marketPremium * 100 },
+    { name: "Size (SMB)", value: sizeEffect * 100 },
+    { name: "Value (HML)", value: valueEffect * 100 },
+    { name: "Total E(R)", value: expectedReturn * 100 },
+  ];
+
+  return {
+    outputs: {
+      expectedReturn: { label: "E(R) Fama-French", value: (expectedReturn * 100).toFixed(2), unit: "%" },
+      capmReturn: { label: "E(R) CAPM", value: (capmReturn * 100).toFixed(2), unit: "%" },
+      sizeEffect: { label: "Size effect (SMB)", value: (sizeEffect * 100).toFixed(2), unit: "%" },
+      valueEffect: { label: "Value effect (HML)", value: (valueEffect * 100).toFixed(2), unit: "%" },
+      alphaFF: { label: "Alpha vs CAPM", value: (alpha * 100).toFixed(2), unit: "%" },
+    },
+    chartData,
+    interpretation: `Fama-French 3-Factor: E(R) = ${(expectedReturn * 100).toFixed(2)}% so với CAPM ${(capmReturn * 100).toFixed(2)}%. Size effect ${(sizeEffect * 100).toFixed(2)}%, Value effect ${(valueEffect * 100).toFixed(2)}%.`,
+  };
+}
+
+// ─── Simple Neural Network ───────────────────────────────────────
+function neuralNetwork(p: Record<string, number>): AlgorithmResult {
+  const { hiddenNodes, learningRate, epochs, dataPoints, noise } = p;
+
+  // Generate XOR-like 2D classification data
+  const data: { x1: number; x2: number; label: number }[] = [];
+  for (let i = 0; i < dataPoints; i++) {
+    const x1 = Math.random() * 2 - 1;
+    const x2 = Math.random() * 2 - 1;
+    const trueLabel = (x1 * x2 > 0) ? 1 : 0;
+    const noisyLabel = Math.random() < noise ? (1 - trueLabel) : trueLabel;
+    data.push({ x1, x2, label: noisyLabel });
+  }
+
+  // Initialize weights
+  const sigmoid = (x: number) => 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x))));
+  const randW = () => (Math.random() - 0.5) * 2;
+
+  // Weights: input(2) -> hidden(n) -> output(1)
+  const wIH: number[][] = [];
+  const bH: number[] = [];
+  for (let h = 0; h < hiddenNodes; h++) {
+    wIH.push([randW(), randW()]);
+    bH.push(randW() * 0.1);
+  }
+  const wHO: number[] = [];
+  let bO = randW() * 0.1;
+  for (let h = 0; h < hiddenNodes; h++) wHO.push(randW());
+
+  const lossHistory: { name: string; value: number }[] = [];
+
+  for (let epoch = 0; epoch < epochs; epoch++) {
+    let totalLoss = 0;
+    for (const d of data) {
+      // Forward
+      const hiddenOut: number[] = [];
+      for (let h = 0; h < hiddenNodes; h++) {
+        hiddenOut.push(sigmoid(wIH[h][0] * d.x1 + wIH[h][1] * d.x2 + bH[h]));
+      }
+      let output = bO;
+      for (let h = 0; h < hiddenNodes; h++) output += wHO[h] * hiddenOut[h];
+      const pred = sigmoid(output);
+
+      const error = pred - d.label;
+      totalLoss += error * error;
+
+      // Backward
+      const dOutput = error * pred * (1 - pred);
+      for (let h = 0; h < hiddenNodes; h++) {
+        const dHidden = dOutput * wHO[h] * hiddenOut[h] * (1 - hiddenOut[h]);
+        wIH[h][0] -= learningRate * dHidden * d.x1;
+        wIH[h][1] -= learningRate * dHidden * d.x2;
+        bH[h] -= learningRate * dHidden;
+        wHO[h] -= learningRate * dOutput * hiddenOut[h];
+      }
+      bO -= learningRate * dOutput;
+    }
+
+    if (epoch % Math.max(1, Math.floor(epochs / 40)) === 0) {
+      lossHistory.push({ name: `${epoch}`, value: totalLoss / data.length });
+    }
+  }
+
+  // Final accuracy
+  let correct = 0;
+  for (const d of data) {
+    const hiddenOut: number[] = [];
+    for (let h = 0; h < hiddenNodes; h++) {
+      hiddenOut.push(sigmoid(wIH[h][0] * d.x1 + wIH[h][1] * d.x2 + bH[h]));
+    }
+    let output = bO;
+    for (let h = 0; h < hiddenNodes; h++) output += wHO[h] * hiddenOut[h];
+    const pred = sigmoid(output) >= 0.5 ? 1 : 0;
+    if (pred === d.label) correct++;
+  }
+  const accuracy = correct / data.length;
+  const finalLoss = lossHistory.length > 0 ? parseFloat(lossHistory[lossHistory.length - 1].value.toFixed(6)) : 0;
+
+  return {
+    outputs: {
+      accuracy: { label: "Accuracy", value: (accuracy * 100).toFixed(2), unit: "%" },
+      finalLoss: { label: "Final Loss (MSE)", value: finalLoss.toFixed(6) },
+      params: { label: "Tổng tham số", value: hiddenNodes * 2 + hiddenNodes + hiddenNodes + 1 },
+      architecture: { label: "Kiến trúc", value: `2→${hiddenNodes}→1` },
+      dataPoints: { label: "Dữ liệu train", value: dataPoints },
+    },
+    chartData: lossHistory,
+    interpretation: `Neural Network (2→${hiddenNodes}→1) đạt accuracy ${(accuracy * 100).toFixed(1)}% sau ${epochs} epochs. Loss cuối = ${finalLoss.toFixed(6)}. Bài toán: phân loại XOR-like 2D.`,
+  };
+}
+
 // Error function approximation
 function erf(x: number): number {
   const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
