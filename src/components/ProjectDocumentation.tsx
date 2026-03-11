@@ -33,17 +33,27 @@ import {
   ArrowRight,
   Search,
   ArrowUp,
-  X
+  X,
+  Cpu,
+  BarChart2,
+  Brain,
+  Coins,
+  Briefcase,
+  ShieldCheck,
+  User
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { CreatorInfo } from "@/components/CreatorInfo";
+import { QuantPlatformGuide } from "@/components/QuantPlatformGuide";
 
-type SectionId = 'overview' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version';
+type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const sections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen },
+  { id: 'platform', label: 'Nền tảng Quant', icon: Cpu },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3 },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5 },
@@ -55,6 +65,7 @@ const sections = [
   { id: 'standards', label: 'Tiêu chuẩn', icon: Shield },
   { id: 'references', label: 'Tham khảo', icon: ExternalLink },
   { id: 'version', label: 'Phiên bản', icon: Zap },
+  { id: 'founder', label: 'Người sáng lập', icon: User },
 ] as const;
 
 const containerVariants = {
@@ -129,6 +140,7 @@ const MetricBadge = ({ value, label, trend }: { value: string; label: string; tr
 // Search content for documentation
 const searchableContent = [
   { id: 'overview', keywords: ['tổng quan', 'crystal ball', 'công cụ', 'phân tích', 'đầu tư', 'tài chính', 'overview'] },
+  { id: 'platform', keywords: ['nền tảng', 'quant', 'stock', 'crypto', 'portfolio', 'risk', 'ai', 'cổ phiếu', 'tiền mã hóa', 'danh mục'] },
   { id: 'metrics', keywords: ['npv', 'irr', 'dpp', 'dscr', 'giá trị hiện tại', 'hoàn vốn', 'chỉ số', 'tỷ suất', 'chiết khấu', 'metrics'] },
   { id: 'sensitivity', keywords: ['độ nhạy', 'tornado', 'spider', 'ma trận', 'biến đổi', 'sensitivity'] },
   { id: 'montecarlo', keywords: ['monte carlo', 'mô phỏng', 'xác suất', 'phân phối', 'rủi ro', 'simulation'] },
@@ -140,6 +152,7 @@ const searchableContent = [
   { id: 'standards', keywords: ['tiêu chuẩn', 'đánh giá', 'standards', 'criteria'] },
   { id: 'references', keywords: ['tham khảo', 'tài liệu', 'nguồn', 'references'] },
   { id: 'version', keywords: ['phiên bản', 'version', 'tính năng', 'features'] },
+  { id: 'founder', keywords: ['người sáng lập', 'founder', 'quách thành long', 'tác giả', 'creator'] },
 ];
 
 export const ProjectDocumentation = () => {
@@ -249,28 +262,32 @@ export const ProjectDocumentation = () => {
             <div className="mb-6 p-4 rounded-2xl bg-primary/20 backdrop-blur-sm border border-primary/30">
               <Sparkles className="w-12 h-12 text-primary animate-pulse-glow" />
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent">
-              Crystal Ball Documentation
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8">
-              Hướng dẫn toàn diện về phân tích tài chính dự án đầu tư với các công cụ chuyên nghiệp
-            </p>
-            
-            {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <Calculator className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">5+ Chỉ số tài chính</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <BarChart3 className="w-4 h-4 text-chart-2" />
-                <span className="text-sm font-medium">3 Loại phân tích độ nhạy</span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
-                <Dice5 className="w-4 h-4 text-chart-3" />
-                <span className="text-sm font-medium">Monte Carlo Simulation</span>
-              </div>
-            </div>
+             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent">
+               Crystal Quant Documentation
+             </h1>
+             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8">
+               Hướng dẫn toàn diện về nền tảng phân tích tài chính & đầu tư định lượng chuyên nghiệp
+             </p>
+             
+             {/* Quick Stats */}
+             <div className="flex flex-wrap justify-center gap-6 mt-4">
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Cpu className="w-4 h-4 text-primary" />
+                 <span className="text-sm font-medium">5 Mô-đun Quant</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Calculator className="w-4 h-4 text-chart-1" />
+                 <span className="text-sm font-medium">5+ Chỉ số tài chính</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <BarChart3 className="w-4 h-4 text-chart-2" />
+                 <span className="text-sm font-medium">Portfolio Optimization</span>
+               </div>
+               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/60 backdrop-blur border border-border/50">
+                 <Brain className="w-4 h-4 text-chart-3" />
+                 <span className="text-sm font-medium">AI-Powered Insights</span>
+               </div>
+             </div>
           </motion.div>
         </div>
       </motion.div>
@@ -430,6 +447,120 @@ export const ProjectDocumentation = () => {
                 description="Đánh giá đa tiêu chí, xếp hạng tự động"
                 color="chart-4"
               />
+            </div>
+          </GlassCard>
+        </section>
+
+        {/* Section: Quant Platform */}
+        <section id="platform">
+          <GlassCard delay={0.05}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-xl bg-primary/20">
+                <Cpu className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Nền tảng Quant Platform</h2>
+                <p className="text-muted-foreground">5 mô-đun phân tích chuyên sâu cho nhà đầu tư chuyên nghiệp</p>
+              </div>
+            </div>
+
+            <p className="text-muted-foreground mb-8 text-lg leading-relaxed">
+              Crystal Quant Platform là hệ thống phân tích định lượng tích hợp, cung cấp dữ liệu thời gian thực, 
+              các chỉ báo kỹ thuật chuyên sâu, và công cụ quản lý danh mục đầu tư hiện đại.
+            </p>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
+              {[
+                {
+                  icon: BarChart2,
+                  title: 'Stock Analysis',
+                  desc: 'Phân tích cổ phiếu toàn diện với dữ liệu giá thời gian thực, chỉ báo kỹ thuật (RSI, MACD, Bollinger Bands, EMA), biểu đồ nến và so sánh đa cổ phiếu.',
+                  color: 'primary',
+                  features: ['Báo giá real-time', 'RSI / MACD / EMA', 'So sánh tối đa 8 mã', 'Xuất PDF & Excel'],
+                },
+                {
+                  icon: Coins,
+                  title: 'Crypto Intelligence',
+                  desc: 'Theo dõi thị trường crypto thời gian thực, phân tích chu kỳ thị trường (Fear & Greed Index), hỗ trợ các đồng coin chính.',
+                  color: 'chart-2',
+                  features: ['Giá real-time', 'Fear & Greed Index', 'Phân tích xu hướng', 'Market cap tracking'],
+                },
+                {
+                  icon: Briefcase,
+                  title: 'Portfolio Optimizer',
+                  desc: 'Tối ưu hóa danh mục đầu tư bằng mô phỏng Monte Carlo 15.000 kịch bản, tính toán Efficient Frontier và phân bổ tỷ trọng tối ưu.',
+                  color: 'chart-3',
+                  features: ['Efficient Frontier', 'Max Sharpe / Min Vol', 'Ràng buộc tỷ trọng', 'Monte Carlo 15K'],
+                },
+                {
+                  icon: ShieldCheck,
+                  title: 'Risk Engine',
+                  desc: 'Đo lường rủi ro danh mục với VaR, CVaR, Max Drawdown, ma trận tương quan Pearson và phát hiện Regime Shift.',
+                  color: 'chart-4',
+                  features: ['VaR / CVaR', 'Sharpe / Sortino', 'Correlation Matrix', 'Regime Detection'],
+                },
+                {
+                  icon: Brain,
+                  title: 'AI Insights',
+                  desc: 'Phân tích thị trường bằng AI, nhận diện mô hình giá, gợi ý phân bổ vốn và đánh giá sentiment tự động.',
+                  color: 'chart-5',
+                  features: ['Nhận diện mô hình', 'Gợi ý phân bổ', 'Phân tích sentiment', 'Báo cáo AI'],
+                },
+                {
+                  icon: GitCompare,
+                  title: 'Stock Comparison',
+                  desc: 'So sánh hiệu suất tối đa 8 mã chứng khoán với biểu đồ chuẩn hóa, ma trận tương quan và xuất báo cáo chuyên nghiệp.',
+                  color: 'primary',
+                  features: ['Base-100 chart', 'Pearson correlation', 'PDF với biểu đồ', 'Excel đa sheet'],
+                },
+              ].map((mod, i) => {
+                const Icon = mod.icon;
+                return (
+                  <motion.div
+                    key={mod.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 + i * 0.08 }}
+                    whileHover={{ scale: 1.02, y: -4 }}
+                    className="relative p-5 rounded-2xl border border-border/30 bg-card/40 backdrop-blur overflow-hidden group cursor-pointer"
+                  >
+                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity"
+                      style={{ background: `hsl(var(--${mod.color}))` }} />
+                    <div className="relative">
+                      <Icon className="w-8 h-8 mb-3" style={{ color: `hsl(var(--${mod.color}))` }} />
+                      <h3 className="font-bold text-base mb-1">{mod.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-3">{mod.desc}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {mod.features.map(f => (
+                          <span key={f} className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/50 text-muted-foreground border border-border/30">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-card to-chart-3/10 border border-border/30">
+              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                <Zap className="w-5 h-5 text-primary" />
+                Tính năng nổi bật
+              </h4>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'Dữ liệu real-time', desc: 'Cập nhật mỗi 30 giây' },
+                  { label: 'Xuất báo cáo', desc: 'PDF với biểu đồ + Excel' },
+                  { label: 'AI-powered', desc: 'Phân tích tự động bằng AI' },
+                  { label: 'Multi-asset', desc: 'Stocks, Crypto, Portfolio' },
+                ].map(item => (
+                  <div key={item.label} className="p-3 rounded-xl bg-card/50 border border-border/30">
+                    <div className="font-medium text-sm text-foreground">{item.label}</div>
+                    <div className="text-xs text-muted-foreground">{item.desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </GlassCard>
         </section>
@@ -944,6 +1075,9 @@ export const ProjectDocumentation = () => {
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {/* Quant Platform Module Guides */}
+            <QuantPlatformGuide />
           </GlassCard>
         </section>
 
@@ -1358,19 +1492,57 @@ export const ProjectDocumentation = () => {
               </div>
             </div>
             
+            {/* v2.0 */}
             <motion.div
               whileHover={{ scale: 1.01 }}
-              className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-secondary/10 relative overflow-hidden"
+              className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-secondary/10 relative overflow-hidden mb-6"
             >
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl" />
               <div className="relative flex items-start gap-6">
                 <div className="w-20 h-20 rounded-2xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-3xl font-bold text-primary">1.0</span>
+                  <span className="text-3xl font-bold text-primary">2.0</span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-bold text-xl">Crystal Ball v1.0</h3>
+                    <h3 className="font-bold text-xl">Crystal Quant Platform v2.0</h3>
                     <span className="px-3 py-1 rounded-full text-xs bg-primary/20 text-primary font-medium">Latest</span>
+                  </div>
+                  <p className="text-muted-foreground mb-4">Nâng cấp toàn diện với nền tảng Quant chuyên sâu và AI Insights</p>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[
+                      '✓ Stock Analysis real-time',
+                      '✓ Crypto Intelligence',
+                      '✓ Portfolio Optimizer (15K MC)',
+                      '✓ Risk Engine (VaR/CVaR)',
+                      '✓ AI Market Insights',
+                      '✓ So sánh đa cổ phiếu',
+                      '✓ Xuất PDF với biểu đồ',
+                      '✓ Ràng buộc tỷ trọng',
+                      '✓ Ma trận tương quan',
+                      '✓ Regime Shift Detection',
+                      '✓ Cộng đồng & Tin tức',
+                      '✓ Watchlist & Price Alerts',
+                    ].map((feature, i) => (
+                      <div key={i} className="text-sm text-muted-foreground px-3 py-2 rounded-lg bg-card/50">
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* v1.0 */}
+            <motion.div
+              className="p-6 rounded-2xl border border-border/30 bg-card/30 relative overflow-hidden opacity-80"
+            >
+              <div className="relative flex items-start gap-6">
+                <div className="w-20 h-20 rounded-2xl bg-muted/30 flex items-center justify-center flex-shrink-0">
+                  <span className="text-3xl font-bold text-muted-foreground">1.0</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-bold text-xl text-muted-foreground">Crystal Ball v1.0</h3>
                   </div>
                   <p className="text-muted-foreground mb-4">Phiên bản đầu tiên với đầy đủ tính năng phân tích tài chính dự án</p>
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1392,6 +1564,48 @@ export const ProjectDocumentation = () => {
                 </div>
               </div>
             </motion.div>
+          </GlassCard>
+        </section>
+
+        {/* Section: Founder */}
+        <section id="founder">
+          <GlassCard delay={1.2}>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="p-3 rounded-xl bg-primary/20">
+                <User className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">Người sáng lập</h2>
+                <p className="text-muted-foreground">Đội ngũ phát triển Crystal Quant Platform</p>
+              </div>
+            </div>
+            
+            <CreatorInfo />
+
+            <div className="mt-6 p-5 rounded-2xl bg-muted/30 border border-border/30">
+              <h4 className="font-semibold mb-3">Về dự án</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Crystal Quant Platform được phát triển bởi <strong className="text-foreground">Quách Thành Long</strong> — 
+                một nhà phát triển full-stack với niềm đam mê về công nghệ tài chính và phân tích định lượng. 
+                Nền tảng kết hợp kiến thức chuyên sâu về tài chính doanh nghiệp, 
+                phương pháp mô phỏng Monte Carlo và công nghệ AI hiện đại để tạo ra bộ công cụ 
+                phân tích đầu tư toàn diện cho thị trường Việt Nam và quốc tế.
+              </p>
+              <div className="grid md:grid-cols-3 gap-3">
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">5+</div>
+                  <div className="text-xs text-muted-foreground">Mô-đun phân tích</div>
+                </div>
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">15K+</div>
+                  <div className="text-xs text-muted-foreground">MC simulations</div>
+                </div>
+                <div className="p-3 rounded-xl bg-card/50 border border-border/30 text-center">
+                  <div className="text-2xl font-bold text-primary mb-1">AI</div>
+                  <div className="text-xs text-muted-foreground">Powered insights</div>
+                </div>
+              </div>
+            </div>
           </GlassCard>
         </section>
       </motion.div>
