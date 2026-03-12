@@ -56,14 +56,26 @@ export default function Dashboard() {
   const { data: globalData } = useCryptoGlobal();
 
   const stockData = useMemo(() => {
-    const stocks = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN'];
+    const stocks = [
+      { symbol: 'VCB.VN', label: 'VCB', base: 88 },
+      { symbol: 'FPT.VN', label: 'FPT', base: 125 },
+      { symbol: 'HPG.VN', label: 'HPG', base: 27 },
+      { symbol: 'VNM.VN', label: 'VNM', base: 72 },
+      { symbol: 'MWG.VN', label: 'MWG', base: 55 },
+      { symbol: 'TCB.VN', label: 'TCB', base: 35 },
+      { symbol: 'VIC.VN', label: 'VIC', base: 42 },
+      { symbol: 'SSI.VN', label: 'SSI', base: 32 },
+    ];
     return stocks.map(s => {
-      const data = generateSampleStockData(s, 90);
+      const data = generateSampleStockData(s.symbol, 90);
       const closes = data.map(d => d.close);
-      const lastPrice = closes[closes.length - 1];
-      const prevPrice = closes[closes.length - 2];
+      // Scale to realistic VN price range (x1000 VND)
+      const scale = s.base / (closes[0] || 100);
+      const scaledCloses = closes.map(c => +(c * scale).toFixed(1));
+      const lastPrice = scaledCloses[scaledCloses.length - 1];
+      const prevPrice = scaledCloses[scaledCloses.length - 2];
       const change = ((lastPrice - prevPrice) / prevPrice) * 100;
-      return { symbol: s, price: lastPrice, change, closes };
+      return { symbol: s.label, price: lastPrice, change, closes: scaledCloses, isVN: true };
     });
   }, []);
 
@@ -88,11 +100,12 @@ export default function Dashboard() {
   const dailyPnLPct = 0.44;
 
   const allocationData = [
-    { name: language === 'vi' ? 'Cổ phiếu Mỹ' : 'US Stocks', value: 45, color: 'hsl(185, 80%, 50%)' },
-    { name: 'Crypto', value: 20, color: 'hsl(270, 70%, 60%)' },
-    { name: language === 'vi' ? 'Trái phiếu' : 'Bonds', value: 15, color: 'hsl(142, 76%, 45%)' },
-    { name: language === 'vi' ? 'Hàng hóa' : 'Commodities', value: 10, color: 'hsl(38, 92%, 55%)' },
-    { name: language === 'vi' ? 'Tiền mặt' : 'Cash', value: 10, color: 'hsl(215, 15%, 50%)' },
+    { name: language === 'vi' ? 'Cổ phiếu VN' : 'VN Stocks', value: 40, color: 'hsl(0, 72%, 55%)' },
+    { name: language === 'vi' ? 'Cổ phiếu Mỹ' : 'US Stocks', value: 25, color: 'hsl(185, 80%, 50%)' },
+    { name: 'Crypto', value: 15, color: 'hsl(270, 70%, 60%)' },
+    { name: language === 'vi' ? 'Trái phiếu' : 'Bonds', value: 10, color: 'hsl(142, 76%, 45%)' },
+    { name: language === 'vi' ? 'Hàng hóa' : 'Commodities', value: 5, color: 'hsl(38, 92%, 55%)' },
+    { name: language === 'vi' ? 'Tiền mặt' : 'Cash', value: 5, color: 'hsl(215, 15%, 50%)' },
   ];
 
   const performanceData = Array.from({ length: 90 }, (_, i) => ({
@@ -185,7 +198,7 @@ export default function Dashboard() {
       {/* Market Tickers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="quant-card">
-          <p className="stat-label mb-3">{language === 'vi' ? 'Thị trường cổ phiếu' : 'Equity Markets'}</p>
+         <p className="stat-label mb-3">{language === 'vi' ? 'Thị trường cổ phiếu VN' : 'VN Equity Markets'}</p>
           <div className="space-y-2">
             {stockData.map((stock) => (
               <div key={stock.symbol} className="flex items-center justify-between">
@@ -194,7 +207,7 @@ export default function Dashboard() {
                   <MiniSparkline data={stock.closes} color={stock.change >= 0 ? TICKER_COLORS.up : TICKER_COLORS.down} />
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-mono">${stock.price.toFixed(2)}</p>
+                  <p className="text-sm font-mono">{stock.price.toFixed(1)}</p>
                   <p className={`text-[10px] font-mono ${stock.change >= 0 ? 'ticker-green' : 'ticker-red'}`}>
                     {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
                   </p>
