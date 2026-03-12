@@ -100,11 +100,12 @@ export default function Dashboard() {
   const dailyPnLPct = 0.44;
 
   const allocationData = [
-    { name: language === 'vi' ? 'Cổ phiếu Mỹ' : 'US Stocks', value: 45, color: 'hsl(185, 80%, 50%)' },
-    { name: 'Crypto', value: 20, color: 'hsl(270, 70%, 60%)' },
-    { name: language === 'vi' ? 'Trái phiếu' : 'Bonds', value: 15, color: 'hsl(142, 76%, 45%)' },
-    { name: language === 'vi' ? 'Hàng hóa' : 'Commodities', value: 10, color: 'hsl(38, 92%, 55%)' },
-    { name: language === 'vi' ? 'Tiền mặt' : 'Cash', value: 10, color: 'hsl(215, 15%, 50%)' },
+    { name: language === 'vi' ? 'Cổ phiếu VN' : 'VN Stocks', value: 40, color: 'hsl(0, 72%, 55%)' },
+    { name: language === 'vi' ? 'Cổ phiếu Mỹ' : 'US Stocks', value: 25, color: 'hsl(185, 80%, 50%)' },
+    { name: 'Crypto', value: 15, color: 'hsl(270, 70%, 60%)' },
+    { name: language === 'vi' ? 'Trái phiếu' : 'Bonds', value: 10, color: 'hsl(142, 76%, 45%)' },
+    { name: language === 'vi' ? 'Hàng hóa' : 'Commodities', value: 5, color: 'hsl(38, 92%, 55%)' },
+    { name: language === 'vi' ? 'Tiền mặt' : 'Cash', value: 5, color: 'hsl(215, 15%, 50%)' },
   ];
 
   const performanceData = Array.from({ length: 90 }, (_, i) => ({
