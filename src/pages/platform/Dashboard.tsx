@@ -198,7 +198,7 @@ export default function Dashboard() {
       {/* Market Tickers */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="quant-card">
-          <p className="stat-label mb-3">{language === 'vi' ? 'Thị trường cổ phiếu' : 'Equity Markets'}</p>
+         <p className="stat-label mb-3">{language === 'vi' ? 'Thị trường cổ phiếu VN' : 'VN Equity Markets'}</p>
           <div className="space-y-2">
             {stockData.map((stock) => (
               <div key={stock.symbol} className="flex items-center justify-between">
@@ -207,7 +207,7 @@ export default function Dashboard() {
                   <MiniSparkline data={stock.closes} color={stock.change >= 0 ? TICKER_COLORS.up : TICKER_COLORS.down} />
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-mono">${stock.price.toFixed(2)}</p>
+                  <p className="text-sm font-mono">{stock.price.toFixed(1)}</p>
                   <p className={`text-[10px] font-mono ${stock.change >= 0 ? 'ticker-green' : 'ticker-red'}`}>
                     {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
                   </p>
