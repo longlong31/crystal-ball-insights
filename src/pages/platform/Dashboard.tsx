@@ -56,14 +56,26 @@ export default function Dashboard() {
   const { data: globalData } = useCryptoGlobal();
 
   const stockData = useMemo(() => {
-    const stocks = ['AAPL', 'GOOGL', 'MSFT', 'NVDA', 'TSLA', 'AMZN'];
+    const stocks = [
+      { symbol: 'VCB.VN', label: 'VCB', base: 88 },
+      { symbol: 'FPT.VN', label: 'FPT', base: 125 },
+      { symbol: 'HPG.VN', label: 'HPG', base: 27 },
+      { symbol: 'VNM.VN', label: 'VNM', base: 72 },
+      { symbol: 'MWG.VN', label: 'MWG', base: 55 },
+      { symbol: 'TCB.VN', label: 'TCB', base: 35 },
+      { symbol: 'VIC.VN', label: 'VIC', base: 42 },
+      { symbol: 'SSI.VN', label: 'SSI', base: 32 },
+    ];
     return stocks.map(s => {
-      const data = generateSampleStockData(s, 90);
+      const data = generateSampleStockData(s.symbol, 90);
       const closes = data.map(d => d.close);
-      const lastPrice = closes[closes.length - 1];
-      const prevPrice = closes[closes.length - 2];
+      // Scale to realistic VN price range (x1000 VND)
+      const scale = s.base / (closes[0] || 100);
+      const scaledCloses = closes.map(c => +(c * scale).toFixed(1));
+      const lastPrice = scaledCloses[scaledCloses.length - 1];
+      const prevPrice = scaledCloses[scaledCloses.length - 2];
       const change = ((lastPrice - prevPrice) / prevPrice) * 100;
-      return { symbol: s, price: lastPrice, change, closes };
+      return { symbol: s.label, price: lastPrice, change, closes: scaledCloses, isVN: true };
     });
   }, []);
 
