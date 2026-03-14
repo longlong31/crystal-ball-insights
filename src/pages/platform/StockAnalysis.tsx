@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, ScatterChart, Scatter, CartesianGrid, Cell } from "recharts";
 import { calculateRSI, calculateMACD, calculateEMA, calculateSMA, calculateBollingerBands, calculateVolatility, calculateBeta, calculateSharpeRatio, calculateMaxDrawdown, calculateVaR, calculateCVaR } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
