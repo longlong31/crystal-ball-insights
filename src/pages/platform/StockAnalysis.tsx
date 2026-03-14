@@ -704,12 +704,33 @@ function FinancialTable({ data, fields, title }: { data: any[]; fields: Record<s
   );
 }
 
+const CATEGORY_KEYS = Object.keys(STOCK_CATEGORIES);
+
+const SECTOR_ICONS: Record<string, string> = {
+  "🇻🇳 VN30 Blue-chips": "🏆",
+  "🇻🇳 VN Ngân hàng": "🏦",
+  "🇻🇳 VN Bất động sản": "🏗️",
+  "🇻🇳 VN Chứng khoán": "📈",
+  "🇻🇳 VN Công nghệ": "💻",
+  "🇻🇳 VN Sản xuất & Vật liệu": "🏭",
+  "🇻🇳 VN Năng lượng & Dầu khí": "⚡",
+  "🇻🇳 VN Tiêu dùng & Thực phẩm": "🛒",
+  "🇺🇸 US Tech": "🇺🇸",
+  "🇺🇸 US Finance & Healthcare": "💊",
+  "🇺🇸 US Industrial & Consumer": "🏭",
+  "🇪🇺 Europe": "🇪🇺",
+  "🌏 Asia & Emerging": "🌏",
+  "📈 ETFs & Indices": "📊",
+};
+
 export default function StockAnalysis() {
   const [selected, setSelected] = useState('VNM.VN');
   const [historyRange, setHistoryRange] = useState('1y');
   const [searchTerm, setSearchTerm] = useState('');
   const [customSymbol, setCustomSymbol] = useState('');
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showScreener, setShowScreener] = useState(false);
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
