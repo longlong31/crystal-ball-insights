@@ -790,15 +790,22 @@ export default function StockAnalysis() {
   }, [selected, quote, analysis, stats, financials]);
 
   const filteredStocks = useMemo(() => {
-    if (!searchTerm) return STOCK_CATEGORIES;
     const term = searchTerm.toLowerCase();
     const result: typeof STOCK_CATEGORIES = {} as any;
     for (const [cat, stocks] of Object.entries(STOCK_CATEGORIES)) {
-      const filtered = stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term));
+      if (selectedCategory !== 'all' && cat !== selectedCategory) continue;
+      const filtered = term
+        ? stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term))
+        : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
     }
     return result;
-  }, [searchTerm]);
+  }, [searchTerm, selectedCategory]);
+
+  const totalFilteredCount = useMemo(() =>
+    Object.values(filteredStocks).reduce((sum, arr) => sum + arr.length, 0),
+    [filteredStocks]
+  );
 
   const bctcLinks = useMemo(() => getBCTCLinks(selected), [selected]);
   const isLoading = quoteLoading || historyLoading;
