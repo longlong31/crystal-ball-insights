@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, ScatterChart, Scatter, CartesianGrid, Cell } from "recharts";
 import { calculateRSI, calculateMACD, calculateEMA, calculateSMA, calculateBollingerBands, calculateVolatility, calculateBeta, calculateSharpeRatio, calculateMaxDrawdown, calculateVaR, calculateCVaR } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -704,12 +704,33 @@ function FinancialTable({ data, fields, title }: { data: any[]; fields: Record<s
   );
 }
 
+const CATEGORY_KEYS = Object.keys(STOCK_CATEGORIES);
+
+const SECTOR_ICONS: Record<string, string> = {
+  "🇻🇳 VN30 Blue-chips": "🏆",
+  "🇻🇳 VN Ngân hàng": "🏦",
+  "🇻🇳 VN Bất động sản": "🏗️",
+  "🇻🇳 VN Chứng khoán": "📈",
+  "🇻🇳 VN Công nghệ": "💻",
+  "🇻🇳 VN Sản xuất & Vật liệu": "🏭",
+  "🇻🇳 VN Năng lượng & Dầu khí": "⚡",
+  "🇻🇳 VN Tiêu dùng & Thực phẩm": "🛒",
+  "🇺🇸 US Tech": "🇺🇸",
+  "🇺🇸 US Finance & Healthcare": "💊",
+  "🇺🇸 US Industrial & Consumer": "🏭",
+  "🇪🇺 Europe": "🇪🇺",
+  "🌏 Asia & Emerging": "🌏",
+  "📈 ETFs & Indices": "📊",
+};
+
 export default function StockAnalysis() {
   const [selected, setSelected] = useState('VNM.VN');
   const [historyRange, setHistoryRange] = useState('1y');
   const [searchTerm, setSearchTerm] = useState('');
   const [customSymbol, setCustomSymbol] = useState('');
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showScreener, setShowScreener] = useState(false);
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
@@ -769,15 +790,22 @@ export default function StockAnalysis() {
   }, [selected, quote, analysis, stats, financials]);
 
   const filteredStocks = useMemo(() => {
-    if (!searchTerm) return STOCK_CATEGORIES;
     const term = searchTerm.toLowerCase();
     const result: typeof STOCK_CATEGORIES = {} as any;
     for (const [cat, stocks] of Object.entries(STOCK_CATEGORIES)) {
-      const filtered = stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term));
+      if (selectedCategory !== 'all' && cat !== selectedCategory) continue;
+      const filtered = term
+        ? stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term))
+        : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
     }
     return result;
-  }, [searchTerm]);
+  }, [searchTerm, selectedCategory]);
+
+  const totalFilteredCount = useMemo(() =>
+    Object.values(filteredStocks).reduce((sum, arr) => sum + arr.length, 0),
+    [filteredStocks]
+  );
 
   const bctcLinks = useMemo(() => getBCTCLinks(selected), [selected]);
   const isLoading = quoteLoading || historyLoading;
@@ -795,60 +823,26 @@ export default function StockAnalysis() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Stock Info Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-56">
-              <Select value={selected} onValueChange={(v) => { setSelected(v); setCustomSymbol(''); }}>
-                <SelectTrigger className="bg-card border-border/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-80">
-                  <div className="p-2 sticky top-0 bg-popover z-10">
-                    <Input placeholder="Tìm mã CK (VN, US, EU, Asia)..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-8 text-xs" />
-                  </div>
-                  {Object.entries(filteredStocks).map(([category, stocks]) => (
-                    <div key={category}>
-                      <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{category}</div>
-                      {stocks.map(s => (
-                        <SelectItem key={s.symbol} value={s.symbol}>
-                          <span className="font-mono font-medium">{s.symbol}</span>
-                          <span className="text-muted-foreground ml-2 text-xs">{s.name}</span>
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <span className="text-xs text-muted-foreground">hoặc</span>
-            <form onSubmit={(e) => { e.preventDefault(); const sym = customSymbol.trim().toUpperCase(); if (sym) setSelected(sym); }} className="flex items-center gap-1">
-              <Input
-                placeholder="Nhập mã bất kỳ (VD: TSLA, 005930.KS)"
-                value={customSymbol}
-                onChange={(e) => setCustomSymbol(e.target.value)}
-                className="h-9 w-52 text-xs font-mono bg-card border-border/30"
-              />
-              <Button type="submit" size="sm" variant="secondary" disabled={!customSymbol.trim()}>
-                <Search className="w-3.5 h-3.5" />
-              </Button>
-            </form>
-          </div>
           <div>
             {quote ? (
               <>
-                <h1 className="text-xl font-semibold">{quote.name}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-semibold">{quote.name}</h1>
+                  <span className="font-mono text-sm text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{selected}</span>
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                </div>
                 <p className="text-xs text-muted-foreground">{quote.sector} · {quote.industry} · {quote.country} · {quote.marketCap}</p>
               </>
             ) : (
               <div className="space-y-1">
-                <div className="h-5 w-32 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-5 w-48 bg-muted animate-pulse rounded" />
+                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
               </div>
             )}
           </div>
-          {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-baseline gap-3">
@@ -877,6 +871,130 @@ export default function StockAnalysis() {
           </div>
         </div>
       </div>
+
+      {/* Stock Screener Panel */}
+      <div className="quant-card space-y-3">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowScreener(!showScreener)}
+            className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span>Bộ lọc & Tìm kiếm cổ phiếu</span>
+            <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">{totalFilteredCount} mã</span>
+            {showScreener ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
+          <form onSubmit={(e) => { e.preventDefault(); const sym = customSymbol.trim().toUpperCase(); if (sym) { setSelected(sym); setShowScreener(false); } }} className="flex items-center gap-1">
+            <Input
+              placeholder="Nhập mã bất kỳ (VD: TSLA, SAB.VN)"
+              value={customSymbol}
+              onChange={(e) => setCustomSymbol(e.target.value)}
+              className="h-8 w-48 text-xs font-mono bg-background border-border/30"
+            />
+            <Button type="submit" size="sm" variant="secondary" disabled={!customSymbol.trim()} className="h-8">
+              <Search className="w-3.5 h-3.5" />
+            </Button>
+          </form>
+        </div>
+
+        {showScreener && (
+          <div className="space-y-3 pt-2 border-t border-border/20">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm nhanh theo mã hoặc tên công ty..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-9 text-sm bg-background border-border/30"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
+                </button>
+              )}
+            </div>
+
+            {/* Sector Filter Chips */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                  selectedCategory === 'all'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                }`}
+              >
+                Tất cả ({ALL_STOCKS.length})
+              </button>
+              {CATEGORY_KEYS.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(selectedCategory === cat ? 'all' : cat)}
+                  className={`px-3 py-1.5 text-xs rounded-full font-medium transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  }`}
+                >
+                  {SECTOR_ICONS[cat] || '📋'} {cat.replace(/^[🇻🇳🇺🇸🇪🇺🌏📈]\s?/, '').replace(/^VN\s/, '')}
+                </button>
+              ))}
+            </div>
+
+            {/* Stock Grid */}
+            <div className="max-h-64 overflow-y-auto space-y-3 pr-1">
+              {Object.entries(filteredStocks).map(([category, stocks]) => (
+                <div key={category}>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 sticky top-0 bg-card/95 backdrop-blur-sm py-1 z-10">
+                    {category} ({stocks.length})
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+                    {stocks.map(s => (
+                      <button
+                        key={s.symbol}
+                        onClick={() => { setSelected(s.symbol); setCustomSymbol(''); setShowScreener(false); }}
+                        className={`flex flex-col items-start p-2 rounded-md text-left transition-all border ${
+                          selected === s.symbol
+                            ? 'bg-primary/10 border-primary/40 shadow-sm'
+                            : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:border-border/30'
+                        }`}
+                      >
+                        <span className="font-mono text-xs font-semibold">{s.symbol.replace('.VN', '')}</span>
+                        <span className="text-[10px] text-muted-foreground truncate w-full">{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {totalFilteredCount === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Không tìm thấy mã cổ phiếu nào phù hợp
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Fundamental Quick Filters (P/E, Market Cap info from current stock) */}
+      {quote && (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'P/E', value: quote.pe, fmt: (v: number) => v > 0 ? v.toFixed(1) : 'N/A', color: quote.pe > 0 && quote.pe < 15 ? 'ticker-green' : quote.pe > 30 ? 'ticker-red' : '' },
+            { label: 'P/B', value: quote.pb, fmt: (v: number) => v > 0 ? v.toFixed(2) : 'N/A', color: quote.pb > 0 && quote.pb < 1.5 ? 'ticker-green' : quote.pb > 3 ? 'ticker-red' : '' },
+            { label: 'ROE', value: quote.roe, fmt: (v: number) => `${v.toFixed(1)}%`, color: quote.roe > 15 ? 'ticker-green' : quote.roe < 5 ? 'ticker-red' : '' },
+            { label: 'D/E', value: quote.deRatio, fmt: (v: number) => v.toFixed(2), color: quote.deRatio < 1 ? 'ticker-green' : quote.deRatio > 2 ? 'ticker-red' : '' },
+            { label: 'Div Yield', value: quote.divYield, fmt: (v: number) => `${v.toFixed(2)}%`, color: quote.divYield > 3 ? 'ticker-green' : '' },
+            { label: 'Vốn hóa', value: 0, fmt: () => quote.marketCap || 'N/A', color: '' },
+          ].map(item => (
+            <div key={item.label} className="flex items-center gap-1.5 bg-muted/30 rounded-md px-2.5 py-1.5 border border-border/20">
+              <span className="text-[10px] text-muted-foreground">{item.label}</span>
+              <span className={`text-xs font-mono font-medium ${item.color}`}>{item.fmt(item.value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Quick Stats */}
       {quote && (
