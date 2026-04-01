@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Brain, Sparkles, Loader2, Send, TrendingUp, AlertTriangle, Lightbulb, BarChart3 } from "lucide-react";
+import { Brain, Sparkles, Loader2, Send, TrendingUp, AlertTriangle, Lightbulb, BarChart3, Newspaper, Target, Eye, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
