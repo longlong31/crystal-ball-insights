@@ -49,11 +49,12 @@ import { Button } from "@/components/ui/button";
 import { CreatorInfo } from "@/components/CreatorInfo";
 import { QuantPlatformGuide } from "@/components/QuantPlatformGuide";
 
-type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
+type SectionId = 'overview' | 'platform' | 'methodology' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const sections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen },
   { id: 'platform', label: 'Nền tảng Quant', icon: Cpu },
+  { id: 'methodology', label: 'Phương pháp nghiên cứu', icon: Activity },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3 },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5 },
