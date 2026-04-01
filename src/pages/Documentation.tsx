@@ -27,11 +27,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
+type SectionId = 'overview' | 'platform' | 'methodology' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const tocSections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen, description: 'Giới thiệu Crystal Ball' },
   { id: 'platform', label: 'Nền tảng Quant', icon: Cpu, description: '5 mô-đun phân tích chuyên sâu' },
+  { id: 'methodology', label: 'Phương pháp nghiên cứu', icon: Activity, description: 'Quy trình & Input/Output' },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp, description: 'NPV, IRR, DPP, DSCR' },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3, description: 'Tornado, Spider, Ma trận' },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5, description: 'Mô phỏng xác suất' },

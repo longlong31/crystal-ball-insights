@@ -568,7 +568,12 @@ export const ProjectDocumentation = () => {
           </GlassCard>
         </section>
 
-        {/* Section: Financial Metrics */}
+        {/* Section: Research Methodology */}
+        <section id="methodology">
+          <ResearchMethodology />
+        </section>
+
+
         <section id="metrics">
           <GlassCard delay={0.1}>
             <div className="flex items-center gap-4 mb-6">
