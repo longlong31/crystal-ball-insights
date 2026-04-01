@@ -48,12 +48,14 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CreatorInfo } from "@/components/CreatorInfo";
 import { QuantPlatformGuide } from "@/components/QuantPlatformGuide";
+import { ResearchMethodology } from "@/components/ResearchMethodology";
 
-type SectionId = 'overview' | 'platform' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
+type SectionId = 'overview' | 'platform' | 'methodology' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
 const sections = [
   { id: 'overview', label: 'Tổng quan', icon: BookOpen },
   { id: 'platform', label: 'Nền tảng Quant', icon: Cpu },
+  { id: 'methodology', label: 'Phương pháp nghiên cứu', icon: Activity },
   { id: 'metrics', label: 'Chỉ số tài chính', icon: TrendingUp },
   { id: 'sensitivity', label: 'Phân tích độ nhạy', icon: BarChart3 },
   { id: 'montecarlo', label: 'Monte Carlo', icon: Dice5 },
@@ -141,6 +143,7 @@ const MetricBadge = ({ value, label, trend }: { value: string; label: string; tr
 const searchableContent = [
   { id: 'overview', keywords: ['tổng quan', 'crystal ball', 'công cụ', 'phân tích', 'đầu tư', 'tài chính', 'overview'] },
   { id: 'platform', keywords: ['nền tảng', 'quant', 'stock', 'crypto', 'portfolio', 'risk', 'ai', 'cổ phiếu', 'tiền mã hóa', 'danh mục'] },
+  { id: 'methodology', keywords: ['phương pháp', 'nghiên cứu', 'methodology', 'quy trình', 'input', 'output', 'flow', 'dữ liệu', 'thu thập', 'xử lý'] },
   { id: 'metrics', keywords: ['npv', 'irr', 'dpp', 'dscr', 'giá trị hiện tại', 'hoàn vốn', 'chỉ số', 'tỷ suất', 'chiết khấu', 'metrics'] },
   { id: 'sensitivity', keywords: ['độ nhạy', 'tornado', 'spider', 'ma trận', 'biến đổi', 'sensitivity'] },
   { id: 'montecarlo', keywords: ['monte carlo', 'mô phỏng', 'xác suất', 'phân phối', 'rủi ro', 'simulation'] },
@@ -565,7 +568,12 @@ export const ProjectDocumentation = () => {
           </GlassCard>
         </section>
 
-        {/* Section: Financial Metrics */}
+        {/* Section: Research Methodology */}
+        <section id="methodology">
+          <ResearchMethodology />
+        </section>
+
+
         <section id="metrics">
           <GlassCard delay={0.1}>
             <div className="flex items-center gap-4 mb-6">
