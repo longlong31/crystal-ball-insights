@@ -16,7 +16,8 @@ import { useState, useEffect } from "react";
   PanelLeft,
   ChevronRight,
   Cpu,
-  User
+  User,
+  Activity
 } from "lucide-react";
 import { ProjectDocumentation } from "@/components/ProjectDocumentation";
 import { Footer } from "@/components/Footer";
