@@ -142,6 +142,7 @@ const MetricBadge = ({ value, label, trend }: { value: string; label: string; tr
 const searchableContent = [
   { id: 'overview', keywords: ['tổng quan', 'crystal ball', 'công cụ', 'phân tích', 'đầu tư', 'tài chính', 'overview'] },
   { id: 'platform', keywords: ['nền tảng', 'quant', 'stock', 'crypto', 'portfolio', 'risk', 'ai', 'cổ phiếu', 'tiền mã hóa', 'danh mục'] },
+  { id: 'methodology', keywords: ['phương pháp', 'nghiên cứu', 'methodology', 'quy trình', 'input', 'output', 'flow', 'dữ liệu', 'thu thập', 'xử lý'] },
   { id: 'metrics', keywords: ['npv', 'irr', 'dpp', 'dscr', 'giá trị hiện tại', 'hoàn vốn', 'chỉ số', 'tỷ suất', 'chiết khấu', 'metrics'] },
   { id: 'sensitivity', keywords: ['độ nhạy', 'tornado', 'spider', 'ma trận', 'biến đổi', 'sensitivity'] },
   { id: 'montecarlo', keywords: ['monte carlo', 'mô phỏng', 'xác suất', 'phân phối', 'rủi ro', 'simulation'] },
