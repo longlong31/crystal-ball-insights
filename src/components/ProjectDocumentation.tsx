@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { CreatorInfo } from "@/components/CreatorInfo";
 import { QuantPlatformGuide } from "@/components/QuantPlatformGuide";
+import { ResearchMethodology } from "@/components/ResearchMethodology";
 
 type SectionId = 'overview' | 'platform' | 'methodology' | 'metrics' | 'sensitivity' | 'montecarlo' | 'guide' | 'glossary' | 'examples' | 'best-practices' | 'faq' | 'standards' | 'references' | 'version' | 'founder';
 
