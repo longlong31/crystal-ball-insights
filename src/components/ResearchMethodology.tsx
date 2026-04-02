@@ -61,6 +61,169 @@ const IOBox = ({ type, items, color }: { type: 'input' | 'output'; items: string
   </div>
 );
 
+const MermaidFlowchart = ({ chart, title }: { chart: string; title: string }) => (
+  <div className="p-4 rounded-xl bg-muted/10 border border-border/30 mt-4">
+    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">📊 Flowchart: {title}</div>
+    <div className="overflow-x-auto">
+      <div className="flex flex-col items-center gap-1 min-w-[300px]">
+        {chart.split('\n').map((line, i) => {
+          const trimmed = line.trim();
+          if (!trimmed) return null;
+          
+          // Parse node types
+          if (trimmed.startsWith('-->')) {
+            return (
+              <div key={i} className="flex flex-col items-center">
+                <div className="w-px h-5 bg-primary/40" />
+                <ArrowRight className="w-4 h-4 text-primary/60 rotate-90" />
+                <div className="w-px h-5 bg-primary/40" />
+              </div>
+            );
+          }
+          
+          // Decision node (diamond)
+          if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+            const text = trimmed.slice(1, -1);
+            return (
+              <div key={i} className="relative">
+                <div className="rotate-45 w-24 h-24 border-2 border-yellow-500/40 bg-yellow-500/10 flex items-center justify-center">
+                  <span className="-rotate-45 text-[10px] font-medium text-yellow-400 text-center px-1">{text}</span>
+                </div>
+              </div>
+            );
+          }
+          
+          // Process node (rectangle)
+          const isStart = trimmed.startsWith('[START]');
+          const isEnd = trimmed.startsWith('[END]');
+          const bgColor = isStart ? 'bg-green-500/15 border-green-500/40 text-green-400' 
+            : isEnd ? 'bg-red-500/15 border-red-500/40 text-red-400'
+            : 'bg-primary/10 border-primary/30 text-foreground';
+          
+          return (
+            <div key={i} className={cn(
+              "px-4 py-2.5 rounded-lg border text-xs font-medium text-center max-w-[280px]",
+              bgColor
+            )}>
+              {trimmed.replace('[START]', '').replace('[END]', '').trim()}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+);
+
+const FLOWCHARTS: Record<string, string> = {
+  "Phân tích Cổ phiếu (Stock Analysis)": `[START] Nhập mã cổ phiếu
+-->
+Fetch OHLCV từ Yahoo Finance API
+-->
+Tính RSI, MACD, EMA, Bollinger
+-->
+Trích xuất P/E, P/B, ROE, D/E
+-->
+Tính Beta, VaR, CVaR, Max Drawdown
+-->
+Linear Regression & ACF
+-->
+[END] Render biểu đồ & Dashboard`,
+  
+  "Crypto Intelligence": `[START] Chọn Crypto Symbol
+-->
+Fetch Market Data từ CoinGecko
+-->
+Tính Technical Indicators
+-->
+Phân tích BTC Dominance & Volume
+-->
+Tính Volatility & Correlation
+-->
+[END] Heatmap & Sparkline Dashboard`,
+  
+  "Portfolio Optimization": `[START] Chọn 2-8 mã cổ phiếu
+-->
+Fetch lịch sử giá 1Y & Log Returns
+-->
+Tính Covariance Matrix
+-->
+Monte Carlo 15,000 portfolios
+-->
+Xác định Efficient Frontier
+-->
+Áp dụng Weight Constraints
+-->
+[END] Max Sharpe & Min Variance Portfolio`,
+  
+  "Risk Engine (VaR/CVaR)": `[START] Portfolio Holdings & Weights
+-->
+Tính Weighted Portfolio Returns
+-->
+Parametric VaR (Normal dist)
+-->
+Historical VaR (Percentile)
+-->
+CVaR = Mean of losses > VaR
+-->
+Stress Test Scenarios
+-->
+[END] Risk Report & Drawdown Chart`,
+  
+  "AI Insight Layer": `[START] User Prompt / Preset
+-->
+Fetch tin tức RSS & Community Posts
+-->
+Xây dựng AI Context + System Prompt
+-->
+Gửi đến Gemini via AI Gateway
+-->
+Pattern Recognition & Sentiment
+-->
+Dự báo với Confidence Level
+-->
+[END] Streaming Markdown Response`,
+  
+  "NPV/IRR Project Analysis": `[START] Nhập thông số dự án
+-->
+Projection dòng tiền hàng năm
+-->
+Tính WACC từ cấu trúc vốn
+-->
+NPV = Sum(CF / (1+WACC)^t)
+-->
+IRR via Newton-Raphson
+-->
+DSCR & Break-even Analysis
+-->
+[END] PDF/Word Report + AI Analysis`,
+  
+  "Monte Carlo Simulation": `[START] Chọn biến ngẫu nhiên
+-->
+Gán phân phối (Normal/PERT/Tri)
+-->
+Random Sampling (Box-Muller)
+-->
+Lặp N lần: Sample -> NPV/IRR
+-->
+Tính Mean, Std, VaR, CVaR
+-->
+[END] Histogram & CDF & Tornado`,
+  
+  "Sensitivity Analysis (Tornado/Spider)": `[START] Base Case Parameters
+-->
+One-at-a-Time (OAT) Variation
+-->
+Tính NPV/IRR cho mỗi scenario
+-->
+Tornado Ranking theo Impact
+-->
+Two-way Sensitivity Matrix
+-->
+Tìm Switching Values (NPV=0)
+-->
+[END] Tornado & Spider Chart`,
+};
+
 const MethodCard = ({ title, desc, icon: Icon, color, steps, inputs, outputs }: {
   title: string; desc: string; icon: any; color: string;
   steps: { title: string; desc: string; icon: any }[];
@@ -90,6 +253,11 @@ const MethodCard = ({ title, desc, icon: Icon, color, steps, inputs, outputs }: 
         <FlowStep key={i} step={i + 1} title={s.title} desc={s.desc} icon={s.icon} color={color} isLast={i === steps.length - 1} />
       ))}
     </div>
+
+    {/* Mermaid-style Flowchart */}
+    {FLOWCHARTS[title] && (
+      <MermaidFlowchart chart={FLOWCHARTS[title]} title={title} />
+    )}
   </GlassCard>
 );
 

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Plus, MessageSquare, Calendar, FileText, AlertCircle, Newspaper,
-  Sparkles, TrendingUp, Activity, Globe, Zap
+  Sparkles, TrendingUp, Activity, Globe, Zap, BarChart3, Landmark, Building2,
+  Cpu, DollarSign, Fuel, ShoppingCart, Bitcoin
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,11 @@ const statCards = [
 const tabs = [
   { key: "feed", icon: MessageSquare, label: "Bài viết", desc: "Thảo luận cộng đồng" },
   { key: "news", icon: Newspaper, label: "Tin tức", desc: "Cập nhật thị trường" },
+  { key: "stocks", icon: TrendingUp, label: "Cổ phiếu", desc: "Tin tức chứng khoán VN & quốc tế" },
+  { key: "crypto", icon: Bitcoin, label: "Crypto", desc: "Thị trường tiền mã hóa" },
+  { key: "banking", icon: Landmark, label: "Ngân hàng", desc: "Tài chính ngân hàng" },
+  { key: "realestate", icon: Building2, label: "BĐS", desc: "Bất động sản" },
+  { key: "tech", icon: Cpu, label: "Công nghệ", desc: "Công nghệ & Fintech" },
   { key: "events", icon: Calendar, label: "Sự kiện", desc: "Sự kiện & hội thảo" },
   { key: "blogs", icon: FileText, label: "Blog", desc: "Bài viết chuyên sâu" },
 ];
@@ -171,23 +177,23 @@ export default function Community() {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="relative">
-              <TabsList className="w-full flex bg-card/60 backdrop-blur-sm border border-border/30 rounded-xl p-1.5 gap-1 h-auto">
+              <TabsList className="w-full flex flex-wrap bg-card/60 backdrop-blur-sm border border-border/30 rounded-xl p-1.5 gap-1 h-auto">
                 {tabs.map(tab => (
                   <TabsTrigger 
                     key={tab.key} 
                     value={tab.key} 
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-secondary/10 data-[state=active]:border-primary/30 data-[state=active]:border data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all duration-300"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-secondary/10 data-[state=active]:border-primary/30 data-[state=active]:border data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all duration-300"
                   >
-                    <tab.icon className="w-4 h-4" />
+                    <tab.icon className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline font-medium">{tab.label}</span>
                   </TabsTrigger>
                 ))}
                 {isAdmin && (
                   <TabsTrigger 
                     value="admin" 
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg data-[state=active]:bg-destructive/10 data-[state=active]:border-destructive/30 data-[state=active]:border transition-all duration-300"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs data-[state=active]:bg-destructive/10 data-[state=active]:border-destructive/30 data-[state=active]:border transition-all duration-300"
                   >
-                    <AlertCircle className="w-4 h-4" />
+                    <AlertCircle className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline font-medium">Duyệt bài</span>
                   </TabsTrigger>
                 )}
@@ -221,6 +227,26 @@ export default function Community() {
 
                 <TabsContent value="news" className="mt-0">
                   <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="stocks" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="crypto" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="banking" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="realestate" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="tech" className="mt-0">
+                  <NewsFeed category="blog" />
                 </TabsContent>
 
                 <TabsContent value="events" className="mt-0">
