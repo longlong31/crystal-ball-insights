@@ -7,6 +7,7 @@ import { generateSampleStockData, calculateSharpeRatio, calculateMaxDrawdown, ca
 import { useCryptoMarkets, useCryptoGlobal } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
+import { FearGreedGauge } from "@/components/platform/FearGreedGauge";
 
 const TICKER_COLORS = {
   up: "hsl(142, 76%, 45%)",
@@ -148,7 +149,7 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
         <div className="quant-card lg:col-span-2">
           <p className="stat-label mb-3">{language === 'vi' ? 'Hiệu suất danh mục (90 ngày)' : 'Portfolio Performance (90D)'}</p>
           <ResponsiveContainer width="100%" height={220}>
@@ -169,6 +170,9 @@ export default function Dashboard() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+
+        {/* Fear & Greed Gauge */}
+        <FearGreedGauge />
 
         <div className="quant-card">
           <p className="stat-label mb-3">{language === 'vi' ? 'Phân bổ tài sản' : 'Asset Allocation'}</p>
