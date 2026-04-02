@@ -229,6 +229,26 @@ export default function Community() {
                   <NewsFeed category="news" />
                 </TabsContent>
 
+                <TabsContent value="stocks" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="crypto" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="banking" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="realestate" className="mt-0">
+                  <NewsFeed category="news" />
+                </TabsContent>
+
+                <TabsContent value="tech" className="mt-0">
+                  <NewsFeed category="blog" />
+                </TabsContent>
+
                 <TabsContent value="events" className="mt-0">
                   <NewsFeed category="event" />
                 </TabsContent>
