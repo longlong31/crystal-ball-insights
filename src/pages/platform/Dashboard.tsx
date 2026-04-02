@@ -7,6 +7,7 @@ import { generateSampleStockData, calculateSharpeRatio, calculateMaxDrawdown, ca
 import { useCryptoMarkets, useCryptoGlobal } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
+import { FearGreedGauge } from "@/components/platform/FearGreedGauge";
 
 const TICKER_COLORS = {
   up: "hsl(142, 76%, 45%)",
