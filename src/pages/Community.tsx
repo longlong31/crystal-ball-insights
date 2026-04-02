@@ -177,23 +177,23 @@ export default function Community() {
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="relative">
-              <TabsList className="w-full flex bg-card/60 backdrop-blur-sm border border-border/30 rounded-xl p-1.5 gap-1 h-auto">
+              <TabsList className="w-full flex flex-wrap bg-card/60 backdrop-blur-sm border border-border/30 rounded-xl p-1.5 gap-1 h-auto">
                 {tabs.map(tab => (
                   <TabsTrigger 
                     key={tab.key} 
                     value={tab.key} 
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-secondary/10 data-[state=active]:border-primary/30 data-[state=active]:border data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all duration-300"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary/15 data-[state=active]:to-secondary/10 data-[state=active]:border-primary/30 data-[state=active]:border data-[state=active]:shadow-lg data-[state=active]:shadow-primary/5 transition-all duration-300"
                   >
-                    <tab.icon className="w-4 h-4" />
+                    <tab.icon className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline font-medium">{tab.label}</span>
                   </TabsTrigger>
                 ))}
                 {isAdmin && (
                   <TabsTrigger 
                     value="admin" 
-                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg data-[state=active]:bg-destructive/10 data-[state=active]:border-destructive/30 data-[state=active]:border transition-all duration-300"
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs data-[state=active]:bg-destructive/10 data-[state=active]:border-destructive/30 data-[state=active]:border transition-all duration-300"
                   >
-                    <AlertCircle className="w-4 h-4" />
+                    <AlertCircle className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline font-medium">Duyệt bài</span>
                   </TabsTrigger>
                 )}
