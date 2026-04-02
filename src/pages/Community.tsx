@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Plus, MessageSquare, Calendar, FileText, AlertCircle, Newspaper,
-  Sparkles, TrendingUp, Activity, Globe, Zap
+  Sparkles, TrendingUp, Activity, Globe, Zap, BarChart3, Landmark, Building2,
+  Cpu, DollarSign, Fuel, ShoppingCart, Bitcoin
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,11 @@ const statCards = [
 const tabs = [
   { key: "feed", icon: MessageSquare, label: "Bài viết", desc: "Thảo luận cộng đồng" },
   { key: "news", icon: Newspaper, label: "Tin tức", desc: "Cập nhật thị trường" },
+  { key: "stocks", icon: TrendingUp, label: "Cổ phiếu", desc: "Tin tức chứng khoán VN & quốc tế" },
+  { key: "crypto", icon: Bitcoin, label: "Crypto", desc: "Thị trường tiền mã hóa" },
+  { key: "banking", icon: Landmark, label: "Ngân hàng", desc: "Tài chính ngân hàng" },
+  { key: "realestate", icon: Building2, label: "BĐS", desc: "Bất động sản" },
+  { key: "tech", icon: Cpu, label: "Công nghệ", desc: "Công nghệ & Fintech" },
   { key: "events", icon: Calendar, label: "Sự kiện", desc: "Sự kiện & hội thảo" },
   { key: "blogs", icon: FileText, label: "Blog", desc: "Bài viết chuyên sâu" },
 ];
