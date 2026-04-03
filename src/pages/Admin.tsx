@@ -705,6 +705,10 @@ export default function Admin() {
           <TabsContent value="news">
             <NewsManager />
           </TabsContent>
+
+          <TabsContent value="algorithms">
+            <AlgorithmReviewPanel />
+          </TabsContent>
         </Tabs>
       </main>
 
