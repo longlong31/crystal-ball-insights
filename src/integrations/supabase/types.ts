@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      community_algorithms: {
+        Row: {
+          category: string
+          code: string
+          created_at: string
+          description: string
+          description_vi: string
+          id: string
+          name: string
+          name_vi: string
+          params: Json
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["algorithm_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string
+          description_vi?: string
+          id?: string
+          name: string
+          name_vi: string
+          params?: Json
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["algorithm_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string
+          description?: string
+          description_vi?: string
+          id?: string
+          name?: string
+          name_vi?: string
+          params?: Json
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["algorithm_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           content: string
@@ -378,6 +426,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
+      algorithm_status: "pending" | "approved" | "rejected"
       app_role: "admin" | "user"
       post_status: "pending" | "approved" | "rejected"
       post_type: "discussion" | "blog" | "event"
@@ -508,6 +557,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      algorithm_status: ["pending", "approved", "rejected"],
       app_role: ["admin", "user"],
       post_status: ["pending", "approved", "rejected"],
       post_type: ["discussion", "blog", "event"],

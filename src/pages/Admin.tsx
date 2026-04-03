@@ -53,11 +53,13 @@ import {
   Sparkles,
   Bot,
   MessageSquare,
-  Newspaper
+  Newspaper,
+  FlaskConical
 } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
 import { ChatbotQAManager } from "@/components/admin/ChatbotQAManager";
+import { AlgorithmReviewPanel } from "@/components/admin/AlgorithmReviewPanel";
 import { NewsManager } from "@/components/admin/NewsManager";
 
 interface UserWithRole {
@@ -320,6 +322,10 @@ export default function Admin() {
             <TabsTrigger value="news" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
               <Newspaper className="w-4 h-4" />
               Tin tức / Sự kiện
+            </TabsTrigger>
+            <TabsTrigger value="algorithms" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
+              <FlaskConical className="w-4 h-4" />
+              Mô hình
             </TabsTrigger>
           </TabsList>
 
@@ -698,6 +704,10 @@ export default function Admin() {
 
           <TabsContent value="news">
             <NewsManager />
+          </TabsContent>
+
+          <TabsContent value="algorithms">
+            <AlgorithmReviewPanel />
           </TabsContent>
         </Tabs>
       </main>

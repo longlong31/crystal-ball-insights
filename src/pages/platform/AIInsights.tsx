@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Brain, Sparkles, Loader2, Send, TrendingUp, AlertTriangle, Lightbulb, BarChart3 } from "lucide-react";
+import { Brain, Sparkles, Loader2, Send, TrendingUp, AlertTriangle, Lightbulb, BarChart3, Newspaper, Target, Eye, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
@@ -15,10 +15,14 @@ interface Insight {
 }
 
 const PRESET_PROMPTS = [
-  { icon: TrendingUp, label: 'Market Outlook', prompt: 'Analyze the current market conditions and provide a detailed outlook for US equities and crypto markets for the next quarter. Include key risk factors and opportunities.' },
-  { icon: AlertTriangle, label: 'Risk Assessment', prompt: 'Perform a comprehensive risk assessment of a diversified portfolio containing US tech stocks (AAPL, MSFT, NVDA) and crypto (BTC, ETH). Identify tail risks and recommend hedging strategies.' },
-  { icon: Lightbulb, label: 'Allocation Strategy', prompt: 'Suggest an optimal asset allocation strategy for a moderate risk tolerance investor with $500K. Consider current market valuations, interest rates, and macro trends.' },
-  { icon: BarChart3, label: 'Anomaly Detection', prompt: 'Identify potential market anomalies and unusual patterns in current market data. Look for divergences between price action, volume, and fundamental indicators.' },
+  { icon: Newspaper, label: 'Dự báo từ Tin tức', prompt: 'Dựa trên tin tức tài chính mới nhất trong hệ thống, hãy phân tích sentiment tổng thể của thị trường. Đưa ra dự báo xu hướng ngắn hạn (1-2 tuần) và trung hạn (1-3 tháng) cho thị trường chứng khoán VN và crypto. Bao gồm: sentiment score, các tín hiệu bullish/bearish từ tin tức, xác suất các kịch bản, và khuyến nghị hành động cụ thể.' },
+  { icon: Eye, label: 'Phát hiện Cơ hội', prompt: 'Phân tích tin tức và dữ liệu hiện tại để phát hiện các cơ hội đầu tư tiềm năng. Tìm kiếm: (1) Ngành/cổ phiếu được hưởng lợi từ chính sách mới, (2) Tín hiệu tích lũy từ tin tức, (3) Divergence giữa tin tức tích cực và giá chưa phản ánh. Đưa ra top 5 cơ hội với mức độ ưu tiên và khung thời gian.' },
+  { icon: TrendingUp, label: 'Market Outlook', prompt: 'Analyze the current market conditions based on latest news and data. Provide a detailed outlook for Vietnamese equities (VN-Index, VN30) and global markets. Include key risk factors, support/resistance levels, and sector rotation signals.' },
+  { icon: AlertTriangle, label: 'Cảnh báo Rủi ro', prompt: 'Dựa trên tin tức và dữ liệu mới nhất, hãy phát hiện các rủi ro tiềm ẩn cho nhà đầu tư: (1) Rủi ro vĩ mô (lạm phát, lãi suất, tỷ giá), (2) Rủi ro ngành (chính sách, cạnh tranh), (3) Black swan scenarios. Đánh giá xác suất xảy ra và mức độ tác động cho từng rủi ro.' },
+  { icon: Lightbulb, label: 'Allocation Strategy', prompt: 'Suggest an optimal asset allocation strategy for a moderate risk tolerance investor focusing on Vietnamese market. Consider current news sentiment, market valuations, VN-Index levels, interest rates, and macro trends. Include specific stock/crypto recommendations with entry points.' },
+  { icon: Target, label: 'Dự đoán Giá', prompt: 'Dựa trên phân tích tin tức, sentiment, và dữ liệu kỹ thuật, hãy đưa ra dự đoán giá cho các mã blue-chip VN (VCB, FPT, HPG, VNM, MWG) trong 1 tháng tới. Với mỗi mã: target price, support/resistance, xác suất tăng/giảm, và catalyst chính từ tin tức.' },
+  { icon: Zap, label: 'Phân tích Nhanh', prompt: 'Tóm tắt nhanh tình hình thị trường hôm nay dựa trên tin tức mới nhất. Format: (1) Top 3 tin tức quan trọng nhất, (2) Sentiment tổng thể (Bullish/Neutral/Bearish), (3) Khuyến nghị hành động trong ngày, (4) Mã cổ phiếu cần theo dõi.' },
+  { icon: BarChart3, label: 'Anomaly Detection', prompt: 'Identify potential market anomalies and unusual patterns from current news and data. Look for divergences between news sentiment and price action, unusual volume patterns, and emerging trends that the market may not have priced in yet.' },
 ];
 
 export default function AIInsights() {
@@ -130,7 +134,7 @@ export default function AIInsights() {
       </div>
 
       {/* Preset Prompts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto">
         {PRESET_PROMPTS.map((p) => (
           <button
             key={p.label}
