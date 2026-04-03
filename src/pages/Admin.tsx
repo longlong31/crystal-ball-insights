@@ -53,11 +53,13 @@ import {
   Sparkles,
   Bot,
   MessageSquare,
-  Newspaper
+  Newspaper,
+  FlaskConical
 } from "lucide-react";
 import { CrystalBallIcon } from "@/components/CrystalBallIcon";
 import { Footer } from "@/components/Footer";
 import { ChatbotQAManager } from "@/components/admin/ChatbotQAManager";
+import { AlgorithmReviewPanel } from "@/components/admin/AlgorithmReviewPanel";
 import { NewsManager } from "@/components/admin/NewsManager";
 
 interface UserWithRole {
