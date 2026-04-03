@@ -20,7 +20,6 @@ interface AlgorithmParam {
   step?: number;
   unit?: string;
   description?: string;
-  unit?: string;
 }
 
 interface AlgorithmResult {
@@ -33,7 +32,7 @@ interface Algorithm {
   id: string;
   name: string;
   nameVi: string;
-  category: "financial" | "optimization" | "ml";
+  category: string;
   icon: any;
   params: AlgorithmParam[];
   run: (params: Record<string, number>) => AlgorithmResult;
