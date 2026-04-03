@@ -321,6 +321,10 @@ export default function Admin() {
               <Newspaper className="w-4 h-4" />
               Tin tức / Sự kiện
             </TabsTrigger>
+            <TabsTrigger value="algorithms" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary gap-2">
+              <FlaskConical className="w-4 h-4" />
+              Mô hình
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
