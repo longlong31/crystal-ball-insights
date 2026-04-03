@@ -19,6 +19,8 @@ interface AlgorithmParam {
   max?: number;
   step?: number;
   unit?: string;
+  description?: string;
+  unit?: string;
 }
 
 interface AlgorithmResult {
