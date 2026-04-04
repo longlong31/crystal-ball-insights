@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { Footer } from "@/components/Footer";
@@ -10,12 +10,14 @@ import { SimulationCard } from "@/components/SimulationCard";
 import {
   FlaskConical, Play, RotateCcw, Brain, Settings2,
   ArrowRight, ChevronDown, ChevronUp, BarChart3,
-  GitBranch, Download, Workflow
+  GitBranch, Download, Workflow, FileText, FileSpreadsheet
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PipelineBuilder } from "@/components/PipelineBuilder";
 import { AlgorithmContributeForm } from "@/components/AlgorithmContributeForm";
 import { algorithms, categoryInfo, type Algorithm, type AlgorithmResult } from "@/lib/algorithmRegistry";
+import { exportAlgorithmPDF, exportAlgorithmExcel } from "@/lib/algorithmExporter";
+import html2canvas from "html2canvas";
 
 // ─── Page Component ───────────────────────────────────────────────
 const AlgorithmLab = () => {
@@ -31,6 +33,22 @@ const AlgorithmLab = () => {
   const [result, setResult] = useState<AlgorithmResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = useCallback(async () => {
+    let chartImage: string | null = null;
+    if (chartRef.current) {
+      try {
+        const canvas = await html2canvas(chartRef.current, { backgroundColor: null });
+        chartImage = canvas.toDataURL("image/png");
+      } catch { /* skip */ }
+    }
+    if (result) exportAlgorithmPDF(selectedAlgo, params, result, chartImage);
+  }, [selectedAlgo, params, result]);
+
+  const handleExportExcel = useCallback(() => {
+    if (result) exportAlgorithmExcel(selectedAlgo, params, result);
+  }, [selectedAlgo, params, result]);
 
   const filteredAlgos = useMemo(() =>
     selectedCategory === "all" ? algorithms : algorithms.filter(a => a.category === selectedCategory),
@@ -263,9 +281,17 @@ const AlgorithmLab = () => {
                       <div className={`p-2 rounded-lg ${catInfo?.bg || ''} border`}>
                         <Icon className={`w-5 h-5 ${catInfo?.color || ''}`} />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h2 className="font-bold text-lg">{language === "vi" ? selectedAlgo.nameVi : selectedAlgo.name}</h2>
                         <p className="text-xs text-muted-foreground">{language === "vi" ? selectedAlgo.descriptionVi : selectedAlgo.description}</p>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs">
+                          <FileText className="w-3.5 h-3.5" /> PDF
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1.5 text-xs">
+                          <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                        </Button>
                       </div>
                     </div>
 
@@ -288,7 +314,7 @@ const AlgorithmLab = () => {
                         <BarChart3 className="w-4 h-4 text-primary" />
                         {language === "vi" ? "Biểu đồ kết quả" : "Result Chart"}
                       </h3>
-                      <div className="h-64">
+                      <div ref={chartRef} className="h-64">
                         <ResultChart data={result.chartData} />
                       </div>
                     </SimulationCard>
