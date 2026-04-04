@@ -314,7 +314,7 @@ const AlgorithmLab = () => {
                         <BarChart3 className="w-4 h-4 text-primary" />
                         {language === "vi" ? "Biểu đồ kết quả" : "Result Chart"}
                       </h3>
-                      <div className="h-64">
+                      <div ref={chartRef} className="h-64">
                         <ResultChart data={result.chartData} />
                       </div>
                     </SimulationCard>
