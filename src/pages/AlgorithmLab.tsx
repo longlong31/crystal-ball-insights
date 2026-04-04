@@ -10,7 +10,7 @@ import { SimulationCard } from "@/components/SimulationCard";
 import {
   FlaskConical, Play, RotateCcw, Brain, Settings2,
   ArrowRight, ChevronDown, ChevronUp, BarChart3,
-  GitBranch, Download, Workflow
+  GitBranch, Download, Workflow, FileText, FileSpreadsheet
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PipelineBuilder } from "@/components/PipelineBuilder";
