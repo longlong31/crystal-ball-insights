@@ -14,10 +14,10 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PipelineBuilder } from "@/components/PipelineBuilder";
+import { AlgorithmContributeForm } from "@/components/AlgorithmContributeForm";
 import { algorithms, categoryInfo, type Algorithm, type AlgorithmResult } from "@/lib/algorithmRegistry";
 import { exportAlgorithmPDF, exportAlgorithmExcel } from "@/lib/algorithmExporter";
 import html2canvas from "html2canvas";
-import { algorithms, categoryInfo, type Algorithm, type AlgorithmResult } from "@/lib/algorithmRegistry";
 
 // ─── Page Component ───────────────────────────────────────────────
 const AlgorithmLab = () => {
