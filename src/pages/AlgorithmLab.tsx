@@ -33,6 +33,22 @@ const AlgorithmLab = () => {
   const [result, setResult] = useState<AlgorithmResult | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = useCallback(async () => {
+    let chartImage: string | null = null;
+    if (chartRef.current) {
+      try {
+        const canvas = await html2canvas(chartRef.current, { backgroundColor: null });
+        chartImage = canvas.toDataURL("image/png");
+      } catch { /* skip */ }
+    }
+    if (result) exportAlgorithmPDF(selectedAlgo, params, result, chartImage);
+  }, [selectedAlgo, params, result]);
+
+  const handleExportExcel = useCallback(() => {
+    if (result) exportAlgorithmExcel(selectedAlgo, params, result);
+  }, [selectedAlgo, params, result]);
 
   const filteredAlgos = useMemo(() =>
     selectedCategory === "all" ? algorithms : algorithms.filter(a => a.category === selectedCategory),
