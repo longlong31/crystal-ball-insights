@@ -281,9 +281,17 @@ const AlgorithmLab = () => {
                       <div className={`p-2 rounded-lg ${catInfo?.bg || ''} border`}>
                         <Icon className={`w-5 h-5 ${catInfo?.color || ''}`} />
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <h2 className="font-bold text-lg">{language === "vi" ? selectedAlgo.nameVi : selectedAlgo.name}</h2>
                         <p className="text-xs text-muted-foreground">{language === "vi" ? selectedAlgo.descriptionVi : selectedAlgo.description}</p>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <Button variant="outline" size="sm" onClick={handleExportPDF} className="gap-1.5 text-xs">
+                          <FileText className="w-3.5 h-3.5" /> PDF
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-1.5 text-xs">
+                          <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+                        </Button>
                       </div>
                     </div>
 
