@@ -269,12 +269,31 @@ export default function AIInsights() {
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const resp = await fetch(`${supabaseUrl}/functions/v1/ai-market-analysis`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ prompt: inputPrompt }),
-      });
-      if (!resp.ok || !resp.body) throw new Error(`Failed: ${resp.status}`);
+      
+      const doFetch = async (attempt = 1): Promise<Response> => {
+        try {
+          const r = await fetch(`${supabaseUrl}/functions/v1/ai-market-analysis`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+            body: JSON.stringify({ prompt: inputPrompt }),
+          });
+          if (!r.ok) {
+            if (r.status === 429) throw new Error("Hệ thống đang bận, vui lòng thử lại sau ít phút.");
+            if (r.status === 402) throw new Error("Đã hết credits AI. Vui lòng liên hệ admin.");
+            throw new Error(`Lỗi server: ${r.status}`);
+          }
+          return r;
+        } catch (e) {
+          if (attempt < 2 && e instanceof TypeError) {
+            await new Promise(res => setTimeout(res, 1500));
+            return doFetch(attempt + 1);
+          }
+          throw e;
+        }
+      };
+      
+      const resp = await doFetch();
+      if (!resp.body) throw new Error("No response body");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
