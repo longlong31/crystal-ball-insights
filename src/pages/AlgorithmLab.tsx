@@ -10,19 +10,21 @@ import { SimulationCard } from "@/components/SimulationCard";
 import {
   FlaskConical, Play, RotateCcw, Brain, Settings2,
   ArrowRight, ChevronDown, ChevronUp, BarChart3,
-  GitBranch, Download, Workflow, FileText, FileSpreadsheet
+  GitBranch, Download, Workflow, FileText, FileSpreadsheet,
+  Layers
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { PipelineBuilder } from "@/components/PipelineBuilder";
 import { AlgorithmContributeForm } from "@/components/AlgorithmContributeForm";
 import { algorithms, categoryInfo, type Algorithm, type AlgorithmResult } from "@/lib/algorithmRegistry";
 import { exportAlgorithmPDF, exportAlgorithmExcel } from "@/lib/algorithmExporter";
+import { RegressionComparison } from "@/components/RegressionComparison";
 import html2canvas from "html2canvas";
 
 // ─── Page Component ───────────────────────────────────────────────
 const AlgorithmLab = () => {
   const { language } = useLanguage();
-  const [mode, setMode] = useState<"single" | "pipeline">("single");
+  const [mode, setMode] = useState<"single" | "pipeline" | "compare">("single");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedAlgo, setSelectedAlgo] = useState<Algorithm>(algorithms[0]);
   const [params, setParams] = useState<Record<string, number>>(() => {
@@ -134,10 +136,23 @@ const AlgorithmLab = () => {
             <Workflow className="w-4 h-4" />
             Pipeline Builder
           </button>
+          <button
+            onClick={() => setMode("compare")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              mode === "compare"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            {language === "vi" ? "So sánh Hồi quy" : "Regression Compare"}
+          </button>
         </div>
 
         {mode === "pipeline" ? (
           <PipelineBuilder algorithms={algorithms} />
+        ) : mode === "compare" ? (
+          <RegressionComparison />
         ) : (
         <>
         {/* Category filter */}
