@@ -1021,6 +1021,395 @@ function logisticRegression(p: Record<string, number>): AlgorithmResult {
   };
 }
 
+// ─── NEW: Multiple Linear Regression ──────────────────────────────
+function multipleRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, b1, b2, b3 } = p;
+  const xs1: number[] = [], xs2: number[] = [], xs3: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x1 = Math.random() * 10, x2 = Math.random() * 10, x3 = Math.random() * 10;
+    xs1.push(x1); xs2.push(x2); xs3.push(x3);
+    ys.push(5 + b1 * x1 + b2 * x2 + b3 * x3 + boxMuller() * noise);
+  }
+  // OLS via normal equations (simplified for 3 vars)
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  const meanX1 = xs1.reduce((a, b) => a + b, 0) / n;
+  const meanX2 = xs2.reduce((a, b) => a + b, 0) / n;
+  const meanX3 = xs3.reduce((a, b) => a + b, 0) / n;
+  // Simple gradient descent for multiple regression
+  let w1 = 0, w2 = 0, w3 = 0, w0 = 0;
+  const lr = 0.001;
+  for (let epoch = 0; epoch < 1000; epoch++) {
+    let dw0 = 0, dw1 = 0, dw2 = 0, dw3 = 0;
+    for (let i = 0; i < n; i++) {
+      const pred = w0 + w1 * xs1[i] + w2 * xs2[i] + w3 * xs3[i];
+      const err = pred - ys[i];
+      dw0 += err; dw1 += err * xs1[i]; dw2 += err * xs2[i]; dw3 += err * xs3[i];
+    }
+    w0 -= lr * dw0 / n; w1 -= lr * dw1 / n; w2 -= lr * dw2 / n; w3 -= lr * dw3 / n;
+  }
+  const ssRes = ys.reduce((s, y, i) => s + (y - (w0 + w1 * xs1[i] + w2 * xs2[i] + w3 * xs3[i])) ** 2, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const adjR2 = 1 - (1 - r2) * (n - 1) / (n - 4);
+  const rmse = Math.sqrt(ssRes / n);
+  const chartData = [
+    { name: "β₁", value: w1 }, { name: "β₂", value: w2 }, { name: "β₃", value: w3 },
+    { name: "β₁ true", value: b1 }, { name: "β₂ true", value: b2 }, { name: "β₃ true", value: b3 },
+  ];
+  return {
+    outputs: {
+      intercept: { label: "Intercept (β₀)", value: w0.toFixed(4) },
+      w1: { label: "β₁ (ước lượng)", value: w1.toFixed(4) },
+      w2: { label: "β₂ (ước lượng)", value: w2.toFixed(4) },
+      w3: { label: "β₃ (ước lượng)", value: w3.toFixed(4) },
+      r2: { label: "R²", value: r2.toFixed(4) },
+      adjR2: { label: "Adjusted R²", value: adjR2.toFixed(4) },
+      rmse: { label: "RMSE", value: rmse.toFixed(4) },
+    },
+    chartData,
+    interpretation: `Y = ${w0.toFixed(2)} + ${w1.toFixed(3)}X₁ + ${w2.toFixed(3)}X₂ + ${w3.toFixed(3)}X₃. R² = ${r2.toFixed(4)}, Adj R² = ${adjR2.toFixed(4)}. So sánh: β₁(${w1.toFixed(2)} vs ${b1}), β₂(${w2.toFixed(2)} vs ${b2}), β₃(${w3.toFixed(2)} vs ${b3}).`,
+  };
+}
+
+// ─── NEW: Polynomial Regression ───────────────────────────────────
+function polynomialRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, degree, a0, a1, a2 } = p;
+  const deg = Math.min(Math.max(Math.round(degree), 1), 5);
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 6 - 3;
+    xs.push(x);
+    ys.push(a0 + a1 * x + a2 * x * x + boxMuller() * noise);
+  }
+  // Fit polynomial using gradient descent
+  const coeffs = new Array(deg + 1).fill(0);
+  const lr = 0.0001;
+  for (let epoch = 0; epoch < 2000; epoch++) {
+    const grad = new Array(deg + 1).fill(0);
+    for (let i = 0; i < n; i++) {
+      let pred = 0;
+      for (let d = 0; d <= deg; d++) pred += coeffs[d] * Math.pow(xs[i], d);
+      const err = pred - ys[i];
+      for (let d = 0; d <= deg; d++) grad[d] += err * Math.pow(xs[i], d);
+    }
+    for (let d = 0; d <= deg; d++) coeffs[d] -= lr * grad[d] / n;
+  }
+  const predict = (x: number) => coeffs.reduce((s, c, d) => s + c * Math.pow(x, d), 0);
+  const ssRes = ys.reduce((s, y, i) => s + (y - predict(xs[i])) ** 2, 0);
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const adjR2 = 1 - (1 - r2) * (n - 1) / (n - deg - 1);
+  const chartData = xs.map((x, i) => ({ name: x.toFixed(1), value: ys[i] }));
+  const eqParts = coeffs.map((c, d) => d === 0 ? c.toFixed(2) : `${c.toFixed(3)}x${d > 1 ? `^${d}` : ''}`);
+  return {
+    outputs: {
+      equation: { label: "Phương trình", value: eqParts.join(" + ").substring(0, 40) },
+      r2: { label: "R²", value: r2.toFixed(4) },
+      adjR2: { label: "Adjusted R²", value: adjR2.toFixed(4) },
+      rmse: { label: "RMSE", value: Math.sqrt(ssRes / n).toFixed(4) },
+      degree: { label: "Bậc đa thức", value: deg },
+    },
+    chartData,
+    interpretation: `Polynomial (bậc ${deg}): R² = ${r2.toFixed(4)}, Adj R² = ${adjR2.toFixed(4)}. ${deg >= 3 ? '⚠️ Bậc cao có thể overfitting.' : '✅ Bậc hợp lý.'}`,
+  };
+}
+
+// ─── NEW: Ridge Regression (L2) ───────────────────────────────────
+function ridgeRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, lambda, slope, intercept } = p;
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 10;
+    xs.push(x); ys.push(slope * x + intercept + boxMuller() * noise);
+  }
+  const meanX = xs.reduce((a, b) => a + b, 0) / n;
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += (xs[i] - meanX) * (ys[i] - meanY); den += (xs[i] - meanX) ** 2; }
+  const olsSlope = num / den;
+  const ridgeSlope = num / (den + lambda * n);
+  const ridgeIntercept = meanY - ridgeSlope * meanX;
+  const olsIntercept = meanY - olsSlope * meanX;
+  const ssResRidge = ys.reduce((s, y, i) => s + (y - (ridgeSlope * xs[i] + ridgeIntercept)) ** 2, 0);
+  const ssResOLS = ys.reduce((s, y, i) => s + (y - (olsSlope * xs[i] + olsIntercept)) ** 2, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2Ridge = 1 - ssResRidge / ssTot;
+  const r2OLS = 1 - ssResOLS / ssTot;
+  const chartData: { name: string; value: number }[] = [];
+  for (let l = 0; l <= 50; l += 2) {
+    const rs = num / (den + l * n);
+    chartData.push({ name: `λ=${l}`, value: rs });
+  }
+  return {
+    outputs: {
+      ridgeSlope: { label: "Ridge Slope", value: ridgeSlope.toFixed(4) },
+      olsSlope: { label: "OLS Slope", value: olsSlope.toFixed(4) },
+      shrinkage: { label: "Shrinkage %", value: ((1 - ridgeSlope / olsSlope) * 100).toFixed(2), unit: "%" },
+      r2Ridge: { label: "R² (Ridge)", value: r2Ridge.toFixed(4) },
+      r2OLS: { label: "R² (OLS)", value: r2OLS.toFixed(4) },
+      lambda: { label: "Lambda (λ)", value: lambda.toFixed(2) },
+    },
+    chartData,
+    interpretation: `Ridge (λ=${lambda}): Slope = ${ridgeSlope.toFixed(3)} vs OLS = ${olsSlope.toFixed(3)} (shrinkage ${((1 - ridgeSlope / olsSlope) * 100).toFixed(1)}%). L2 regularization giảm overfitting bằng cách co hệ số về 0.`,
+  };
+}
+
+// ─── NEW: Lasso Regression (L1) ───────────────────────────────────
+function lassoRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, lambda, nFeatures } = p;
+  const nF = Math.min(Math.max(Math.round(nFeatures), 2), 8);
+  // Generate data with some irrelevant features
+  const trueCoeffs = Array.from({ length: nF }, (_, i) => i < Math.ceil(nF / 2) ? 2 + Math.random() * 3 : 0);
+  const X: number[][] = [];
+  const ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const row = Array.from({ length: nF }, () => Math.random() * 10);
+    X.push(row);
+    ys.push(5 + row.reduce((s, x, j) => s + x * trueCoeffs[j], 0) + boxMuller() * noise);
+  }
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  // Coordinate descent for Lasso
+  const coeffs = new Array(nF).fill(0);
+  let b0 = meanY;
+  for (let iter = 0; iter < 500; iter++) {
+    for (let j = 0; j < nF; j++) {
+      let rho = 0;
+      for (let i = 0; i < n; i++) {
+        let pred = b0;
+        for (let k = 0; k < nF; k++) if (k !== j) pred += coeffs[k] * X[i][k];
+        rho += X[i][j] * (ys[i] - pred);
+      }
+      rho /= n;
+      const xjSq = X.reduce((s, row) => s + row[j] ** 2, 0) / n;
+      if (rho > lambda / 2) coeffs[j] = (rho - lambda / 2) / xjSq;
+      else if (rho < -lambda / 2) coeffs[j] = (rho + lambda / 2) / xjSq;
+      else coeffs[j] = 0;
+    }
+    b0 = (ys.reduce((s, y, i) => s + y - coeffs.reduce((s2, c, j) => s2 + c * X[i][j], 0), 0)) / n;
+  }
+  const nonZero = coeffs.filter(c => Math.abs(c) > 0.001).length;
+  const ssRes = ys.reduce((s, y, i) => s + (y - (b0 + coeffs.reduce((s2, c, j) => s2 + c * X[i][j], 0))) ** 2, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const chartData = coeffs.map((c, i) => ({ name: `X${i + 1}`, value: c }));
+  return {
+    outputs: {
+      nonZeroFeatures: { label: "Features chọn", value: `${nonZero}/${nF}` },
+      r2: { label: "R²", value: r2.toFixed(4) },
+      rmse: { label: "RMSE", value: Math.sqrt(ssRes / n).toFixed(4) },
+      lambda: { label: "Lambda (λ)", value: lambda.toFixed(2) },
+      sparsity: { label: "Sparsity", value: ((1 - nonZero / nF) * 100).toFixed(0), unit: "%" },
+    },
+    chartData,
+    interpretation: `Lasso (λ=${lambda}): Chọn ${nonZero}/${nF} features. R² = ${r2.toFixed(4)}. L1 regularization loại bỏ features không quan trọng (sparsity = ${((1 - nonZero / nF) * 100).toFixed(0)}%).`,
+  };
+}
+
+// ─── NEW: Elastic Net ─────────────────────────────────────────────
+function elasticNet(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, alpha, l1Ratio, slope, intercept } = p;
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 10;
+    xs.push(x); ys.push(slope * x + intercept + boxMuller() * noise);
+  }
+  const meanX = xs.reduce((a, b) => a + b, 0) / n;
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  // Simplified elastic net via iterative soft thresholding
+  let w = 0, b0 = meanY;
+  for (let iter = 0; iter < 500; iter++) {
+    let rho = 0;
+    for (let i = 0; i < n; i++) rho += xs[i] * (ys[i] - b0);
+    rho /= n;
+    const l1 = alpha * l1Ratio;
+    const l2 = alpha * (1 - l1Ratio);
+    const xSq = xs.reduce((s, x) => s + x * x, 0) / n;
+    if (rho > l1 / 2) w = (rho - l1 / 2) / (xSq + l2);
+    else if (rho < -l1 / 2) w = (rho + l1 / 2) / (xSq + l2);
+    else w = 0;
+    b0 = meanY - w * meanX;
+  }
+  const ssRes = ys.reduce((s, y, i) => s + (y - (w * xs[i] + b0)) ** 2, 0);
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  // Compare Ridge vs Lasso vs Elastic Net
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += (xs[i] - meanX) * (ys[i] - meanY); den += (xs[i] - meanX) ** 2; }
+  const olsW = num / den;
+  const ridgeW = num / (den + alpha * (1 - l1Ratio) * n);
+  const chartData = [
+    { name: "OLS", value: olsW }, { name: "Ridge", value: ridgeW },
+    { name: "Elastic Net", value: w }, { name: "True", value: slope },
+  ];
+  return {
+    outputs: {
+      enSlope: { label: "Elastic Net Slope", value: w.toFixed(4) },
+      olsSlope: { label: "OLS Slope", value: olsW.toFixed(4) },
+      r2: { label: "R²", value: r2.toFixed(4) },
+      alpha: { label: "Alpha", value: alpha.toFixed(2) },
+      l1Ratio: { label: "L1 Ratio", value: l1Ratio.toFixed(2) },
+      method: { label: "Thiên về", value: l1Ratio > 0.5 ? "Lasso (L1)" : "Ridge (L2)" },
+    },
+    chartData,
+    interpretation: `Elastic Net (α=${alpha}, l1_ratio=${l1Ratio}): Slope = ${w.toFixed(3)}. ${l1Ratio === 1 ? '= Lasso thuần' : l1Ratio === 0 ? '= Ridge thuần' : `Kết hợp L1(${(l1Ratio * 100).toFixed(0)}%) + L2(${((1 - l1Ratio) * 100).toFixed(0)}%)`}.`,
+  };
+}
+
+// ─── NEW: Decision Tree Regression ────────────────────────────────
+function decisionTreeRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, maxDepth, minLeaf } = p;
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 10;
+    xs.push(x);
+    ys.push(Math.sin(x) * 5 + x * 0.5 + boxMuller() * noise);
+  }
+  // Simple recursive splitting
+  type Node = { value: number; left?: Node; right?: Node; splitX?: number; depth: number };
+  const buildTree = (indices: number[], depth: number): Node => {
+    const vals = indices.map(i => ys[i]);
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    if (depth >= maxDepth || vals.length <= minLeaf) return { value: mean, depth };
+    let bestSSE = Infinity, bestSplit = 0, bestLeft: number[] = [], bestRight: number[] = [];
+    const sorted = [...indices].sort((a, b) => xs[a] - xs[b]);
+    for (let s = Math.max(1, Math.floor(minLeaf)); s < sorted.length - Math.max(1, Math.floor(minLeaf)); s++) {
+      const left = sorted.slice(0, s), right = sorted.slice(s);
+      const lMean = left.reduce((a, i) => a + ys[i], 0) / left.length;
+      const rMean = right.reduce((a, i) => a + ys[i], 0) / right.length;
+      const sse = left.reduce((a, i) => a + (ys[i] - lMean) ** 2, 0) + right.reduce((a, i) => a + (ys[i] - rMean) ** 2, 0);
+      if (sse < bestSSE) { bestSSE = sse; bestSplit = xs[sorted[s]]; bestLeft = left; bestRight = right; }
+    }
+    if (bestLeft.length === 0 || bestRight.length === 0) return { value: mean, depth };
+    return { value: mean, splitX: bestSplit, left: buildTree(bestLeft, depth + 1), right: buildTree(bestRight, depth + 1), depth };
+  };
+  const allIdx = Array.from({ length: n }, (_, i) => i);
+  const tree = buildTree(allIdx, 0);
+  const predict = (x: number, node: Node): number => {
+    if (!node.left || !node.right || node.splitX === undefined) return node.value;
+    return x < node.splitX ? predict(x, node.left) : predict(x, node.right);
+  };
+  let leaves = 0;
+  const countLeaves = (node: Node) => { if (!node.left) leaves++; else { countLeaves(node.left!); countLeaves(node.right!); } };
+  countLeaves(tree);
+  const preds = xs.map(x => predict(x, tree));
+  const ssRes = ys.reduce((s, y, i) => s + (y - preds[i]) ** 2, 0);
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const chartData = xs.filter((_, i) => i % Math.max(1, Math.floor(n / 50)) === 0).map((x, i) => ({ name: x.toFixed(1), value: preds[Math.min(i * Math.max(1, Math.floor(n / 50)), n - 1)] }));
+  return {
+    outputs: {
+      r2: { label: "R²", value: r2.toFixed(4) },
+      rmse: { label: "RMSE", value: Math.sqrt(ssRes / n).toFixed(4) },
+      leaves: { label: "Số lá (leaves)", value: leaves },
+      maxDepth: { label: "Max Depth", value: maxDepth },
+      complexity: { label: "Độ phức tạp", value: leaves > 20 ? "Cao (có thể overfit)" : "Hợp lý" },
+    },
+    chartData,
+    interpretation: `Decision Tree (depth=${maxDepth}): R² = ${r2.toFixed(4)}, ${leaves} lá. ${r2 > 0.95 ? '⚠️ R² rất cao – kiểm tra overfitting!' : '✅ Mức fit hợp lý.'} Không cần giả định tuyến tính.`,
+  };
+}
+
+// ─── NEW: Random Forest Regression ────────────────────────────────
+function randomForestRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, nTrees, maxDepth, sampleRatio } = p;
+  const nT = Math.min(Math.max(Math.round(nTrees), 3), 50);
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 10;
+    xs.push(x);
+    ys.push(Math.sin(x) * 5 + x * 0.5 + boxMuller() * noise);
+  }
+  // Build multiple simple trees
+  const treePredictions: number[][] = [];
+  for (let t = 0; t < nT; t++) {
+    // Bootstrap sample
+    const sampleSize = Math.round(n * sampleRatio / 100);
+    const sampleIdx = Array.from({ length: sampleSize }, () => Math.floor(Math.random() * n));
+    // Simple piecewise constant (bins)
+    const nBins = Math.min(Math.pow(2, maxDepth), 16);
+    const binSize = 10 / nBins;
+    const binMeans: number[] = [];
+    for (let b = 0; b < nBins; b++) {
+      const binPts = sampleIdx.filter(i => xs[i] >= b * binSize && xs[i] < (b + 1) * binSize);
+      binMeans.push(binPts.length > 0 ? binPts.reduce((s, i) => s + ys[i], 0) / binPts.length : 0);
+    }
+    const preds = xs.map(x => { const b = Math.min(Math.floor(x / binSize), nBins - 1); return binMeans[b]; });
+    treePredictions.push(preds);
+  }
+  // Ensemble average
+  const ensemble = xs.map((_, i) => treePredictions.reduce((s, tp) => s + tp[i], 0) / nT);
+  const ssRes = ys.reduce((s, y, i) => s + (y - ensemble[i]) ** 2, 0);
+  const meanY = ys.reduce((a, b) => a + b, 0) / n;
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  // Single tree R² for comparison
+  const singlePred = treePredictions[0];
+  const ssResSingle = ys.reduce((s, y, i) => s + (y - singlePred[i]) ** 2, 0);
+  const r2Single = 1 - ssResSingle / ssTot;
+  const chartData = xs.filter((_, i) => i % Math.max(1, Math.floor(n / 50)) === 0)
+    .map((x, i) => ({ name: x.toFixed(1), value: ensemble[Math.min(i * Math.max(1, Math.floor(n / 50)), n - 1)] }));
+  return {
+    outputs: {
+      r2Forest: { label: "R² (Forest)", value: r2.toFixed(4) },
+      r2Single: { label: "R² (1 Tree)", value: r2Single.toFixed(4) },
+      improvement: { label: "Cải thiện", value: ((r2 - r2Single) * 100).toFixed(2), unit: "%" },
+      rmse: { label: "RMSE", value: Math.sqrt(ssRes / n).toFixed(4) },
+      nTrees: { label: "Số cây", value: nT },
+    },
+    chartData,
+    interpretation: `Random Forest (${nT} cây, depth=${maxDepth}): R² = ${r2.toFixed(4)} vs Single Tree R² = ${r2Single.toFixed(4)} (cải thiện ${((r2 - r2Single) * 100).toFixed(1)}%). Nhiều cây → ổn định hơn, giảm variance.`,
+  };
+}
+
+// ─── NEW: Support Vector Regression ───────────────────────────────
+function svrRegression(p: Record<string, number>): AlgorithmResult {
+  const { n, noise, epsilon, C } = p;
+  const xs: number[] = [], ys: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const x = (i / n) * 10;
+    xs.push(x); ys.push(2 * x + 3 + Math.sin(x) * 2 + boxMuller() * noise);
+  }
+  // Simplified SVR via gradient descent with epsilon-insensitive loss
+  let w = 0, b = 0;
+  const lr = 0.001;
+  for (let epoch = 0; epoch < 2000; epoch++) {
+    let dw = 0, db = 0;
+    for (let i = 0; i < n; i++) {
+      const pred = w * xs[i] + b;
+      const diff = ys[i] - pred;
+      if (Math.abs(diff) > epsilon) {
+        const sign = diff > 0 ? 1 : -1;
+        dw += -C * sign * xs[i]; db += -C * sign;
+      }
+    }
+    dw = dw / n + w; // L2 regularization
+    db /= n;
+    w -= lr * dw; b -= lr * db;
+  }
+  const preds = xs.map(x => w * x + b);
+  const insideTube = ys.filter((y, i) => Math.abs(y - preds[i]) <= epsilon).length;
+  const ssRes = ys.reduce((s, y, i) => s + (y - preds[i]) ** 2, 0);
+  const meanY = ys.reduce((a, v) => a + v, 0) / n;
+  const ssTot = ys.reduce((s, y) => s + (y - meanY) ** 2, 0);
+  const r2 = 1 - ssRes / ssTot;
+  const chartData = xs.filter((_, i) => i % Math.max(1, Math.floor(n / 50)) === 0)
+    .map((x, i) => ({ name: x.toFixed(1), value: preds[Math.min(i * Math.max(1, Math.floor(n / 50)), n - 1)] }));
+  return {
+    outputs: {
+      w: { label: "Weight (w)", value: w.toFixed(4) },
+      b: { label: "Bias (b)", value: b.toFixed(4) },
+      r2: { label: "R²", value: r2.toFixed(4) },
+      rmse: { label: "RMSE", value: Math.sqrt(ssRes / n).toFixed(4) },
+      insideTube: { label: "Trong ε-tube", value: ((insideTube / n) * 100).toFixed(1), unit: "%" },
+      supportVectors: { label: "Support Vectors", value: `~${n - insideTube}` },
+    },
+    chartData,
+    interpretation: `SVR (ε=${epsilon}, C=${C}): R² = ${r2.toFixed(4)}. ${((insideTube / n) * 100).toFixed(0)}% điểm nằm trong ε-tube. ${n - insideTube} support vectors quyết định mô hình.`,
+  };
+}
+
 // ─── ALGORITHM REGISTRY ───────────────────────────────────────────
 
 export const algorithms: Algorithm[] = [
