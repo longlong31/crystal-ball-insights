@@ -305,13 +305,16 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       const mult = ext.unitMultiplier && ext.unitMultiplier > 0 ? ext.unitMultiplier : 1;
       const newMetrics: SelectedMetric[] = ext.metrics
         .filter((m: any) => typeof m.value === "number" && !isNaN(m.value))
-        .map((m: any) => ({
-          name: `🤖 ${m.name}`,
+        .map((m: any, i: number) => ({
+          id: `ai-${Date.now()}-${i}`,
+          name: m.name,
           value: m.value * mult,
           unit: Math.abs(m.value * mult) >= 1e6 ? "triệu" : "",
           category: m.category || "AI",
           selected: (m.confidence ?? 0) >= 0.6,
           useAs: m.useAs || undefined,
+          confidence: typeof m.confidence === "number" ? m.confidence : undefined,
+          source: "ai" as const,
         }));
 
       setSelectedMetrics(prev => {
