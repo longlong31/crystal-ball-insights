@@ -1050,13 +1050,128 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                         </div>
                       )}
 
+                      {/* AI extracted metrics table */}
+                      {(() => {
+                        const aiRows = selectedMetrics.filter(m => m.source === "ai");
+                        if (aiRows.length === 0) return null;
+                        const setAllAi = (val: boolean) =>
+                          setSelectedMetrics(prev => prev.map(m => m.source === "ai" ? { ...m, selected: val } : m));
+                        const toggleOne = (id?: string) =>
+                          setSelectedMetrics(prev => prev.map(m => m.id === id ? { ...m, selected: !m.selected } : m));
+                        const setUseAs = (id: string | undefined, useAs: string) =>
+                          setSelectedMetrics(prev => prev.map(m => m.id === id ? { ...m, useAs: useAs || undefined } : m));
+
+                        const useAsOptions = [
+                          { v: "", label: "—" },
+                          { v: "revenue", label: "Doanh thu" },
+                          { v: "expenses", label: "Chi phí" },
+                          { v: "netIncome", label: "Lợi nhuận ròng" },
+                          { v: "grossProfit", label: "Lợi nhuận gộp" },
+                          { v: "operatingIncome", label: "LN hoạt động" },
+                          { v: "ebitda", label: "EBITDA" },
+                          { v: "assets", label: "Tài sản" },
+                          { v: "liabilities", label: "Nợ" },
+                          { v: "equity", label: "Vốn CSH" },
+                          { v: "cashFlow", label: "Dòng tiền" },
+                          { v: "operatingCashFlow", label: "DT hoạt động" },
+                          { v: "investingCashFlow", label: "DT đầu tư" },
+                          { v: "financingCashFlow", label: "DT tài trợ" },
+                          { v: "depreciation", label: "Khấu hao" },
+                          { v: "interestExpense", label: "Chi phí lãi vay" },
+                          { v: "taxExpense", label: "Thuế" },
+                        ];
+                        const selectedCount = aiRows.filter(m => m.selected).length;
+
+                        return (
+                          <div className="rounded-lg border border-border/50 overflow-hidden">
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/30 border-b border-border/50">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Brain className="w-4 h-4 text-primary" />
+                                Chỉ số AI trích xuất
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {selectedCount}/{aiRows.length}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAllAi(true)}>Chọn hết</Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAllAi(false)}>Bỏ hết</Button>
+                              </div>
+                            </div>
+                            <div className="max-h-[420px] overflow-auto">
+                              <Table>
+                                <TableHeader className="sticky top-0 bg-card/95 backdrop-blur z-10">
+                                  <TableRow>
+                                    <TableHead className="w-10"></TableHead>
+                                    <TableHead>Chỉ số</TableHead>
+                                    <TableHead className="text-right">Giá trị</TableHead>
+                                    <TableHead>Đơn vị</TableHead>
+                                    <TableHead>Nhóm</TableHead>
+                                    <TableHead>Map sang</TableHead>
+                                    <TableHead className="w-28">Confidence</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {aiRows.map((m) => {
+                                    const conf = m.confidence ?? 0;
+                                    const confColor = conf >= 0.8 ? "bg-green-500" : conf >= 0.6 ? "bg-yellow-500" : "bg-red-500";
+                                    return (
+                                      <TableRow key={m.id} className={m.selected ? "" : "opacity-50"}>
+                                        <TableCell>
+                                          <input
+                                            type="checkbox"
+                                            checked={m.selected}
+                                            onChange={() => toggleOne(m.id)}
+                                            className="w-4 h-4 cursor-pointer accent-primary"
+                                          />
+                                        </TableCell>
+                                        <TableCell className="font-medium text-sm">{m.name}</TableCell>
+                                        <TableCell className="text-right font-mono text-sm">
+                                          {formatNumber(m.value)}
+                                        </TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                          {m.unit || "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Badge variant="outline" className="text-[10px]">{m.category}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          <select
+                                            value={m.useAs || ""}
+                                            onChange={(e) => setUseAs(m.id, e.target.value)}
+                                            className="h-7 text-xs rounded border border-border bg-background px-1.5 max-w-[130px]"
+                                          >
+                                            {useAsOptions.map(o => (
+                                              <option key={o.v} value={o.v}>{o.label}</option>
+                                            ))}
+                                          </select>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                              <div className={`h-full ${confColor}`} style={{ width: `${conf * 100}%` }} />
+                                            </div>
+                                            <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">
+                                              {(conf * 100).toFixed(0)}%
+                                            </span>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <Button
                         onClick={() => setActiveTab("select-metrics")}
                         variant="outline"
                         className="w-full"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Xem & chọn các chỉ số AI đã trích xuất
+                        Tiếp tục với {selectedMetrics.filter(m => m.selected).length} chỉ số đã chọn
                       </Button>
                     </motion.div>
                   )}
