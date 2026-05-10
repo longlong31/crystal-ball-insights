@@ -959,6 +959,103 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                   </CardContent>
                 </Card>
               )}
+
+              {/* AI Super Extraction Card */}
+              <Card className="glass border-primary/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-primary" />
+                    AI phân tích siêu đỉnh
+                    <Badge variant="secondary" className="ml-2 text-xs">Gemini</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Dùng AI đọc toàn bộ file, tự động trích xuất các chỉ số tài chính (kể cả khi tên cột không chuẩn),
+                    suy luận đơn vị (đồng/triệu/tỷ) và đưa ra nhận định chuyên sâu.
+                  </p>
+                  <Button
+                    onClick={runAIExtraction}
+                    disabled={aiLoading}
+                    className="w-full"
+                    variant="glow"
+                  >
+                    {aiLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />AI đang đọc file...</>
+                    ) : (
+                      <><Wand2 className="w-4 h-4 mr-2" />Trích xuất bằng AI</>
+                    )}
+                  </Button>
+
+                  {aiExtraction && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {aiExtraction.currency && (
+                          <Badge variant="outline">Tiền tệ: {aiExtraction.currency}</Badge>
+                        )}
+                        {aiExtraction.period && (
+                          <Badge variant="outline">Kỳ: {aiExtraction.period}</Badge>
+                        )}
+                        {aiExtraction.unitMultiplier && aiExtraction.unitMultiplier !== 1 && (
+                          <Badge variant="outline">Đơn vị: ×{aiExtraction.unitMultiplier.toLocaleString()}</Badge>
+                        )}
+                        {aiExtraction.dataQuality && (
+                          <Badge variant={aiExtraction.dataQuality === "high" ? "default" : "secondary"}>
+                            Chất lượng: {aiExtraction.dataQuality}
+                          </Badge>
+                        )}
+                        <Badge className="bg-primary/20 text-primary border-primary/30">
+                          +{aiExtraction.addedCount} chỉ số mới
+                        </Badge>
+                      </div>
+
+                      {aiExtraction.insights.length > 0 && (
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-primary">
+                            <Lightbulb className="w-4 h-4" />
+                            Nhận định AI
+                          </div>
+                          <ul className="space-y-1.5 text-sm text-muted-foreground">
+                            {aiExtraction.insights.map((ins, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="text-primary mt-0.5">▸</span>
+                                <span>{ins}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {aiExtraction.warnings && aiExtraction.warnings.length > 0 && (
+                        <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-yellow-600">
+                            <AlertCircle className="w-4 h-4" />
+                            Cảnh báo
+                          </div>
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {aiExtraction.warnings.map((w, i) => (
+                              <li key={i}>• {w}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => setActiveTab("select-metrics")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Xem & chọn các chỉ số AI đã trích xuất
+                      </Button>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </TabsContent>
