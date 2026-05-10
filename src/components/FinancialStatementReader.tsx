@@ -237,12 +237,15 @@ const calculatePaybackPeriod = (cashFlows: number[]): number => {
 };
 
 interface SelectedMetric {
+  id?: string;
   name: string;
   value: number;
   unit: string;
   category: string;
   selected: boolean;
   useAs?: string; // Which analysis field to map to
+  confidence?: number; // AI confidence 0-1
+  source?: "rule" | "ai";
 }
 
 interface FinancialStatementReaderProps {
