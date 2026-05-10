@@ -266,6 +266,84 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   const [growthRate, setGrowthRate] = useState(5);
   const [analysis, setAnalysis] = useState<CrystalBallAnalysis | null>(null);
 
+  // AI extraction state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiExtraction, setAiExtraction] = useState<{
+    insights: string[];
+    warnings?: string[];
+    dataQuality?: string;
+    currency?: string;
+    period?: string;
+    unitMultiplier?: number;
+    addedCount: number;
+  } | null>(null);
+
+  const runAIExtraction = useCallback(async () => {
+    if (!financialData) {
+      toast.error("Vui lòng upload file trước");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      // Send compact sheets (cap rows per sheet)
+      const compactSheets = financialData.sheets.map(s => ({
+        name: s.name,
+        headers: s.headers,
+        rows: s.rows.slice(0, 200),
+      }));
+      const { data, error } = await supabase.functions.invoke("ai-extract-financials", {
+        body: { sheets: compactSheets, fileName: financialData.fileName },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const ext = data?.extraction;
+      if (!ext?.metrics) throw new Error("AI không trả về dữ liệu hợp lệ");
+
+      const mult = ext.unitMultiplier && ext.unitMultiplier > 0 ? ext.unitMultiplier : 1;
+      const newMetrics: SelectedMetric[] = ext.metrics
+        .filter((m: any) => typeof m.value === "number" && !isNaN(m.value))
+        .map((m: any) => ({
+          name: `🤖 ${m.name}`,
+          value: m.value * mult,
+          unit: Math.abs(m.value * mult) >= 1e6 ? "triệu" : "",
+          category: m.category || "AI",
+          selected: (m.confidence ?? 0) >= 0.6,
+          useAs: m.useAs || undefined,
+        }));
+
+      setSelectedMetrics(prev => {
+        // Avoid exact duplicates by value+useAs
+        const existing = new Set(prev.map(p => `${p.useAs || ""}_${p.value}`));
+        const merged = [...prev];
+        let added = 0;
+        for (const nm of newMetrics) {
+          const key = `${nm.useAs || ""}_${nm.value}`;
+          if (!existing.has(key)) {
+            merged.push(nm);
+            existing.add(key);
+            added++;
+          }
+        }
+        setAiExtraction({
+          insights: ext.insights || [],
+          warnings: ext.warnings,
+          dataQuality: ext.dataQuality,
+          currency: ext.currency,
+          period: ext.period,
+          unitMultiplier: mult,
+          addedCount: added,
+        });
+        toast.success(`AI trích xuất ${newMetrics.length} chỉ số (${added} mới)`);
+        return merged;
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "AI phân tích thất bại");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [financialData]);
+
   const handleExcelUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
