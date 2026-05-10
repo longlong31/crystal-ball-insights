@@ -12,10 +12,12 @@ import { Slider } from "@/components/ui/slider";
 import { 
   FileText, Upload, Table2, TrendingUp, AlertCircle, CheckCircle, 
   Download, Trash2, FileSpreadsheet, File, Calculator, Sparkles,
-  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity
+  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity,
+  Brain, Lightbulb, Loader2, Wand2
 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart,
   Bar,
@@ -263,6 +265,84 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   const [initialInvestment, setInitialInvestment] = useState(0);
   const [growthRate, setGrowthRate] = useState(5);
   const [analysis, setAnalysis] = useState<CrystalBallAnalysis | null>(null);
+
+  // AI extraction state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiExtraction, setAiExtraction] = useState<{
+    insights: string[];
+    warnings?: string[];
+    dataQuality?: string;
+    currency?: string;
+    period?: string;
+    unitMultiplier?: number;
+    addedCount: number;
+  } | null>(null);
+
+  const runAIExtraction = useCallback(async () => {
+    if (!financialData) {
+      toast.error("Vui lòng upload file trước");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      // Send compact sheets (cap rows per sheet)
+      const compactSheets = financialData.sheets.map(s => ({
+        name: s.name,
+        headers: s.headers,
+        rows: s.rows.slice(0, 200),
+      }));
+      const { data, error } = await supabase.functions.invoke("ai-extract-financials", {
+        body: { sheets: compactSheets, fileName: financialData.fileName },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const ext = data?.extraction;
+      if (!ext?.metrics) throw new Error("AI không trả về dữ liệu hợp lệ");
+
+      const mult = ext.unitMultiplier && ext.unitMultiplier > 0 ? ext.unitMultiplier : 1;
+      const newMetrics: SelectedMetric[] = ext.metrics
+        .filter((m: any) => typeof m.value === "number" && !isNaN(m.value))
+        .map((m: any) => ({
+          name: `🤖 ${m.name}`,
+          value: m.value * mult,
+          unit: Math.abs(m.value * mult) >= 1e6 ? "triệu" : "",
+          category: m.category || "AI",
+          selected: (m.confidence ?? 0) >= 0.6,
+          useAs: m.useAs || undefined,
+        }));
+
+      setSelectedMetrics(prev => {
+        // Avoid exact duplicates by value+useAs
+        const existing = new Set(prev.map(p => `${p.useAs || ""}_${p.value}`));
+        const merged = [...prev];
+        let added = 0;
+        for (const nm of newMetrics) {
+          const key = `${nm.useAs || ""}_${nm.value}`;
+          if (!existing.has(key)) {
+            merged.push(nm);
+            existing.add(key);
+            added++;
+          }
+        }
+        setAiExtraction({
+          insights: ext.insights || [],
+          warnings: ext.warnings,
+          dataQuality: ext.dataQuality,
+          currency: ext.currency,
+          period: ext.period,
+          unitMultiplier: mult,
+          addedCount: added,
+        });
+        toast.success(`AI trích xuất ${newMetrics.length} chỉ số (${added} mới)`);
+        return merged;
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "AI phân tích thất bại");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [financialData]);
 
   const handleExcelUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -879,6 +959,103 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                   </CardContent>
                 </Card>
               )}
+
+              {/* AI Super Extraction Card */}
+              <Card className="glass border-primary/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-primary" />
+                    AI phân tích siêu đỉnh
+                    <Badge variant="secondary" className="ml-2 text-xs">Gemini</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Dùng AI đọc toàn bộ file, tự động trích xuất các chỉ số tài chính (kể cả khi tên cột không chuẩn),
+                    suy luận đơn vị (đồng/triệu/tỷ) và đưa ra nhận định chuyên sâu.
+                  </p>
+                  <Button
+                    onClick={runAIExtraction}
+                    disabled={aiLoading}
+                    className="w-full"
+                    variant="glow"
+                  >
+                    {aiLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />AI đang đọc file...</>
+                    ) : (
+                      <><Wand2 className="w-4 h-4 mr-2" />Trích xuất bằng AI</>
+                    )}
+                  </Button>
+
+                  {aiExtraction && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {aiExtraction.currency && (
+                          <Badge variant="outline">Tiền tệ: {aiExtraction.currency}</Badge>
+                        )}
+                        {aiExtraction.period && (
+                          <Badge variant="outline">Kỳ: {aiExtraction.period}</Badge>
+                        )}
+                        {aiExtraction.unitMultiplier && aiExtraction.unitMultiplier !== 1 && (
+                          <Badge variant="outline">Đơn vị: ×{aiExtraction.unitMultiplier.toLocaleString()}</Badge>
+                        )}
+                        {aiExtraction.dataQuality && (
+                          <Badge variant={aiExtraction.dataQuality === "high" ? "default" : "secondary"}>
+                            Chất lượng: {aiExtraction.dataQuality}
+                          </Badge>
+                        )}
+                        <Badge className="bg-primary/20 text-primary border-primary/30">
+                          +{aiExtraction.addedCount} chỉ số mới
+                        </Badge>
+                      </div>
+
+                      {aiExtraction.insights.length > 0 && (
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-primary">
+                            <Lightbulb className="w-4 h-4" />
+                            Nhận định AI
+                          </div>
+                          <ul className="space-y-1.5 text-sm text-muted-foreground">
+                            {aiExtraction.insights.map((ins, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="text-primary mt-0.5">▸</span>
+                                <span>{ins}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {aiExtraction.warnings && aiExtraction.warnings.length > 0 && (
+                        <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-yellow-600">
+                            <AlertCircle className="w-4 h-4" />
+                            Cảnh báo
+                          </div>
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {aiExtraction.warnings.map((w, i) => (
+                              <li key={i}>• {w}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => setActiveTab("select-metrics")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Xem & chọn các chỉ số AI đã trích xuất
+                      </Button>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </TabsContent>
