@@ -12,10 +12,12 @@ import { Slider } from "@/components/ui/slider";
 import { 
   FileText, Upload, Table2, TrendingUp, AlertCircle, CheckCircle, 
   Download, Trash2, FileSpreadsheet, File, Calculator, Sparkles,
-  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity
+  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity,
+  Brain, Lightbulb, Loader2, Wand2
 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart,
   Bar,
