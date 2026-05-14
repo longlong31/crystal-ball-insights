@@ -172,6 +172,42 @@ export type Database = {
         }
         Relationships: []
       }
+      n8n_runs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          payload: Json | null
+          result: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+          workflow: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          workflow: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload?: Json | null
+          result?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workflow?: string
+        }
+        Relationships: []
+      }
       news_articles: {
         Row: {
           category: string
@@ -248,6 +284,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      powerbi_reports: {
+        Row: {
+          created_at: string
+          embed_url: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          embed_url: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          embed_url?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       price_alerts: {
         Row: {
