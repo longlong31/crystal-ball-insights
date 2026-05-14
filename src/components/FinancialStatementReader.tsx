@@ -481,7 +481,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         setIsLoading(false);
       };
 
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       toast.error("Có lỗi xảy ra khi xử lý file");
       setIsLoading(false);
