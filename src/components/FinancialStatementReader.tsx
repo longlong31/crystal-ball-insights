@@ -371,8 +371,8 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
       reader.onload = (e) => {
         try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "binary" });
+          const data = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(data, { type: "array", cellDates: true, cellNF: false, cellText: false });
 
           const sheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
@@ -481,7 +481,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         setIsLoading(false);
       };
 
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       toast.error("Có lỗi xảy ra khi xử lý file");
       setIsLoading(false);
@@ -507,8 +507,9 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         setProgress((prev) => Math.min(prev + 10, 85));
       }, 150);
 
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      const pdfjsLib: any = await import("pdfjs-dist");
+      // Use unpkg with the exact installed version (cdnjs sometimes lags) and .js worker (pdfjs-dist v3 ships .js)
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -519,23 +520,43 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       for (let i = 1; i <= Math.min(pdf.numPages, 50); i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: unknown) => (item as { str: string }).str).join(" ");
-        allText.push(pageText);
 
-        const lines = pageText.split(/[\n\r]+/);
-        lines.forEach((line, lineIndex) => {
-          const parts = line.split(/\s{2,}|\t/);
-          if (parts.length >= 2) {
-            const row: Record<string, string | number> = {
-              STT: lineIndex + 1,
-              "Nội dung": parts[0] || "",
-            };
-            parts.slice(1).forEach((part, idx) => {
-              const numValue = parseFloat(part.replace(/[,\.]/g, "").replace(/\s/g, ""));
-              row[`Cột ${idx + 2}`] = !isNaN(numValue) ? numValue : part;
-            });
-            extractedRows.push(row);
-          }
+        // Group items by Y coordinate to reconstruct visual lines
+        const linesMap = new Map<number, { x: number; str: string }[]>();
+        for (const it of textContent.items as any[]) {
+          if (typeof it.str !== "string" || !it.str.trim()) continue;
+          const y = Math.round(it.transform[5]);
+          const x = it.transform[4];
+          if (!linesMap.has(y)) linesMap.set(y, []);
+          linesMap.get(y)!.push({ x, str: it.str });
+        }
+        const sortedLines = Array.from(linesMap.entries())
+          .sort((a, b) => b[0] - a[0]) // top to bottom (Y descending)
+          .map(([, items]) =>
+            items.sort((a, b) => a.x - b.x).map(p => p.str).join(" ").replace(/\s+/g, " ").trim()
+          )
+          .filter(l => l.length > 0);
+
+        allText.push(`--- Trang ${i} ---\n${sortedLines.join("\n")}`);
+
+        sortedLines.forEach((line, lineIndex) => {
+          // Split label from numeric columns: numbers (with commas/dots/parentheses) at the end
+          const numRe = /-?\(?\d[\d.,\s]*\)?%?/g;
+          const numbers = line.match(numRe) || [];
+          const label = line.replace(numRe, "").replace(/\s+/g, " ").trim();
+          if (!label && numbers.length === 0) return;
+          const row: Record<string, string | number> = {
+            Trang: i,
+            STT: lineIndex + 1,
+            "Nội dung": label || line,
+          };
+          numbers.forEach((part, idx) => {
+            const cleaned = part.replace(/[(),\s]/g, "").replace(/%$/, "");
+            const numValue = parseFloat(cleaned);
+            const isNeg = /\(.*\)/.test(part);
+            row[`Số ${idx + 1}`] = !isNaN(numValue) ? (isNeg ? -numValue : numValue) : part;
+          });
+          extractedRows.push(row);
         });
       }
 
