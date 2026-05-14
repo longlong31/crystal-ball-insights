@@ -371,8 +371,8 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
       reader.onload = (e) => {
         try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "binary" });
+          const data = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(data, { type: "array", cellDates: true, cellNF: false, cellText: false });
 
           const sheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
