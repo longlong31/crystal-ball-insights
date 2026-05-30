@@ -19,16 +19,23 @@ serve(async (req) => {
       });
     }
 
-    // Build compact text representation (cap size)
-    const MAX_CHARS = 18000;
+    // Build compact text representation (larger budget for richer context)
+    const MAX_CHARS = 40000;
     let dataText = "";
     for (const s of sheets) {
       const headers = (s.headers || []).join(" | ");
-      dataText += `\n## SHEET: ${s.name}\nHEADERS: ${headers}\n`;
-      const rows = (s.rows || []).slice(0, 200);
+      dataText += `\n## SHEET: ${s.name}\nCỘT: ${headers}\n`;
+      const rows = (s.rows || []).slice(0, 500);
       for (const r of rows) {
-        const line = Object.values(r).map((v: any) => String(v ?? "")).join(" | ");
-        if (line.trim()) dataText += line + "\n";
+        const line = Object.values(r).map((v: any) => {
+          if (v == null) return "";
+          if (typeof v === "number") {
+            // Preserve precision; show as plain number
+            return Number.isInteger(v) ? String(v) : v.toFixed(2);
+          }
+          return String(v);
+        }).join(" | ");
+        if (line.replace(/[\s|]/g, "")) dataText += line + "\n";
         if (dataText.length > MAX_CHARS) break;
       }
       if (dataText.length > MAX_CHARS) break;
