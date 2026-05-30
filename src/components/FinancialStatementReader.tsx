@@ -418,25 +418,60 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
           const sheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+            // Read as 2D array so we can auto-detect the header row (financial reports often have title rows above)
+            const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: "", blankrows: false, raw: true });
+            if (!matrix.length) return { name: sheetName, headers: [], rows: [] };
 
-            if (jsonData.length === 0) {
-              return { name: sheetName, headers: [], rows: [] };
+            const scoreRow = (r: unknown[]) => {
+              let strings = 0, numbers = 0;
+              for (const c of r) {
+                if (c == null || c === "") continue;
+                if (typeof c === "number") numbers++;
+                else if (typeof c === "string" && c.trim() && parseFinancialNumber(c) === null) strings++;
+              }
+              return { strings, numbers };
+            };
+
+            // Header row = first row with ≥2 string cells AND the next row has ≥1 numeric cell
+            let headerIdx = 0;
+            for (let i = 0; i < Math.min(matrix.length - 1, 15); i++) {
+              const cur = scoreRow(matrix[i]);
+              const next = scoreRow(matrix[i + 1]);
+              if (cur.strings >= 2 && (next.numbers >= 1 || scoreRow(matrix[Math.min(i + 2, matrix.length - 1)]).numbers >= 1)) {
+                headerIdx = i;
+                break;
+              }
             }
 
-            const headers = Object.keys(jsonData[0]);
-            const rows = jsonData.map((row) => {
-              const processedRow: Record<string, string | number> = {};
-              headers.forEach((header) => {
-                const value = row[header];
-                if (typeof value === "number") {
-                  processedRow[header] = value;
-                } else {
-                  processedRow[header] = String(value || "");
+            const rawHeaders = (matrix[headerIdx] as unknown[]).map((h, idx) => {
+              const s = String(h ?? "").trim();
+              return s || `Cột ${idx + 1}`;
+            });
+            // De-duplicate headers
+            const seen = new Map<string, number>();
+            const headers = rawHeaders.map((h) => {
+              const c = seen.get(h) || 0;
+              seen.set(h, c + 1);
+              return c === 0 ? h : `${h} (${c + 1})`;
+            });
+
+            const rows: Record<string, string | number>[] = [];
+            for (let i = headerIdx + 1; i < matrix.length; i++) {
+              const r = matrix[i] as unknown[];
+              if (!r || r.every((c) => c == null || c === "")) continue;
+              const obj: Record<string, string | number> = {};
+              headers.forEach((h, idx) => {
+                const v = r[idx];
+                if (v instanceof Date) obj[h] = v.toISOString().slice(0, 10);
+                else if (typeof v === "number") obj[h] = v;
+                else {
+                  const s = String(v ?? "").trim();
+                  const n = parseFinancialNumber(s);
+                  obj[h] = n !== null && /^[\d\s.,()%-]+$/.test(s) ? n : s;
                 }
               });
-              return processedRow;
-            });
+              rows.push(obj);
+            }
 
             return { name: sheetName, headers, rows };
           });
