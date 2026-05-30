@@ -334,7 +334,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       const compactSheets = financialData.sheets.map(s => ({
         name: s.name,
         headers: s.headers,
-        rows: s.rows.slice(0, 200),
+        rows: s.rows.slice(0, 500),
       }));
       const { data, error } = await supabase.functions.invoke("ai-extract-financials", {
         body: { sheets: compactSheets, fileName: financialData.fileName },
