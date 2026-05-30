@@ -132,62 +132,104 @@ const formatPercent = (value: number): string => {
   return (value * 100).toFixed(2) + "%";
 };
 
+// Robust number parser: handles "1,234.56", "1.234,56", "(123)" negative, "12%", "12 tỷ", "5 triệu", etc.
+const parseFinancialNumber = (raw: unknown): number | null => {
+  if (typeof raw === "number") return isFinite(raw) ? raw : null;
+  if (raw == null) return null;
+  let s = String(raw).trim();
+  if (!s) return null;
+  const isPercent = /%/.test(s);
+  const isNegative = /^\(.*\)$/.test(s) || /^-/.test(s);
+  let multiplier = 1;
+  if (/tỷ|tỉ|billion|\bbn\b/i.test(s)) multiplier = 1e9;
+  else if (/triệu|million|\bmn\b|\bmil\b/i.test(s)) multiplier = 1e6;
+  else if (/nghìn|thousand|\bk\b/i.test(s)) multiplier = 1e3;
+  s = s.replace(/[^\d.,-]/g, "");
+  if (!s || s === "-" || s === "." || s === ",") return null;
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (lastComma > -1) {
+    const parts = s.split(",");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/,/g, "");
+    else s = s.replace(",", ".");
+  } else if (lastDot > -1) {
+    const parts = s.split(".");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/\./g, "");
+  }
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  let result = n * multiplier;
+  if (isNegative && result > 0) result = -result;
+  if (isPercent) result = result / 100;
+  return result;
+};
+
+// Ignore cells that look like row index, year, or tiny ordinals — they pollute metric matches
+const isLikelyMetricValue = (n: number): boolean => {
+  if (!isFinite(n) || n === 0) return false;
+  const abs = Math.abs(n);
+  if (Number.isInteger(n) && abs >= 1900 && abs <= 2100) return false;
+  if (Number.isInteger(n) && abs < 100) return false;
+  return true;
+};
+
 const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
   const detectedMetrics: { name: string; value: number; unit: string }[] = [];
   const summary: Partial<FinancialSummary> = {};
 
+  const mappings: Record<string, keyof FinancialSummary> = {
+    revenue: "totalRevenue", expenses: "totalExpenses", netIncome: "netIncome",
+    assets: "totalAssets", liabilities: "totalLiabilities", equity: "equity",
+    cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+    investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+    interestExpense: "interestExpense", taxExpense: "taxExpense",
+    ebitda: "ebitda", grossProfit: "grossProfit", ebit: "operatingIncome",
+  };
+
   data.forEach((sheet) => {
     sheet.rows.forEach((row) => {
-      const rowText = Object.keys(row)
-        .map((key) => String(row[key]).toLowerCase())
-        .join(" ");
+      // Build label text from non-numeric cells only
+      const labelText = Object.values(row)
+        .map((v) => String(v ?? ""))
+        .filter((v) => v && parseFinancialNumber(v) === null)
+        .join(" ")
+        .toLowerCase();
+      if (!labelText) return;
+
+      // Pick the largest-magnitude numeric cell on this row (typical financial figure)
+      const candidates: number[] = [];
+      Object.values(row).forEach((v) => {
+        const n = parseFinancialNumber(v);
+        if (n !== null && isLikelyMetricValue(n)) candidates.push(n);
+      });
+      if (candidates.length === 0) return;
+      const bestValue = candidates.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a);
 
       Object.entries(financialKeywords).forEach(([metricKey, keywords]) => {
-        keywords.forEach((keyword) => {
-          if (rowText.includes(keyword.toLowerCase())) {
-            Object.values(row).forEach((cellValue) => {
-              const numValue = typeof cellValue === "number" ? cellValue : parseFloat(String(cellValue).replace(/[,\.]/g, ""));
-              if (!isNaN(numValue) && numValue !== 0) {
-                detectedMetrics.push({
-                  name: keyword,
-                  value: numValue,
-                  unit: numValue >= 1e6 ? "triệu" : "",
-                });
-
-                // Map to summary
-                const mappings: Record<string, keyof FinancialSummary> = {
-                  revenue: "totalRevenue",
-                  expenses: "totalExpenses",
-                  netIncome: "netIncome",
-                  assets: "totalAssets",
-                  liabilities: "totalLiabilities",
-                  equity: "equity",
-                  cashFlow: "cashFlow",
-                  operatingCashFlow: "operatingCashFlow",
-                  investingCashFlow: "investingCashFlow",
-                  depreciation: "depreciation",
-                  interestExpense: "interestExpense",
-                  taxExpense: "taxExpense",
-                  ebitda: "ebitda",
-                  grossProfit: "grossProfit",
-                  ebit: "operatingIncome",
-                };
-
-                const summaryKey = mappings[metricKey];
-                if (summaryKey && !(summaryKey in summary)) {
-                  (summary as Record<string, number>)[summaryKey] = numValue;
-                }
-              }
+        for (const keyword of keywords) {
+          if (labelText.includes(keyword.toLowerCase())) {
+            detectedMetrics.push({
+              name: keyword,
+              value: bestValue,
+              unit: Math.abs(bestValue) >= 1e6 ? "triệu" : "",
             });
+            const summaryKey = mappings[metricKey];
+            if (summaryKey && !(summaryKey in summary)) {
+              (summary as Record<string, number>)[summaryKey] = bestValue;
+            }
+            break;
           }
-        });
+        }
       });
     });
   });
 
   return {
     ...summary,
-    detectedMetrics: detectedMetrics.slice(0, 30),
+    detectedMetrics: detectedMetrics.slice(0, 50),
   };
 };
 
