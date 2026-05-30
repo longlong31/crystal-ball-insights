@@ -829,10 +829,9 @@ export default function StockAnalysis() {
 
   return (
     <div className="space-y-4">
-      {/* Stock Info Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       {/* Stock Info Header — premium hero */}
       <div className="relative quant-card overflow-hidden">
+
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent" />
         <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
         <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
