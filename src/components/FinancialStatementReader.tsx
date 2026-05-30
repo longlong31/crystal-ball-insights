@@ -132,62 +132,104 @@ const formatPercent = (value: number): string => {
   return (value * 100).toFixed(2) + "%";
 };
 
+// Robust number parser: handles "1,234.56", "1.234,56", "(123)" negative, "12%", "12 tỷ", "5 triệu", etc.
+const parseFinancialNumber = (raw: unknown): number | null => {
+  if (typeof raw === "number") return isFinite(raw) ? raw : null;
+  if (raw == null) return null;
+  let s = String(raw).trim();
+  if (!s) return null;
+  const isPercent = /%/.test(s);
+  const isNegative = /^\(.*\)$/.test(s) || /^-/.test(s);
+  let multiplier = 1;
+  if (/tỷ|tỉ|billion|\bbn\b/i.test(s)) multiplier = 1e9;
+  else if (/triệu|million|\bmn\b|\bmil\b/i.test(s)) multiplier = 1e6;
+  else if (/nghìn|thousand|\bk\b/i.test(s)) multiplier = 1e3;
+  s = s.replace(/[^\d.,-]/g, "");
+  if (!s || s === "-" || s === "." || s === ",") return null;
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (lastComma > -1) {
+    const parts = s.split(",");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/,/g, "");
+    else s = s.replace(",", ".");
+  } else if (lastDot > -1) {
+    const parts = s.split(".");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/\./g, "");
+  }
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  let result = n * multiplier;
+  if (isNegative && result > 0) result = -result;
+  if (isPercent) result = result / 100;
+  return result;
+};
+
+// Ignore cells that look like row index, year, or tiny ordinals — they pollute metric matches
+const isLikelyMetricValue = (n: number): boolean => {
+  if (!isFinite(n) || n === 0) return false;
+  const abs = Math.abs(n);
+  if (Number.isInteger(n) && abs >= 1900 && abs <= 2100) return false;
+  if (Number.isInteger(n) && abs < 100) return false;
+  return true;
+};
+
 const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
   const detectedMetrics: { name: string; value: number; unit: string }[] = [];
   const summary: Partial<FinancialSummary> = {};
 
+  const mappings: Record<string, keyof FinancialSummary> = {
+    revenue: "totalRevenue", expenses: "totalExpenses", netIncome: "netIncome",
+    assets: "totalAssets", liabilities: "totalLiabilities", equity: "equity",
+    cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+    investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+    interestExpense: "interestExpense", taxExpense: "taxExpense",
+    ebitda: "ebitda", grossProfit: "grossProfit", ebit: "operatingIncome",
+  };
+
   data.forEach((sheet) => {
     sheet.rows.forEach((row) => {
-      const rowText = Object.keys(row)
-        .map((key) => String(row[key]).toLowerCase())
-        .join(" ");
+      // Build label text from non-numeric cells only
+      const labelText = Object.values(row)
+        .map((v) => String(v ?? ""))
+        .filter((v) => v && parseFinancialNumber(v) === null)
+        .join(" ")
+        .toLowerCase();
+      if (!labelText) return;
+
+      // Pick the largest-magnitude numeric cell on this row (typical financial figure)
+      const candidates: number[] = [];
+      Object.values(row).forEach((v) => {
+        const n = parseFinancialNumber(v);
+        if (n !== null && isLikelyMetricValue(n)) candidates.push(n);
+      });
+      if (candidates.length === 0) return;
+      const bestValue = candidates.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a);
 
       Object.entries(financialKeywords).forEach(([metricKey, keywords]) => {
-        keywords.forEach((keyword) => {
-          if (rowText.includes(keyword.toLowerCase())) {
-            Object.values(row).forEach((cellValue) => {
-              const numValue = typeof cellValue === "number" ? cellValue : parseFloat(String(cellValue).replace(/[,\.]/g, ""));
-              if (!isNaN(numValue) && numValue !== 0) {
-                detectedMetrics.push({
-                  name: keyword,
-                  value: numValue,
-                  unit: numValue >= 1e6 ? "triệu" : "",
-                });
-
-                // Map to summary
-                const mappings: Record<string, keyof FinancialSummary> = {
-                  revenue: "totalRevenue",
-                  expenses: "totalExpenses",
-                  netIncome: "netIncome",
-                  assets: "totalAssets",
-                  liabilities: "totalLiabilities",
-                  equity: "equity",
-                  cashFlow: "cashFlow",
-                  operatingCashFlow: "operatingCashFlow",
-                  investingCashFlow: "investingCashFlow",
-                  depreciation: "depreciation",
-                  interestExpense: "interestExpense",
-                  taxExpense: "taxExpense",
-                  ebitda: "ebitda",
-                  grossProfit: "grossProfit",
-                  ebit: "operatingIncome",
-                };
-
-                const summaryKey = mappings[metricKey];
-                if (summaryKey && !(summaryKey in summary)) {
-                  (summary as Record<string, number>)[summaryKey] = numValue;
-                }
-              }
+        for (const keyword of keywords) {
+          if (labelText.includes(keyword.toLowerCase())) {
+            detectedMetrics.push({
+              name: keyword,
+              value: bestValue,
+              unit: Math.abs(bestValue) >= 1e6 ? "triệu" : "",
             });
+            const summaryKey = mappings[metricKey];
+            if (summaryKey && !(summaryKey in summary)) {
+              (summary as Record<string, number>)[summaryKey] = bestValue;
+            }
+            break;
           }
-        });
+        }
       });
     });
   });
 
   return {
     ...summary,
-    detectedMetrics: detectedMetrics.slice(0, 30),
+    detectedMetrics: detectedMetrics.slice(0, 50),
   };
 };
 
@@ -292,7 +334,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       const compactSheets = financialData.sheets.map(s => ({
         name: s.name,
         headers: s.headers,
-        rows: s.rows.slice(0, 200),
+        rows: s.rows.slice(0, 500),
       }));
       const { data, error } = await supabase.functions.invoke("ai-extract-financials", {
         body: { sheets: compactSheets, fileName: financialData.fileName },
@@ -376,25 +418,60 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
           const sheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+            // Read as 2D array so we can auto-detect the header row (financial reports often have title rows above)
+            const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: "", blankrows: false, raw: true });
+            if (!matrix.length) return { name: sheetName, headers: [], rows: [] };
 
-            if (jsonData.length === 0) {
-              return { name: sheetName, headers: [], rows: [] };
+            const scoreRow = (r: unknown[]) => {
+              let strings = 0, numbers = 0;
+              for (const c of r) {
+                if (c == null || c === "") continue;
+                if (typeof c === "number") numbers++;
+                else if (typeof c === "string" && c.trim() && parseFinancialNumber(c) === null) strings++;
+              }
+              return { strings, numbers };
+            };
+
+            // Header row = first row with ≥2 string cells AND the next row has ≥1 numeric cell
+            let headerIdx = 0;
+            for (let i = 0; i < Math.min(matrix.length - 1, 15); i++) {
+              const cur = scoreRow(matrix[i]);
+              const next = scoreRow(matrix[i + 1]);
+              if (cur.strings >= 2 && (next.numbers >= 1 || scoreRow(matrix[Math.min(i + 2, matrix.length - 1)]).numbers >= 1)) {
+                headerIdx = i;
+                break;
+              }
             }
 
-            const headers = Object.keys(jsonData[0]);
-            const rows = jsonData.map((row) => {
-              const processedRow: Record<string, string | number> = {};
-              headers.forEach((header) => {
-                const value = row[header];
-                if (typeof value === "number") {
-                  processedRow[header] = value;
-                } else {
-                  processedRow[header] = String(value || "");
+            const rawHeaders = (matrix[headerIdx] as unknown[]).map((h, idx) => {
+              const s = String(h ?? "").trim();
+              return s || `Cột ${idx + 1}`;
+            });
+            // De-duplicate headers
+            const seen = new Map<string, number>();
+            const headers = rawHeaders.map((h) => {
+              const c = seen.get(h) || 0;
+              seen.set(h, c + 1);
+              return c === 0 ? h : `${h} (${c + 1})`;
+            });
+
+            const rows: Record<string, string | number>[] = [];
+            for (let i = headerIdx + 1; i < matrix.length; i++) {
+              const r = matrix[i] as unknown[];
+              if (!r || r.every((c) => c == null || c === "")) continue;
+              const obj: Record<string, string | number> = {};
+              headers.forEach((h, idx) => {
+                const v = r[idx];
+                if (v instanceof Date) obj[h] = v.toISOString().slice(0, 10);
+                else if (typeof v === "number") obj[h] = v;
+                else {
+                  const s = String(v ?? "").trim();
+                  const n = parseFinancialNumber(s);
+                  obj[h] = n !== null && /^[\d\s.,()%-]+$/.test(s) ? n : s;
                 }
               });
-              return processedRow;
-            });
+              rows.push(obj);
+            }
 
             return { name: sheetName, headers, rows };
           });
