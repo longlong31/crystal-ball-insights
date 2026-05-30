@@ -1051,38 +1051,38 @@ export default function StockAnalysis() {
           <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
 
-        {/* Price Tab */}
+        {/* Price Tab — Candlestick */}
         <TabsContent value="price">
-          <div className="quant-card space-y-4">
-            <p className="stat-label">Price Chart with Bollinger Bands & EMAs</p>
+          <div className="quant-card space-y-3 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent" />
+            <div className="flex items-center justify-between relative">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-sm bg-primary" />
+                <p className="text-xs font-semibold tracking-wide uppercase text-foreground/80">
+                  Candlestick · {historyRange.toUpperCase()}
+                </p>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  Bollinger Bands · EMA(12,50)
+                </span>
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {analysis ? `${analysis.chartData.length} bars` : ""}
+              </span>
+            </div>
             {analysis ? (
-              <>
-                <ResponsiveContainer width="100%" height={350}>
-                  <ComposedChart data={analysis.chartData}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={Math.floor(analysis.chartData.length / 8)} />
-                    <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10 }} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(222, 40%, 7%)', border: '1px solid hsl(222, 20%, 14%)', borderRadius: 6, fontSize: 11 }} />
-                    <Area type="monotone" dataKey="bbUpper" stroke="none" fill="hsl(185, 80%, 50%)" fillOpacity={0.05} />
-                    <Area type="monotone" dataKey="bbLower" stroke="none" fill="hsl(185, 80%, 50%)" fillOpacity={0.05} />
-                    <Line type="monotone" dataKey="bbUpper" stroke="hsl(185, 80%, 50%)" strokeWidth={0.5} dot={false} strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="bbLower" stroke="hsl(185, 80%, 50%)" strokeWidth={0.5} dot={false} strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="ema12" stroke="hsl(38, 92%, 55%)" strokeWidth={1} dot={false} />
-                    <Line type="monotone" dataKey="ema50" stroke="hsl(270, 70%, 60%)" strokeWidth={1} dot={false} />
-                    <Line type="monotone" dataKey="close" stroke="hsl(185, 80%, 50%)" strokeWidth={2} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-                <ResponsiveContainer width="100%" height={80}>
-                  <BarChart data={analysis.chartData}>
-                    <XAxis dataKey="date" hide />
-                    <Bar dataKey="volume" fill="hsl(185, 80%, 50%)" fillOpacity={0.2} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </>
+              <CandlestickChart
+                data={analysis.chartData as any}
+                height={380}
+                formatPrice={(v) => formatCurrency(v, selected)}
+              />
             ) : (
-              <div className="flex items-center justify-center h-[350px]"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+              <div className="flex items-center justify-center h-[450px]">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
             )}
           </div>
         </TabsContent>
+
 
         {/* Technicals Tab */}
         <TabsContent value="technicals">
