@@ -755,7 +755,12 @@ export default function StockAnalysis() {
     const sharpe = calculateSharpeRatio(returns);
     const maxDD = calculateMaxDrawdown(closes);
     const chartData = history.dates.map((date, i) => ({
-      date, close: history.closes[i], volume: history.volumes[i],
+      date,
+      open: history.opens[i],
+      high: history.highs[i],
+      low: history.lows[i],
+      close: history.closes[i],
+      volume: history.volumes[i],
       rsi: rsi[i], macd: macd[i]?.macd, signal: macd[i]?.signal, histogram: macd[i]?.histogram,
       ema12: ema12[i], ema26: ema26[i], ema50: ema50[i], sma20: sma20[i],
       bbUpper: bb[i]?.upper, bbLower: bb[i]?.lower, bbMiddle: bb[i]?.middle,
