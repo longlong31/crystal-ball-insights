@@ -267,22 +267,43 @@ export default function Dashboard() {
         ])}
       />
 
-      {/* Module Quick Access */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {modules.map((mod) => (
-          <Link key={mod.path} to={mod.path}>
-            <motion.div
-              whileHover={{ scale: 1.02, y: -2 }}
-              className="quant-card text-center cursor-pointer hover:border-primary/30 transition-colors"
-            >
-              <div className="mx-auto w-10 h-10 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: `${mod.color}15` }}>
-                <mod.icon className="w-5 h-5" style={{ color: mod.color }} />
-              </div>
-              <p className="text-xs font-medium">{mod.title}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{mod.desc}</p>
-            </motion.div>
-          </Link>
-        ))}
+      {/* Module Quick Access — rich dashboard cards */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="stat-label">{language === 'vi' ? 'Module nền tảng' : 'Platform Modules'}</p>
+          <span className="text-[10px] font-mono text-muted-foreground">{modules.length} {language === 'vi' ? 'mô-đun trực tiếp' : 'live modules'}</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {modules.map((mod, idx) => {
+            const trend = stockData[idx % stockData.length]?.closes || [];
+            return (
+              <Link key={mod.path} to={mod.path}>
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  className="quant-card group cursor-pointer relative overflow-hidden hover:border-primary/40 transition-all h-full"
+                >
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    style={{ background: `radial-gradient(circle at top right, ${mod.color}20, transparent 60%)` }}
+                  />
+                  <div className="relative flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${mod.color}18`, boxShadow: `0 0 20px ${mod.color}25` }}>
+                      <mod.icon className="w-5 h-5" style={{ color: mod.color }} />
+                    </div>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-green-500/10 text-green-500 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />LIVE
+                    </span>
+                  </div>
+                  <p className="relative text-sm font-semibold">{mod.title}</p>
+                  <p className="relative text-[11px] text-muted-foreground mt-0.5">{mod.desc}</p>
+                  <div className="relative mt-2 -mx-1">
+                    <MiniSparkline data={trend} color={mod.color} />
+                  </div>
+                </motion.div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
