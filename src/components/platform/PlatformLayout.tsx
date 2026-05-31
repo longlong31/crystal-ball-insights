@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { PlatformChatDock } from "./PlatformChatDock";
 import { Sparkles } from "lucide-react";
 
 interface PlatformLayoutProps {
@@ -174,6 +175,7 @@ export function PlatformLayout({ children }: PlatformLayoutProps) {
           </main>
         </div>
       </div>
+      <PlatformChatDock />
     </div>
   );
 }
