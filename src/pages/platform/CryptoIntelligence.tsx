@@ -703,10 +703,20 @@ export default function CryptoIntelligence() {
       {selectedMarket && (
         <CryptoChatPanel
           symbol={selectedCrypto}
+          name={selectedMarket.name}
           price={selectedMarket.currentPrice}
+          priceVnd={selectedMarket.currentPrice * usdVnd}
           change24h={selectedMarket.priceChangePercentage24h}
+          change7d={selectedMarket.priceChangePercentage7d}
           rsi={rsiLast}
           cycle={tech?.cycle}
+          marketCap={selectedMarket.marketCap}
+          volume24h={selectedMarket.totalVolume}
+          ath={selectedMarket.ath}
+          athChangePct={selectedMarket.athChangePercentage}
+          maxDrawdown={tech?.maxDD}
+          volatilityAnn={tech?.vol}
+          rank={selectedMarket.marketCapRank}
         />
       )}
     </div>
