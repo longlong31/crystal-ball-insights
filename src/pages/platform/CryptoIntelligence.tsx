@@ -188,7 +188,16 @@ export default function CryptoIntelligence() {
             {language === "vi" ? "Phân tích chuyên sâu · Real-time từ CoinGecko" : "Pro-grade analytics · Real-time from CoinGecko"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            variant={showVnd ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowVnd((v) => !v)}
+            title={`1 USD ≈ ${usdVnd.toLocaleString("vi-VN")} ₫`}
+          >
+            <Coins className="w-3 h-3 mr-1" />
+            {showVnd ? "USD + VND" : "USD only"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => refetchMarkets()}>
             <RefreshCw className="w-3 h-3 mr-1" />
             {language === "vi" ? "Làm mới" : "Refresh"}
@@ -204,9 +213,71 @@ export default function CryptoIntelligence() {
                 {globalData.marketCapChangePercentage24h?.toFixed(2)}% 24h
               </p>
             )}
+            <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+              1 USD ≈ {usdVnd.toLocaleString("vi-VN")} ₫
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Top 10 cards */}
+      <div className="quant-card">
+        <div className="flex items-center justify-between mb-3">
+          <p className="stat-label flex items-center gap-2">
+            <Crown className="w-3.5 h-3.5 text-quant-amber" />
+            {language === "vi" ? "TOP 10 VỐN HÓA" : "TOP 10 BY MARKET CAP"}
+            <span className="text-[10px] ml-1 text-primary font-normal">LIVE</span>
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {cryptoMarkets?.slice(0, 10).map((c, idx) => {
+            const isSelected = selectedCrypto === c.symbol;
+            const up = (c.priceChangePercentage24h ?? 0) >= 0;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCrypto(c.symbol)}
+                className={`relative text-left p-2.5 rounded-lg border transition-all ${
+                  isSelected
+                    ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                    : "bg-muted/20 border-border/30 hover:border-primary/30 hover:bg-muted/40"
+                }`}
+              >
+                <span className="absolute top-1 right-1.5 text-[9px] font-mono text-muted-foreground">#{idx + 1}</span>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <img src={c.image} alt={c.name} className="w-5 h-5 rounded-full" />
+                  <span className="font-mono text-xs font-semibold truncate">{c.symbol}</span>
+                </div>
+                <p className="text-sm font-mono font-medium leading-tight">
+                  ${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}
+                </p>
+                {showVnd && (
+                  <p className="text-[10px] font-mono text-muted-foreground leading-tight">
+                    {fmtVnd(c.currentPrice, usdVnd)}
+                  </p>
+                )}
+                <p className={`text-[10px] font-mono mt-0.5 ${up ? "ticker-green" : "ticker-red"}`}>
+                  {up ? "▲" : "▼"} {Math.abs(c.priceChangePercentage24h ?? 0).toFixed(2)}%
+                </p>
+                {c.sparkline7d.length > 0 && (
+                  <ResponsiveContainer width="100%" height={24}>
+                    <AreaChart data={c.sparkline7d.filter((_, i) => i % 6 === 0).map((v, i) => ({ i, v }))}>
+                      <defs>
+                        <linearGradient id={`tg-${c.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} stopOpacity={0.35} />
+                          <stop offset="100%" stopColor={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="v" stroke={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fill={`url(#tg-${c.symbol})`} strokeWidth={1.2} dot={false} isAnimationActive={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
 
       {/* Market Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
