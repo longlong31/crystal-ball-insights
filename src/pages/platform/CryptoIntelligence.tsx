@@ -508,7 +508,63 @@ export default function CryptoIntelligence() {
               )}
             </TabsContent>
 
-            <TabsContent value="indicators" className="mt-3">
+            <TabsContent value="area" className="mt-3">
+              {candles.length ? (
+                <ResponsiveContainer width="100%" height={380}>
+                  <ComposedChart data={candles} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                    <defs>
+                      <linearGradient id="priceArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(185, 80%, 50%)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="hsl(185, 80%, 50%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="hsl(222, 20%, 14%)" strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(215, 16%, 47%)" }} interval={Math.floor(candles.length / 8)} />
+                    <YAxis yAxisId="price" tick={{ fontSize: 10, fill: "hsl(215, 16%, 47%)" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} tickFormatter={(v) => fmtPrice(v)} />
+                    <YAxis yAxisId="vol" orientation="right" tick={{ fontSize: 9, fill: "hsl(215, 16%, 35%)" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1e9).toFixed(1)}B`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "hsl(222, 40%, 7%)", border: "1px solid hsl(222, 20%, 14%)", borderRadius: 6, fontSize: 11 }}
+                      formatter={(value: number, name: string) => {
+                        if (name === "close") return [`${fmtPrice(value)} (${fmtVnd(value, usdVnd)})`, language === "vi" ? "Giá" : "Price"];
+                        if (name === "volume") return [`$${(value / 1e9).toFixed(2)}B`, "Volume"];
+                        return [value, name];
+                      }}
+                    />
+                    <Bar yAxisId="vol" dataKey="volume" fill="hsl(215, 16%, 35%)" fillOpacity={0.4} isAnimationActive={false} />
+                    <Area yAxisId="price" type="monotone" dataKey="close" stroke="hsl(185, 80%, 50%)" fill="url(#priceArea)" strokeWidth={1.8} dot={false} isAnimationActive={false} />
+                    <Line yAxisId="price" type="monotone" dataKey="ema50" stroke="hsl(38, 92%, 55%)" strokeWidth={1.2} dot={false} strokeDasharray="3 3" isAnimationActive={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : <div className="flex items-center justify-center h-72"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+            </TabsContent>
+
+            <TabsContent value="volume" className="mt-3">
+              {candles.length ? (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="stat-label">{language === "vi" ? "Khối lượng giao dịch" : "Trading Volume"}</p>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      24h: ${(selectedMarket.totalVolume / 1e9).toFixed(2)}B · ≈ {fmtVnd(selectedMarket.totalVolume, usdVnd)}
+                    </span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <BarChart data={candles} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
+                      <CartesianGrid stroke="hsl(222, 20%, 14%)" strokeDasharray="2 4" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(215, 16%, 47%)" }} interval={Math.floor(candles.length / 8)} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(215, 16%, 47%)" }} tickFormatter={(v) => `${(v / 1e9).toFixed(1)}B`} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(222, 40%, 7%)", border: "1px solid hsl(222, 20%, 14%)", borderRadius: 6, fontSize: 11 }} formatter={(v: number) => [`$${(v / 1e9).toFixed(2)}B`, "Volume"]} />
+                      <Bar dataKey="volume" isAnimationActive={false}>
+                        {candles.map((d, i) => (
+                          <Cell key={i} fill={d.close >= d.open ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fillOpacity={0.6} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </>
+              ) : <div className="flex items-center justify-center h-72"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+            </TabsContent>
+
+
               {tech ? (
                 <div className="space-y-3">
                   <div>
