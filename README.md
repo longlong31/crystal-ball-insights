@@ -1,7 +1,7 @@
-# Crystal Ball - Công cụ phân tích rủi ro Monte Carlo
+# Crystal Ball - Nền tảng AI & phân tích tài chính
 
 <p align="center">
-  <img src="https://quachthanhlong.com/long/long.png" alt="Crystal Ball Logo" width="120" />
+  <img src="https://quachthanhlong.com/og-image.jpg" alt="Crystal Ball Logo" width="120" />
 </p>
 
 <p align="center">
@@ -16,60 +16,78 @@
 
 ---
 
-## 📖 Giới thiệu
+## 📌 Giới thiệu
 
-**Crystal Ball** là công cụ mô phỏng Monte Carlo chuyên nghiệp cho phân tích rủi ro dự án đầu tư, dự báo tài chính và hỗ trợ ra quyết định. Được thiết kế dành cho các chuyên gia tài chính, ngân hàng, và nhà đầu tư.
+**Crystal Ball** là nền tảng phân tích tài chính toàn diện, kết hợp:
+- Mô phỏng Monte Carlo cho đánh giá rủi ro dự án,
+- AI Insights thông minh,
+- Phân tích cổ phiếu và crypto chuyên sâu,
+- Quản lý danh mục đầu tư, watchlist và cảnh báo giá.
 
-## ✨ Tính năng chính
+Dự án hướng đến cả chuyên gia tài chính, nhà quản lý danh mục và trader muốn dùng dữ liệu, mô phỏng và AI để ra quyết định nhanh, chính xác.
 
-### 🎲 Mô phỏng Monte Carlo
-- Phân tích rủi ro với hàng nghìn kịch bản mô phỏng
-- Hỗ trợ nhiều loại phân phối xác suất: Normal, Lognormal, Uniform, Triangular, Beta
-- Tính toán VaR, CVaR (95%/99%)
-- Histogram và thống kê chi tiết
+---
 
-### 📊 Phân tích dự án đầu tư
-- **Chỉ số tài chính**: NPV, IRR, MIRR, PI, DPP, DSCR, WACC
-- **Tỷ suất sinh lời**: ROI, ROE, ROA
-- **Biên lợi nhuận**: Gross Margin, Net Margin, EBITDA Margin
-- **Điểm hòa vốn**: BEP (Sản lượng), BEP (Doanh thu), BEP (Năm)
-- **Hai góc nhìn**: TIPV (Tổng đầu tư) và EPV (Chủ đầu tư)
+## ✨ Tính năng nổi bật
 
-### 📈 Phân tích độ nhạy nâng cao
-- **Phân tích 1D**: Kiểm tra tác động từng biến
-- **Phân tích 2D**: Ma trận tương tác hai biến
-- **Biểu đồ Tornado**: Xếp hạng theo độ tác động
-- **Biểu đồ Spider**: Trực quan hóa độ nhạy
+### 🤖 Nền tảng AI đầu tư
+- Chatbot AI real-time giúp phân tích cổ phiếu, crypto và danh mục.
+- AI Insights tự động tóm tắt tình hình, rủi ro và cơ hội.
+- Hệ thống phản hồi bằng tiếng Việt & tiếng Anh.
+- Tích hợp Supabase Edge Functions cho chatbot và phân tích dữ liệu.
 
-### 🔥 Stress Testing
-- Các kịch bản khủng hoảng thực tế
-- Biến động lãi suất (±50%)
-- Sụt giảm doanh thu (-30%)
-- Tăng chi phí (+50%)
-- Đánh giá tính bền vững dự án
+### 📊 Phân tích dự án & mô phỏng rủi ro
+- Monte Carlo với hàng nghìn kịch bản
+- VaR / CVaR, phân phối kết quả, histogram
+- NPV, IRR, MIRR, PI, DPP, DSCR, WACC
+- ROI, ROE, ROA, EBITDA Margin
+- Điểm hòa vốn doanh thu, sản lượng và thời gian
+- Stress test kịch bản suy giảm doanh thu, tăng chi phí, biến động lãi suất
 
-### 🤖 AI Insights (Google Gemini)
-- Phân tích chuyên sâu tự động
-- Đề xuất cải thiện thông minh
-- Chatbot hỗ trợ 24/7
-- Kiểm duyệt nội dung AI
+### 📈 Phân tích cổ phiếu chuyên sâu
+- So sánh hiệu suất tương đối nhiều mã
+- Biểu đồ giá normalized (base = 100)
+- Ma trận tương quan giữa cổ phiếu
+- Xuất báo cáo PDF & Excel từ dashboard
+- Hỗ trợ nhập mã, so sánh cổ phiếu Việt Nam và quốc tế
 
-### 👥 Cộng đồng
-- Thảo luận và chia sẻ kinh nghiệm
-- Upload hình ảnh, video, PDF
-- Blog và sự kiện
-- Hệ thống like, bình luận, chia sẻ
-- Kiểm duyệt nội dung bởi Admin và AI
+### ₿ Phân tích crypto thông minh
+- Dashboard crypto intelligence và chat AI chuyên biệt
+- Hỗ trợ vùng giá, chỉ báo kỹ thuật, RSI, Bollinger Bands, EMA
+- Tư vấn điểm mua/bán, mức hỗ trợ/kháng cự
+- Phân tích rủi ro và tâm lý thị trường real-time
 
-### 📄 Xuất báo cáo
-- **PDF**: Báo cáo chuyên nghiệp theo chuẩn ngân hàng
-- **Word (.docx)**: Báo cáo thẩm định rủi ro
-- **Excel**: Dữ liệu và biểu đồ
+### 💼 Quản lý danh mục & cảnh báo
+- Watchlist đa tài sản: cổ phiếu và crypto
+- Price alerts theo điều kiện trên/dưới
+- Xem nhanh trạng thái từng mã
+- Chọn nhanh mã từ watchlist để phân tích chi tiết
 
-### 📱 Responsive Design
-- Tương thích mọi thiết bị
-- Menu hamburger mobile
-- Giao diện hiện đại và trực quan
+### 📉 Risk Engine & Sentiment
+- Fear & Greed gauge đánh giá tâm lý thị trường
+- Phân tích chiều sâu các yếu tố momentum, tin tức, nhà đầu tư, biến động, ảnh hưởng toàn cầu
+- Dashboard rủi ro nền tảng cho cả cổ phiếu và crypto
+
+---
+
+## 🚀 Nền tảng `/platform`
+
+`/src/components/platform/` chứa các tính năng chính của Quant Platform:
+- `PlatformLayout.tsx` – cấu trúc sidebar, định tuyến và layout nền tảng
+- `PlatformChatDock.tsx` – trợ lý AI luôn hiện trên giao diện
+- `CryptoChatPanel.tsx` – chat AI chuyên sâu cho phân tích crypto
+- `StockComparison.tsx` – so sánh hiệu suất cổ phiếu và ma trận tương quan
+- `CandlestickChart.tsx` – biểu đồ nến với Bollinger Bands và EMA
+- `WatchlistPanel.tsx` – watchlist đa tài sản và price alert
+- `FearGreedGauge.tsx` – chỉ số tâm lý Fear & Greed
+
+Các trang `/platform` bao gồm:
+- Dashboard tổng quan
+- Stock Analysis
+- Crypto Intel
+- Portfolio
+- Risk Engine
+- AI Insights
 
 ---
 
@@ -77,70 +95,65 @@
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 18, TypeScript, Tailwind CSS, Framer Motion |
-| **UI Components** | shadcn/ui, Radix UI, Lucide Icons |
-| **Charts** | Recharts |
-| **Backend** | Supabase (Database, Auth, Storage, Edge Functions) |
-| **AI** | Google Gemini AI (via Lovable AI Gateway) |
-| **Export** | jsPDF, docx, xlsx |
-| **Build** | Vite, ESLint |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS |
+| UI | shadcn/ui, Radix UI, Lucide Icons |
+| Charts | Recharts |
+| State & Data | React Query, Supabase, custom hooks |
+| AI | Google Gemini / Lovable AI Gateway |
+| Backend | Supabase Auth, Database, Storage, Edge Functions |
+| Export | jsPDF, docx, xlsx |
+| Tools | ESLint, Prettier |
 
 ---
 
-## 🚀 Cài đặt local
+## ⚙️ Cài đặt local
 
 ```bash
-# Clone repository
 git clone <YOUR_GIT_URL>
-
-# Di chuyển vào thư mục dự án
-cd crystal-ball
-
-# Cài đặt dependencies
+cd crystal-ball-insights
 npm install
-
-# Chạy development server
 npm run dev
 ```
 
-Truy cập `http://localhost:5173` để xem ứng dụng.
+Mở `http://localhost:5173` để xem ứng dụng.
+
+> Lưu ý: cấu hình Supabase và biến môi trường `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` cần được thiết lập để AI và dữ liệu thị trường hoạt động đầy đủ.
 
 ---
 
-## 📚 Cấu trúc dự án
+## 📁 Cấu trúc dự án
 
 ```
-crystal-ball/
+crystal-ball-insights/
 ├── src/
-│   ├── components/          # React components
-│   │   ├── ui/              # shadcn/ui components
-│   │   ├── community/       # Community features
-│   │   └── auth/            # Authentication
-│   ├── pages/               # Page components
-│   ├── lib/                 # Utilities & calculations
-│   │   ├── monteCarlo.ts    # Monte Carlo simulation
-│   │   ├── projectCalculator.ts  # Financial calculations
-│   │   ├── pdfExporter.ts   # PDF generation
-│   │   └── sensitivityAnalysis.ts
-│   ├── hooks/               # Custom hooks
-│   └── integrations/        # Supabase integration
+│   ├── components/
+│   │   ├── platform/            # Quant Platform: AI, stocks, crypto, portfolio
+│   │   ├── community/           # Forum, bài đăng, bình luận
+│   │   ├── auth/                # Đăng nhập / đăng ký
+│   │   ├── layout/              # Header, footer, layout chung
+│   │   └── ui/                  # Component dùng chung
+│   ├── pages/                   # Các trang chính
+│   ├── lib/                     # Logic, mô phỏng, xuất báo cáo
+│   ├── hooks/                   # Custom hooks dữ liệu và state
+│   └── integrations/            # Supabase client và API helpers
 ├── supabase/
-│   ├── functions/           # Edge Functions
-│   │   ├── chatbot-ai/      # AI Chatbot
-│   │   ├── analyze-project/ # AI Analysis
-│   │   └── moderate-content/ # Content moderation
-│   └── migrations/          # Database migrations
-└── public/                  # Static assets
+│   ├── functions/               # Edge Functions AI & data
+│   │   ├── chatbot-ai/          # Chatbot streaming AI
+│   │   ├── analyze-project/     # Phân tích dự án tự động
+│   │   ├── moderate-content/    # Kiểm duyệt nội dung
+│   │   └── fetch-stock-data/    # API lấy dữ liệu cổ phiếu/crypto
+│   └── migrations/              # Database schema
+└── public/                      # Static assets
 ```
 
 ---
 
-## 🔐 Bảo mật
+## 🔒 Bảo mật
 
-- Row Level Security (RLS) cho tất cả các bảng
-- Xác thực người dùng qua Supabase Auth
-- Kiểm duyệt nội dung AI tự động
-- Admin approval cho bài đăng cộng đồng
+- Supabase Auth quản lý đăng nhập người dùng
+- Row Level Security (RLS) cho dữ liệu
+- Kiểm duyệt nội dung AI và cộng đồng
+- Role-based access cho Admin và người dùng
 
 ---
 
@@ -148,23 +161,14 @@ crystal-ball/
 
 **Quách Thành Long** - CTO-level Full-stack Developer
 
-- 🌐 Website: [quachthanhlong.com](https://quachthanhlong.com)
-- 📧 Email: [contact@quachthanhlong.com](mailto:contact@quachthanhlong.com)
-- 💼 Các dự án: [quachthanhlong.com/projects](https://quachthanhlong.com/projects)
-
-### Các dự án nổi bật khác:
-- **ThinkShift** - Nền tảng giáo dục AI
-- **MSC** - Hệ thống quản lý doanh nghiệp
-- **Dragon Keeper** - Game mobile phát triển bằng Unity
-- **Cosmic Emotion Letter** - Game narrative theo phong cách Studio Ghibli
+- 🌐 [quachthanhlong.com](https://quachthanhlong.com)
+- 📧 [contact@quachthanhlong.com](mailto:contact@quachthanhlong.com)
 
 ---
 
 ## 📄 License
 
-© 2025 Crystal Ball by Quách Thành Long. All rights reserved.
-
----
+© 2026 Crystal Ball by Quách Thành Long. All rights reserved.
 
 <p align="center">
   Made with ❤️ in Vietnam
