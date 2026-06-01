@@ -54,10 +54,14 @@ const fmtPrice = (v: number) =>
 export default function CryptoIntelligence() {
   const [selectedCrypto, setSelectedCrypto] = useState("BTC");
   const [historyDays, setHistoryDays] = useState("90");
+  const [search, setSearch] = useState("");
+  const [showVnd, setShowVnd] = useState(false);
   const { language } = useLanguage();
 
-  const { data: cryptoMarkets, isLoading: marketsLoading, refetch: refetchMarkets } = useCryptoMarkets();
+  const { data: cryptoMarkets, isLoading: marketsLoading, refetch: refetchMarkets } = useTopCryptoMarkets(100);
   const { data: globalData } = useCryptoGlobal();
+  const { data: fxData } = useUsdVndRate();
+  const usdVnd = fxData?.usdVnd ?? 25400;
   const { data: historyData, isLoading: historyLoading } = useCryptoHistory(selectedCrypto, historyDays);
 
   /** Build full candle dataset with indicators */
