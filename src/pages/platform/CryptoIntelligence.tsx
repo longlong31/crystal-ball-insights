@@ -51,6 +51,14 @@ const fmtPrice = (v: number) =>
     ? `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
     : `$${v.toLocaleString(undefined, { maximumFractionDigits: v < 1 ? 4 : 2 })}`;
 
+const fmtVnd = (usd: number, rate: number) => {
+  const v = usd * rate;
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)} tỷ ₫`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)} triệu ₫`;
+  if (v >= 1e3) return `${v.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} ₫`;
+  return `${v.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} ₫`;
+};
+
 export default function CryptoIntelligence() {
   const [selectedCrypto, setSelectedCrypto] = useState("BTC");
   const [historyDays, setHistoryDays] = useState("90");
