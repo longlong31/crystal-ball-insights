@@ -12,6 +12,7 @@ import { useWatchlist } from "@/hooks/useWatchlist";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 import { StockComparison } from "@/components/platform/StockComparison";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CandlestickChart } from "@/components/platform/CandlestickChart";
 
 // Global stock categories
 const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
@@ -754,7 +755,12 @@ export default function StockAnalysis() {
     const sharpe = calculateSharpeRatio(returns);
     const maxDD = calculateMaxDrawdown(closes);
     const chartData = history.dates.map((date, i) => ({
-      date, close: history.closes[i], volume: history.volumes[i],
+      date,
+      open: history.opens[i],
+      high: history.highs[i],
+      low: history.lows[i],
+      close: history.closes[i],
+      volume: history.volumes[i],
       rsi: rsi[i], macd: macd[i]?.macd, signal: macd[i]?.signal, histogram: macd[i]?.histogram,
       ema12: ema12[i], ema26: ema26[i], ema50: ema50[i], sma20: sma20[i],
       bbUpper: bb[i]?.upper, bbLower: bb[i]?.lower, bbMiddle: bb[i]?.middle,
@@ -823,54 +829,91 @@ export default function StockAnalysis() {
 
   return (
     <div className="space-y-4">
-      {/* Stock Info Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            {quote ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold">{quote.name}</h1>
-                  <span className="font-mono text-sm text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{selected}</span>
-                  {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                </div>
-                <p className="text-xs text-muted-foreground">{quote.sector} · {quote.industry} · {quote.country} · {quote.marketCap}</p>
-              </>
-            ) : (
-              <div className="space-y-1">
-                <div className="h-5 w-48 bg-muted animate-pulse rounded" />
-                <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+      {/* Stock Info Header — premium hero */}
+      <div className="relative quant-card overflow-hidden">
+
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.06] via-transparent to-transparent" />
+        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            {quote && (
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-mono font-bold text-base shrink-0 border ${quote.priceChange1d >= 0 ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+                {selected.replace('.VN', '').slice(0, 4)}
               </div>
             )}
+            <div className="min-w-0">
+              {quote ? (
+                <>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-xl font-semibold truncate">{quote.name}</h1>
+                    <span className="font-mono text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">{selected}</span>
+                    {isLoading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{quote.sector} · {quote.industry} · {quote.country} · {quote.marketCap}</p>
+                </>
+              ) : (
+                <div className="space-y-1">
+                  <div className="h-5 w-48 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-baseline gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
             {quote ? (
-              <>
-                <span className="text-3xl font-mono font-semibold">{formatCurrency(quote.currentPrice, selected)}</span>
-                <span className={`text-sm font-mono ${quote.priceChange1d >= 0 ? 'ticker-green' : 'ticker-red'}`}>
-                  {quote.priceChange1d >= 0 ? '+' : ''}{quote.priceChange1d.toFixed(2)}%
-                </span>
-              </>
+              <div className="flex flex-col items-start sm:items-end">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-mono font-semibold tabular-nums">{formatCurrency(quote.currentPrice, selected)}</span>
+                  <span className={`text-sm font-mono px-1.5 py-0.5 rounded ${quote.priceChange1d >= 0 ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                    {quote.priceChange1d >= 0 ? '▲' : '▼'} {Math.abs(quote.priceChange1d).toFixed(2)}%
+                  </span>
+                </div>
+                <div className="flex gap-3 mt-1 text-[10px] font-mono text-muted-foreground">
+                  <span>O <span className="text-foreground">{formatCurrency(quote.open, selected)}</span></span>
+                  <span>H <span className="text-green-400">{formatCurrency(quote.dayHigh, selected)}</span></span>
+                  <span>L <span className="text-red-400">{formatCurrency(quote.dayLow, selected)}</span></span>
+                  <span>Vol <span className="text-foreground">{formatLargeNumber(quote.volume)}</span></span>
+                </div>
+              </div>
             ) : <div className="h-8 w-28 bg-muted animate-pulse rounded" />}
-          </div>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={() => {
-              if (isInWatchlist(selected)) removeFromWatchlist(selected);
-              else addToWatchlist(selected, 'stock', quote?.name);
-            }} className={isInWatchlist(selected) ? 'text-yellow-500 border-yellow-500/30' : ''}>
-              <Star className={`w-3.5 h-3.5 ${isInWatchlist(selected) ? 'fill-yellow-500' : ''}`} />
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!quote}>
-              <Download className="w-3.5 h-3.5 mr-1" /> Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={!quote}>
-              <FileText className="w-3.5 h-3.5 mr-1" /> PDF
-            </Button>
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" onClick={() => {
+                if (isInWatchlist(selected)) removeFromWatchlist(selected);
+                else addToWatchlist(selected, 'stock', quote?.name);
+              }} className={isInWatchlist(selected) ? 'text-yellow-500 border-yellow-500/30' : ''}>
+                <Star className={`w-3.5 h-3.5 ${isInWatchlist(selected) ? 'fill-yellow-500' : ''}`} />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={!quote}>
+                <Download className="w-3.5 h-3.5 mr-1" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={!quote}>
+                <FileText className="w-3.5 h-3.5 mr-1" /> PDF
+              </Button>
+            </div>
           </div>
         </div>
+
+        {/* 52-week range bar */}
+        {quote && quote.fiftyTwoWeekHigh > 0 && quote.fiftyTwoWeekLow > 0 && (
+          <div className="relative mt-4 pt-3 border-t border-border/20">
+            <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground mb-1.5">
+              <span>52W Low <span className="text-foreground">{formatCurrency(quote.fiftyTwoWeekLow, selected)}</span></span>
+              <span className="text-muted-foreground/60">Range Position</span>
+              <span>52W High <span className="text-foreground">{formatCurrency(quote.fiftyTwoWeekHigh, selected)}</span></span>
+            </div>
+            <div className="relative h-1.5 bg-muted/40 rounded-full overflow-hidden">
+              <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-500/40 via-yellow-500/40 to-green-500/40 w-full" />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))] ring-2 ring-background"
+                style={{
+                  left: `${Math.max(0, Math.min(100, ((quote.currentPrice - quote.fiftyTwoWeekLow) / (quote.fiftyTwoWeekHigh - quote.fiftyTwoWeekLow)) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+
 
       {/* Stock Screener Panel */}
       <div className="quant-card space-y-3">
@@ -1045,38 +1088,38 @@ export default function StockAnalysis() {
           <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
 
-        {/* Price Tab */}
+        {/* Price Tab — Candlestick */}
         <TabsContent value="price">
-          <div className="quant-card space-y-4">
-            <p className="stat-label">Price Chart with Bollinger Bands & EMAs</p>
+          <div className="quant-card space-y-3 relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/[0.03] via-transparent to-transparent" />
+            <div className="flex items-center justify-between relative">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-sm bg-primary" />
+                <p className="text-xs font-semibold tracking-wide uppercase text-foreground/80">
+                  Candlestick · {historyRange.toUpperCase()}
+                </p>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  Bollinger Bands · EMA(12,50)
+                </span>
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {analysis ? `${analysis.chartData.length} bars` : ""}
+              </span>
+            </div>
             {analysis ? (
-              <>
-                <ResponsiveContainer width="100%" height={350}>
-                  <ComposedChart data={analysis.chartData}>
-                    <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={Math.floor(analysis.chartData.length / 8)} />
-                    <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10 }} />
-                    <Tooltip contentStyle={{ backgroundColor: 'hsl(222, 40%, 7%)', border: '1px solid hsl(222, 20%, 14%)', borderRadius: 6, fontSize: 11 }} />
-                    <Area type="monotone" dataKey="bbUpper" stroke="none" fill="hsl(185, 80%, 50%)" fillOpacity={0.05} />
-                    <Area type="monotone" dataKey="bbLower" stroke="none" fill="hsl(185, 80%, 50%)" fillOpacity={0.05} />
-                    <Line type="monotone" dataKey="bbUpper" stroke="hsl(185, 80%, 50%)" strokeWidth={0.5} dot={false} strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="bbLower" stroke="hsl(185, 80%, 50%)" strokeWidth={0.5} dot={false} strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="ema12" stroke="hsl(38, 92%, 55%)" strokeWidth={1} dot={false} />
-                    <Line type="monotone" dataKey="ema50" stroke="hsl(270, 70%, 60%)" strokeWidth={1} dot={false} />
-                    <Line type="monotone" dataKey="close" stroke="hsl(185, 80%, 50%)" strokeWidth={2} dot={false} />
-                  </ComposedChart>
-                </ResponsiveContainer>
-                <ResponsiveContainer width="100%" height={80}>
-                  <BarChart data={analysis.chartData}>
-                    <XAxis dataKey="date" hide />
-                    <Bar dataKey="volume" fill="hsl(185, 80%, 50%)" fillOpacity={0.2} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </>
+              <CandlestickChart
+                data={analysis.chartData as any}
+                height={380}
+                formatPrice={(v) => formatCurrency(v, selected)}
+              />
             ) : (
-              <div className="flex items-center justify-center h-[350px]"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+              <div className="flex items-center justify-center h-[450px]">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
             )}
           </div>
         </TabsContent>
+
 
         {/* Technicals Tab */}
         <TabsContent value="technicals">

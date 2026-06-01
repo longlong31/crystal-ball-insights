@@ -12,10 +12,12 @@ import { Slider } from "@/components/ui/slider";
 import { 
   FileText, Upload, Table2, TrendingUp, AlertCircle, CheckCircle, 
   Download, Trash2, FileSpreadsheet, File, Calculator, Sparkles,
-  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity
+  DollarSign, Percent, TrendingDown, BarChart3, PieChart, Activity,
+  Brain, Lightbulb, Loader2, Wand2
 } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 import {
   BarChart,
   Bar,
@@ -130,62 +132,104 @@ const formatPercent = (value: number): string => {
   return (value * 100).toFixed(2) + "%";
 };
 
+// Robust number parser: handles "1,234.56", "1.234,56", "(123)" negative, "12%", "12 tỷ", "5 triệu", etc.
+const parseFinancialNumber = (raw: unknown): number | null => {
+  if (typeof raw === "number") return isFinite(raw) ? raw : null;
+  if (raw == null) return null;
+  let s = String(raw).trim();
+  if (!s) return null;
+  const isPercent = /%/.test(s);
+  const isNegative = /^\(.*\)$/.test(s) || /^-/.test(s);
+  let multiplier = 1;
+  if (/tỷ|tỉ|billion|\bbn\b/i.test(s)) multiplier = 1e9;
+  else if (/triệu|million|\bmn\b|\bmil\b/i.test(s)) multiplier = 1e6;
+  else if (/nghìn|thousand|\bk\b/i.test(s)) multiplier = 1e3;
+  s = s.replace(/[^\d.,-]/g, "");
+  if (!s || s === "-" || s === "." || s === ",") return null;
+  const lastDot = s.lastIndexOf(".");
+  const lastComma = s.lastIndexOf(",");
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (lastComma > -1) {
+    const parts = s.split(",");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/,/g, "");
+    else s = s.replace(",", ".");
+  } else if (lastDot > -1) {
+    const parts = s.split(".");
+    if (parts[parts.length - 1].length === 3 && parts.length > 1) s = s.replace(/\./g, "");
+  }
+  const n = parseFloat(s);
+  if (!isFinite(n)) return null;
+  let result = n * multiplier;
+  if (isNegative && result > 0) result = -result;
+  if (isPercent) result = result / 100;
+  return result;
+};
+
+// Ignore cells that look like row index, year, or tiny ordinals — they pollute metric matches
+const isLikelyMetricValue = (n: number): boolean => {
+  if (!isFinite(n) || n === 0) return false;
+  const abs = Math.abs(n);
+  if (Number.isInteger(n) && abs >= 1900 && abs <= 2100) return false;
+  if (Number.isInteger(n) && abs < 100) return false;
+  return true;
+};
+
 const detectFinancialMetrics = (data: SheetData[]): FinancialSummary => {
   const detectedMetrics: { name: string; value: number; unit: string }[] = [];
   const summary: Partial<FinancialSummary> = {};
 
+  const mappings: Record<string, keyof FinancialSummary> = {
+    revenue: "totalRevenue", expenses: "totalExpenses", netIncome: "netIncome",
+    assets: "totalAssets", liabilities: "totalLiabilities", equity: "equity",
+    cashFlow: "cashFlow", operatingCashFlow: "operatingCashFlow",
+    investingCashFlow: "investingCashFlow", depreciation: "depreciation",
+    interestExpense: "interestExpense", taxExpense: "taxExpense",
+    ebitda: "ebitda", grossProfit: "grossProfit", ebit: "operatingIncome",
+  };
+
   data.forEach((sheet) => {
     sheet.rows.forEach((row) => {
-      const rowText = Object.keys(row)
-        .map((key) => String(row[key]).toLowerCase())
-        .join(" ");
+      // Build label text from non-numeric cells only
+      const labelText = Object.values(row)
+        .map((v) => String(v ?? ""))
+        .filter((v) => v && parseFinancialNumber(v) === null)
+        .join(" ")
+        .toLowerCase();
+      if (!labelText) return;
+
+      // Pick the largest-magnitude numeric cell on this row (typical financial figure)
+      const candidates: number[] = [];
+      Object.values(row).forEach((v) => {
+        const n = parseFinancialNumber(v);
+        if (n !== null && isLikelyMetricValue(n)) candidates.push(n);
+      });
+      if (candidates.length === 0) return;
+      const bestValue = candidates.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a);
 
       Object.entries(financialKeywords).forEach(([metricKey, keywords]) => {
-        keywords.forEach((keyword) => {
-          if (rowText.includes(keyword.toLowerCase())) {
-            Object.values(row).forEach((cellValue) => {
-              const numValue = typeof cellValue === "number" ? cellValue : parseFloat(String(cellValue).replace(/[,\.]/g, ""));
-              if (!isNaN(numValue) && numValue !== 0) {
-                detectedMetrics.push({
-                  name: keyword,
-                  value: numValue,
-                  unit: numValue >= 1e6 ? "triệu" : "",
-                });
-
-                // Map to summary
-                const mappings: Record<string, keyof FinancialSummary> = {
-                  revenue: "totalRevenue",
-                  expenses: "totalExpenses",
-                  netIncome: "netIncome",
-                  assets: "totalAssets",
-                  liabilities: "totalLiabilities",
-                  equity: "equity",
-                  cashFlow: "cashFlow",
-                  operatingCashFlow: "operatingCashFlow",
-                  investingCashFlow: "investingCashFlow",
-                  depreciation: "depreciation",
-                  interestExpense: "interestExpense",
-                  taxExpense: "taxExpense",
-                  ebitda: "ebitda",
-                  grossProfit: "grossProfit",
-                  ebit: "operatingIncome",
-                };
-
-                const summaryKey = mappings[metricKey];
-                if (summaryKey && !(summaryKey in summary)) {
-                  (summary as Record<string, number>)[summaryKey] = numValue;
-                }
-              }
+        for (const keyword of keywords) {
+          if (labelText.includes(keyword.toLowerCase())) {
+            detectedMetrics.push({
+              name: keyword,
+              value: bestValue,
+              unit: Math.abs(bestValue) >= 1e6 ? "triệu" : "",
             });
+            const summaryKey = mappings[metricKey];
+            if (summaryKey && !(summaryKey in summary)) {
+              (summary as Record<string, number>)[summaryKey] = bestValue;
+            }
+            break;
           }
-        });
+        }
       });
     });
   });
 
   return {
     ...summary,
-    detectedMetrics: detectedMetrics.slice(0, 30),
+    detectedMetrics: detectedMetrics.slice(0, 50),
   };
 };
 
@@ -235,12 +279,15 @@ const calculatePaybackPeriod = (cashFlows: number[]): number => {
 };
 
 interface SelectedMetric {
+  id?: string;
   name: string;
   value: number;
   unit: string;
   category: string;
   selected: boolean;
   useAs?: string; // Which analysis field to map to
+  confidence?: number; // AI confidence 0-1
+  source?: "rule" | "ai";
 }
 
 interface FinancialStatementReaderProps {
@@ -264,6 +311,87 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
   const [growthRate, setGrowthRate] = useState(5);
   const [analysis, setAnalysis] = useState<CrystalBallAnalysis | null>(null);
 
+  // AI extraction state
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiExtraction, setAiExtraction] = useState<{
+    insights: string[];
+    warnings?: string[];
+    dataQuality?: string;
+    currency?: string;
+    period?: string;
+    unitMultiplier?: number;
+    addedCount: number;
+  } | null>(null);
+
+  const runAIExtraction = useCallback(async () => {
+    if (!financialData) {
+      toast.error("Vui lòng upload file trước");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      // Send compact sheets (cap rows per sheet)
+      const compactSheets = financialData.sheets.map(s => ({
+        name: s.name,
+        headers: s.headers,
+        rows: s.rows.slice(0, 500),
+      }));
+      const { data, error } = await supabase.functions.invoke("ai-extract-financials", {
+        body: { sheets: compactSheets, fileName: financialData.fileName },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const ext = data?.extraction;
+      if (!ext?.metrics) throw new Error("AI không trả về dữ liệu hợp lệ");
+
+      const mult = ext.unitMultiplier && ext.unitMultiplier > 0 ? ext.unitMultiplier : 1;
+      const newMetrics: SelectedMetric[] = ext.metrics
+        .filter((m: any) => typeof m.value === "number" && !isNaN(m.value))
+        .map((m: any, i: number) => ({
+          id: `ai-${Date.now()}-${i}`,
+          name: m.name,
+          value: m.value * mult,
+          unit: Math.abs(m.value * mult) >= 1e6 ? "triệu" : "",
+          category: m.category || "AI",
+          selected: (m.confidence ?? 0) >= 0.6,
+          useAs: m.useAs || undefined,
+          confidence: typeof m.confidence === "number" ? m.confidence : undefined,
+          source: "ai" as const,
+        }));
+
+      setSelectedMetrics(prev => {
+        // Avoid exact duplicates by value+useAs
+        const existing = new Set(prev.map(p => `${p.useAs || ""}_${p.value}`));
+        const merged = [...prev];
+        let added = 0;
+        for (const nm of newMetrics) {
+          const key = `${nm.useAs || ""}_${nm.value}`;
+          if (!existing.has(key)) {
+            merged.push(nm);
+            existing.add(key);
+            added++;
+          }
+        }
+        setAiExtraction({
+          insights: ext.insights || [],
+          warnings: ext.warnings,
+          dataQuality: ext.dataQuality,
+          currency: ext.currency,
+          period: ext.period,
+          unitMultiplier: mult,
+          addedCount: added,
+        });
+        toast.success(`AI trích xuất ${newMetrics.length} chỉ số (${added} mới)`);
+        return merged;
+      });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "AI phân tích thất bại");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [financialData]);
+
   const handleExcelUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -285,30 +413,65 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
 
       reader.onload = (e) => {
         try {
-          const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: "binary" });
+          const data = e.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(data, { type: "array", cellDates: true, cellNF: false, cellText: false });
 
           const sheets: SheetData[] = workbook.SheetNames.map((sheetName) => {
             const worksheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: "" });
+            // Read as 2D array so we can auto-detect the header row (financial reports often have title rows above)
+            const matrix = XLSX.utils.sheet_to_json<unknown[]>(worksheet, { header: 1, defval: "", blankrows: false, raw: true });
+            if (!matrix.length) return { name: sheetName, headers: [], rows: [] };
 
-            if (jsonData.length === 0) {
-              return { name: sheetName, headers: [], rows: [] };
+            const scoreRow = (r: unknown[]) => {
+              let strings = 0, numbers = 0;
+              for (const c of r) {
+                if (c == null || c === "") continue;
+                if (typeof c === "number") numbers++;
+                else if (typeof c === "string" && c.trim() && parseFinancialNumber(c) === null) strings++;
+              }
+              return { strings, numbers };
+            };
+
+            // Header row = first row with ≥2 string cells AND the next row has ≥1 numeric cell
+            let headerIdx = 0;
+            for (let i = 0; i < Math.min(matrix.length - 1, 15); i++) {
+              const cur = scoreRow(matrix[i]);
+              const next = scoreRow(matrix[i + 1]);
+              if (cur.strings >= 2 && (next.numbers >= 1 || scoreRow(matrix[Math.min(i + 2, matrix.length - 1)]).numbers >= 1)) {
+                headerIdx = i;
+                break;
+              }
             }
 
-            const headers = Object.keys(jsonData[0]);
-            const rows = jsonData.map((row) => {
-              const processedRow: Record<string, string | number> = {};
-              headers.forEach((header) => {
-                const value = row[header];
-                if (typeof value === "number") {
-                  processedRow[header] = value;
-                } else {
-                  processedRow[header] = String(value || "");
+            const rawHeaders = (matrix[headerIdx] as unknown[]).map((h, idx) => {
+              const s = String(h ?? "").trim();
+              return s || `Cột ${idx + 1}`;
+            });
+            // De-duplicate headers
+            const seen = new Map<string, number>();
+            const headers = rawHeaders.map((h) => {
+              const c = seen.get(h) || 0;
+              seen.set(h, c + 1);
+              return c === 0 ? h : `${h} (${c + 1})`;
+            });
+
+            const rows: Record<string, string | number>[] = [];
+            for (let i = headerIdx + 1; i < matrix.length; i++) {
+              const r = matrix[i] as unknown[];
+              if (!r || r.every((c) => c == null || c === "")) continue;
+              const obj: Record<string, string | number> = {};
+              headers.forEach((h, idx) => {
+                const v = r[idx];
+                if (v instanceof Date) obj[h] = v.toISOString().slice(0, 10);
+                else if (typeof v === "number") obj[h] = v;
+                else {
+                  const s = String(v ?? "").trim();
+                  const n = parseFinancialNumber(s);
+                  obj[h] = n !== null && /^[\d\s.,()%-]+$/.test(s) ? n : s;
                 }
               });
-              return processedRow;
-            });
+              rows.push(obj);
+            }
 
             return { name: sheetName, headers, rows };
           });
@@ -395,7 +558,7 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         setIsLoading(false);
       };
 
-      reader.readAsBinaryString(file);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       toast.error("Có lỗi xảy ra khi xử lý file");
       setIsLoading(false);
@@ -421,8 +584,9 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
         setProgress((prev) => Math.min(prev + 10, 85));
       }, 150);
 
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+      const pdfjsLib: any = await import("pdfjs-dist");
+      // Use unpkg with the exact installed version (cdnjs sometimes lags) and .js worker (pdfjs-dist v3 ships .js)
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -433,23 +597,43 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
       for (let i = 1; i <= Math.min(pdf.numPages, 50); i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: unknown) => (item as { str: string }).str).join(" ");
-        allText.push(pageText);
 
-        const lines = pageText.split(/[\n\r]+/);
-        lines.forEach((line, lineIndex) => {
-          const parts = line.split(/\s{2,}|\t/);
-          if (parts.length >= 2) {
-            const row: Record<string, string | number> = {
-              STT: lineIndex + 1,
-              "Nội dung": parts[0] || "",
-            };
-            parts.slice(1).forEach((part, idx) => {
-              const numValue = parseFloat(part.replace(/[,\.]/g, "").replace(/\s/g, ""));
-              row[`Cột ${idx + 2}`] = !isNaN(numValue) ? numValue : part;
-            });
-            extractedRows.push(row);
-          }
+        // Group items by Y coordinate to reconstruct visual lines
+        const linesMap = new Map<number, { x: number; str: string }[]>();
+        for (const it of textContent.items as any[]) {
+          if (typeof it.str !== "string" || !it.str.trim()) continue;
+          const y = Math.round(it.transform[5]);
+          const x = it.transform[4];
+          if (!linesMap.has(y)) linesMap.set(y, []);
+          linesMap.get(y)!.push({ x, str: it.str });
+        }
+        const sortedLines = Array.from(linesMap.entries())
+          .sort((a, b) => b[0] - a[0]) // top to bottom (Y descending)
+          .map(([, items]) =>
+            items.sort((a, b) => a.x - b.x).map(p => p.str).join(" ").replace(/\s+/g, " ").trim()
+          )
+          .filter(l => l.length > 0);
+
+        allText.push(`--- Trang ${i} ---\n${sortedLines.join("\n")}`);
+
+        sortedLines.forEach((line, lineIndex) => {
+          // Split label from numeric columns: numbers (with commas/dots/parentheses) at the end
+          const numRe = /-?\(?\d[\d.,\s]*\)?%?/g;
+          const numbers = line.match(numRe) || [];
+          const label = line.replace(numRe, "").replace(/\s+/g, " ").trim();
+          if (!label && numbers.length === 0) return;
+          const row: Record<string, string | number> = {
+            Trang: i,
+            STT: lineIndex + 1,
+            "Nội dung": label || line,
+          };
+          numbers.forEach((part, idx) => {
+            const cleaned = part.replace(/[(),\s]/g, "").replace(/%$/, "");
+            const numValue = parseFloat(cleaned);
+            const isNeg = /\(.*\)/.test(part);
+            row[`Số ${idx + 1}`] = !isNaN(numValue) ? (isNeg ? -numValue : numValue) : part;
+          });
+          extractedRows.push(row);
         });
       }
 
@@ -879,6 +1063,218 @@ export function FinancialStatementReader({ onAnalysisComplete }: FinancialStatem
                   </CardContent>
                 </Card>
               )}
+
+              {/* AI Super Extraction Card */}
+              <Card className="glass border-primary/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-primary" />
+                    AI phân tích siêu đỉnh
+                    <Badge variant="secondary" className="ml-2 text-xs">Gemini</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Dùng AI đọc toàn bộ file, tự động trích xuất các chỉ số tài chính (kể cả khi tên cột không chuẩn),
+                    suy luận đơn vị (đồng/triệu/tỷ) và đưa ra nhận định chuyên sâu.
+                  </p>
+                  <Button
+                    onClick={runAIExtraction}
+                    disabled={aiLoading}
+                    className="w-full"
+                    variant="glow"
+                  >
+                    {aiLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />AI đang đọc file...</>
+                    ) : (
+                      <><Wand2 className="w-4 h-4 mr-2" />Trích xuất bằng AI</>
+                    )}
+                  </Button>
+
+                  {aiExtraction && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-3"
+                    >
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {aiExtraction.currency && (
+                          <Badge variant="outline">Tiền tệ: {aiExtraction.currency}</Badge>
+                        )}
+                        {aiExtraction.period && (
+                          <Badge variant="outline">Kỳ: {aiExtraction.period}</Badge>
+                        )}
+                        {aiExtraction.unitMultiplier && aiExtraction.unitMultiplier !== 1 && (
+                          <Badge variant="outline">Đơn vị: ×{aiExtraction.unitMultiplier.toLocaleString()}</Badge>
+                        )}
+                        {aiExtraction.dataQuality && (
+                          <Badge variant={aiExtraction.dataQuality === "high" ? "default" : "secondary"}>
+                            Chất lượng: {aiExtraction.dataQuality}
+                          </Badge>
+                        )}
+                        <Badge className="bg-primary/20 text-primary border-primary/30">
+                          +{aiExtraction.addedCount} chỉ số mới
+                        </Badge>
+                      </div>
+
+                      {aiExtraction.insights.length > 0 && (
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-primary">
+                            <Lightbulb className="w-4 h-4" />
+                            Nhận định AI
+                          </div>
+                          <ul className="space-y-1.5 text-sm text-muted-foreground">
+                            {aiExtraction.insights.map((ins, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="text-primary mt-0.5">▸</span>
+                                <span>{ins}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {aiExtraction.warnings && aiExtraction.warnings.length > 0 && (
+                        <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                          <div className="flex items-center gap-2 mb-2 text-sm font-medium text-yellow-600">
+                            <AlertCircle className="w-4 h-4" />
+                            Cảnh báo
+                          </div>
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {aiExtraction.warnings.map((w, i) => (
+                              <li key={i}>• {w}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* AI extracted metrics table */}
+                      {(() => {
+                        const aiRows = selectedMetrics.filter(m => m.source === "ai");
+                        if (aiRows.length === 0) return null;
+                        const setAllAi = (val: boolean) =>
+                          setSelectedMetrics(prev => prev.map(m => m.source === "ai" ? { ...m, selected: val } : m));
+                        const toggleOne = (id?: string) =>
+                          setSelectedMetrics(prev => prev.map(m => m.id === id ? { ...m, selected: !m.selected } : m));
+                        const setUseAs = (id: string | undefined, useAs: string) =>
+                          setSelectedMetrics(prev => prev.map(m => m.id === id ? { ...m, useAs: useAs || undefined } : m));
+
+                        const useAsOptions = [
+                          { v: "", label: "—" },
+                          { v: "revenue", label: "Doanh thu" },
+                          { v: "expenses", label: "Chi phí" },
+                          { v: "netIncome", label: "Lợi nhuận ròng" },
+                          { v: "grossProfit", label: "Lợi nhuận gộp" },
+                          { v: "operatingIncome", label: "LN hoạt động" },
+                          { v: "ebitda", label: "EBITDA" },
+                          { v: "assets", label: "Tài sản" },
+                          { v: "liabilities", label: "Nợ" },
+                          { v: "equity", label: "Vốn CSH" },
+                          { v: "cashFlow", label: "Dòng tiền" },
+                          { v: "operatingCashFlow", label: "DT hoạt động" },
+                          { v: "investingCashFlow", label: "DT đầu tư" },
+                          { v: "financingCashFlow", label: "DT tài trợ" },
+                          { v: "depreciation", label: "Khấu hao" },
+                          { v: "interestExpense", label: "Chi phí lãi vay" },
+                          { v: "taxExpense", label: "Thuế" },
+                        ];
+                        const selectedCount = aiRows.filter(m => m.selected).length;
+
+                        return (
+                          <div className="rounded-lg border border-border/50 overflow-hidden">
+                            <div className="flex items-center justify-between gap-2 px-3 py-2 bg-muted/30 border-b border-border/50">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Brain className="w-4 h-4 text-primary" />
+                                Chỉ số AI trích xuất
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {selectedCount}/{aiRows.length}
+                                </Badge>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAllAi(true)}>Chọn hết</Button>
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAllAi(false)}>Bỏ hết</Button>
+                              </div>
+                            </div>
+                            <div className="max-h-[420px] overflow-auto">
+                              <Table>
+                                <TableHeader className="sticky top-0 bg-card/95 backdrop-blur z-10">
+                                  <TableRow>
+                                    <TableHead className="w-10"></TableHead>
+                                    <TableHead>Chỉ số</TableHead>
+                                    <TableHead className="text-right">Giá trị</TableHead>
+                                    <TableHead>Đơn vị</TableHead>
+                                    <TableHead>Nhóm</TableHead>
+                                    <TableHead>Map sang</TableHead>
+                                    <TableHead className="w-28">Confidence</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {aiRows.map((m) => {
+                                    const conf = m.confidence ?? 0;
+                                    const confColor = conf >= 0.8 ? "bg-green-500" : conf >= 0.6 ? "bg-yellow-500" : "bg-red-500";
+                                    return (
+                                      <TableRow key={m.id} className={m.selected ? "" : "opacity-50"}>
+                                        <TableCell>
+                                          <input
+                                            type="checkbox"
+                                            checked={m.selected}
+                                            onChange={() => toggleOne(m.id)}
+                                            className="w-4 h-4 cursor-pointer accent-primary"
+                                          />
+                                        </TableCell>
+                                        <TableCell className="font-medium text-sm">{m.name}</TableCell>
+                                        <TableCell className="text-right font-mono text-sm">
+                                          {formatNumber(m.value)}
+                                        </TableCell>
+                                        <TableCell className="text-xs text-muted-foreground">
+                                          {m.unit || "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                          <Badge variant="outline" className="text-[10px]">{m.category}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                          <select
+                                            value={m.useAs || ""}
+                                            onChange={(e) => setUseAs(m.id, e.target.value)}
+                                            className="h-7 text-xs rounded border border-border bg-background px-1.5 max-w-[130px]"
+                                          >
+                                            {useAsOptions.map(o => (
+                                              <option key={o.v} value={o.v}>{o.label}</option>
+                                            ))}
+                                          </select>
+                                        </TableCell>
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                              <div className={`h-full ${confColor}`} style={{ width: `${conf * 100}%` }} />
+                                            </div>
+                                            <span className="text-[10px] font-mono text-muted-foreground w-8 text-right">
+                                              {(conf * 100).toFixed(0)}%
+                                            </span>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      <Button
+                        onClick={() => setActiveTab("select-metrics")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Tiếp tục với {selectedMetrics.filter(m => m.selected).length} chỉ số đã chọn
+                      </Button>
+                    </motion.div>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </TabsContent>
