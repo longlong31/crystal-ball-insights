@@ -435,6 +435,9 @@ export default function CryptoIntelligence() {
                 <p className="text-2xl font-mono font-semibold">
                   ${selectedMarket.currentPrice.toLocaleString(undefined, { maximumFractionDigits: selectedMarket.currentPrice < 1 ? 4 : 2 })}
                 </p>
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  ≈ {fmtVnd(selectedMarket.currentPrice, usdVnd)}
+                </p>
                 <p className={`text-xs font-mono ${selectedMarket.priceChangePercentage24h >= 0 ? "ticker-green" : "ticker-red"}`}>
                   {selectedMarket.priceChangePercentage24h >= 0 ? "+" : ""}
                   {selectedMarket.priceChangePercentage24h?.toFixed(2)}% (24h)
