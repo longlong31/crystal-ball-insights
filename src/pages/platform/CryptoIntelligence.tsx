@@ -62,7 +62,10 @@ export default function CryptoIntelligence() {
   const { data: globalData } = useCryptoGlobal();
   const { data: fxData } = useUsdVndRate();
   const usdVnd = fxData?.usdVnd ?? 25400;
-  const { data: historyData, isLoading: historyLoading } = useCryptoHistory(selectedCrypto, historyDays);
+  // Resolve CoinGecko id for selected symbol (fallback to symbol if not found)
+  const selectedMarketEarly = cryptoMarkets?.find((c) => c.symbol === selectedCrypto);
+  const selectedCoinId = selectedMarketEarly?.id || selectedCrypto.toLowerCase();
+  const { data: historyData, isLoading: historyLoading } = useCryptoHistory(selectedCoinId, historyDays);
 
   /** Build full candle dataset with indicators */
   const candles: Candle[] = useMemo(() => {
