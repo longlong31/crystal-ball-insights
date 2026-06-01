@@ -107,7 +107,22 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid type. Use: crypto, crypto_global, crypto_history" }), {
+    if (type === "fx_rates") {
+      // USD->VND via Tether (USDT≈USD). Free, no key.
+      const resp = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=vnd", {
+        headers: { "Accept": "application/json" },
+      });
+      let usdVnd = 25400; // fallback
+      if (resp.ok) {
+        const data = await resp.json();
+        usdVnd = data?.tether?.vnd || usdVnd;
+      }
+      return new Response(JSON.stringify({ data: { usdVnd } }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid type. Use: crypto, crypto_global, crypto_history, fx_rates" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
