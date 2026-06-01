@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Bitcoin, Loader2, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3 } from "lucide-react";
+import { Bitcoin, Loader2, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3, Search, Crown, Coins } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell,
   BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, CartesianGrid,
@@ -9,7 +9,8 @@ import {
 } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useCryptoMarkets, useCryptoGlobal, useCryptoHistory } from "@/hooks/useMarketData";
+import { Input } from "@/components/ui/input";
+import { useTopCryptoMarkets, useCryptoGlobal, useCryptoHistory, useUsdVndRate } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CandlestickChart, Candle } from "@/components/platform/CandlestickChart";
 import { CryptoChatPanel } from "@/components/platform/CryptoChatPanel";
