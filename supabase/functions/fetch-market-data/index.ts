@@ -14,9 +14,12 @@ serve(async (req) => {
     const { type, symbols } = await req.json();
 
     if (type === "crypto") {
-      // CoinGecko free API
-      const ids = (symbols || ["bitcoin", "ethereum", "solana", "binancecoin", "ripple", "cardano"]).join(",");
-      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&sparkline=true&price_change_percentage=1h,24h,7d,30d`;
+      // CoinGecko free API. If symbols provided -> filter by ids; otherwise fetch top N by mcap.
+      const hasIds = Array.isArray(symbols) && symbols.length > 0 && !symbols[0]?.toString().startsWith("__top");
+      const topMatch = symbols?.[0]?.toString().match(/^__top:(\d+)$/);
+      const perPage = topMatch ? Math.min(250, parseInt(topMatch[1], 10) || 100) : 100;
+      const idsParam = hasIds ? `&ids=${(symbols as string[]).join(",")}` : "";
+      const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd${idsParam}&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=true&price_change_percentage=1h,24h,7d,30d`;
       
       const resp = await fetch(url, {
         headers: { "Accept": "application/json" },
