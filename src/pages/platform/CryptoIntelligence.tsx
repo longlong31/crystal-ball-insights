@@ -281,61 +281,85 @@ export default function CryptoIntelligence() {
 
       {/* Market Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="quant-card lg:col-span-2">
-          <p className="stat-label mb-3">
-            {language === "vi" ? "Tổng quan thị trường" : "Market Overview"}
-            <span className="text-[10px] ml-2 text-primary font-normal">LIVE</span>
-          </p>
-          <div className="space-y-1">
-            {cryptoMarkets?.map((c) => (
-              <div
-                key={c.symbol}
-                className={`flex items-center gap-4 p-3 rounded-md cursor-pointer transition-colors ${
-                  selectedCrypto === c.symbol ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/30"
-                }`}
-                onClick={() => setSelectedCrypto(c.symbol)}
-              >
-                <div className="flex items-center gap-2 w-28">
-                  <img src={c.image} alt={c.name} className="w-6 h-6 rounded-full" />
-                  <div>
-                    <span className="font-mono font-medium text-sm">{c.symbol}</span>
-                    <p className="text-[10px] text-muted-foreground">{c.name}</p>
+        <div className="quant-card lg:col-span-2 flex flex-col">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <p className="stat-label">
+              {language === "vi" ? "Tất cả Crypto" : "All Cryptos"}
+              <span className="text-[10px] ml-2 text-primary font-normal">
+                {cryptoMarkets?.length ?? 0} {language === "vi" ? "loại" : "coins"}
+              </span>
+            </p>
+            <div className="relative w-56">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={language === "vi" ? "Tìm theo tên/ký hiệu..." : "Search symbol/name..."}
+                className="h-7 pl-7 text-xs font-mono bg-muted/20 border-border/40"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-[40px_1fr_90px_110px_70px_70px] gap-2 px-3 py-1.5 text-[10px] font-mono text-muted-foreground border-b border-border/30 bg-muted/10">
+            <span>#</span>
+            <span>{language === "vi" ? "Tên" : "Name"}</span>
+            <span className="text-right">7D</span>
+            <span className="text-right">{language === "vi" ? "Giá" : "Price"}</span>
+            <span className="text-right">24h%</span>
+            <span className="text-right hidden md:block">MCap</span>
+          </div>
+          <div className="overflow-y-auto max-h-[520px] divide-y divide-border/20 pr-1">
+            {cryptoMarkets
+              ?.filter((c) => {
+                if (!search.trim()) return true;
+                const q = search.toLowerCase();
+                return c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+              })
+              .map((c) => {
+                const up = (c.priceChangePercentage24h ?? 0) >= 0;
+                const isSel = selectedCrypto === c.symbol;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => setSelectedCrypto(c.symbol)}
+                    className={`grid grid-cols-[40px_1fr_90px_110px_70px_70px] gap-2 items-center px-3 py-2 cursor-pointer transition-colors ${
+                      isSel ? "bg-primary/10" : "hover:bg-muted/30"
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono text-muted-foreground">#{c.marketCapRank}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img src={c.image} alt={c.name} className="w-5 h-5 rounded-full shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-mono font-medium text-xs">{c.symbol}</span>
+                        <p className="text-[10px] text-muted-foreground truncate">{c.name}</p>
+                      </div>
+                    </div>
+                    <div className="h-7">
+                      {c.sparkline7d.length > 0 && (
+                        <ResponsiveContainer width="100%" height={28}>
+                          <AreaChart data={c.sparkline7d.filter((_, i) => i % 6 === 0).map((v, i) => ({ i, v }))}>
+                            <Area type="monotone" dataKey="v" stroke={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fill={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fillOpacity={0.15} strokeWidth={1.2} dot={false} isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-mono">${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}</p>
+                      {showVnd && (
+                        <p className="text-[9px] font-mono text-muted-foreground">{fmtVnd(c.currentPrice, usdVnd)}</p>
+                      )}
+                    </div>
+                    <p className={`text-[10px] font-mono text-right ${up ? "ticker-green" : "ticker-red"}`}>
+                      {up ? "+" : ""}{c.priceChangePercentage24h?.toFixed(2)}%
+                    </p>
+                    <p className="text-[10px] font-mono text-right text-muted-foreground hidden md:block">
+                      {c.marketCap >= 1e9 ? `$${(c.marketCap / 1e9).toFixed(1)}B` : `$${(c.marketCap / 1e6).toFixed(0)}M`}
+                    </p>
                   </div>
-                </div>
-                <div className="flex-1">
-                  {c.sparkline7d.length > 0 && (
-                    <ResponsiveContainer width="100%" height={35}>
-                      <AreaChart data={c.sparkline7d.filter((_, i) => i % 4 === 0).map((v, i) => ({ i, v }))}>
-                        <defs>
-                          <linearGradient id={`cg-${c.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} stopOpacity={0.3} />
-                            <stop offset="100%" stopColor={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area type="monotone" dataKey="v" stroke={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} fill={`url(#cg-${c.symbol})`} strokeWidth={1.5} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-                <div className="text-right w-28">
-                  <p className="text-sm font-mono">${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}</p>
-                  <p className={`text-[10px] font-mono ${c.priceChangePercentage24h >= 0 ? "ticker-green" : "ticker-red"}`}>
-                    {c.priceChangePercentage24h >= 0 ? "+" : ""}
-                    {c.priceChangePercentage24h?.toFixed(2)}%
-                  </p>
-                </div>
-                <div className="text-right w-20 hidden md:block">
-                  <p className="text-[10px] text-muted-foreground">24h Vol</p>
-                  <p className="text-xs font-mono">${(c.totalVolume / 1e9).toFixed(1)}B</p>
-                </div>
-                <div className="text-right w-20 hidden lg:block">
-                  <p className="text-[10px] text-muted-foreground">MCap</p>
-                  <p className="text-xs font-mono">${(c.marketCap / 1e9).toFixed(0)}B</p>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
+
 
         <div className="quant-card">
           <p className="stat-label mb-3">{language === "vi" ? "Thị phần" : "Market Dominance"}</p>
