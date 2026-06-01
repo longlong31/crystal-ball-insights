@@ -472,12 +472,18 @@ export default function CryptoIntelligence() {
           </div>
 
           <Tabs defaultValue="candles">
-            <TabsList className="bg-muted/30 border border-border/30">
+            <TabsList className="bg-muted/30 border border-border/30 flex-wrap h-auto">
               <TabsTrigger value="candles" className="text-xs gap-1">
                 <BarChart3 className="w-3 h-3" /> Candlestick
               </TabsTrigger>
+              <TabsTrigger value="area" className="text-xs gap-1">
+                <Activity className="w-3 h-3" /> {language === "vi" ? "Giá + Volume" : "Price+Vol"}
+              </TabsTrigger>
               <TabsTrigger value="indicators" className="text-xs gap-1">
                 <Activity className="w-3 h-3" /> RSI / MACD
+              </TabsTrigger>
+              <TabsTrigger value="volume" className="text-xs gap-1">
+                <BarChart3 className="w-3 h-3" /> Volume
               </TabsTrigger>
               <TabsTrigger value="drawdown" className="text-xs gap-1">
                 <TrendingDown className="w-3 h-3" /> Drawdown
