@@ -564,6 +564,7 @@ export default function CryptoIntelligence() {
               ) : <div className="flex items-center justify-center h-72"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
             </TabsContent>
 
+            <TabsContent value="indicators" className="mt-3">
 
               {tech ? (
                 <div className="space-y-3">
