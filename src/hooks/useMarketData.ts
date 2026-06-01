@@ -76,8 +76,30 @@ export function useCryptoMarkets(symbolList?: string[]) {
   return useQuery<CryptoMarketData[]>({
     queryKey: ["crypto-markets", ids.join(",")],
     queryFn: () => fetchMarketData("crypto", ids),
-    refetchInterval: 60000, // 1 min
+    refetchInterval: 60000,
     staleTime: 30000,
+    retry: 2,
+  });
+}
+
+/** Fetch top N cryptocurrencies by market cap (no symbol filter). */
+export function useTopCryptoMarkets(limit: number = 100) {
+  return useQuery<CryptoMarketData[]>({
+    queryKey: ["crypto-markets-top", limit],
+    queryFn: () => fetchMarketData("crypto", [`__top:${limit}`]),
+    refetchInterval: 60000,
+    staleTime: 30000,
+    retry: 2,
+  });
+}
+
+/** USD -> VND exchange rate (via USDT). */
+export function useUsdVndRate() {
+  return useQuery<{ usdVnd: number }>({
+    queryKey: ["fx-usd-vnd"],
+    queryFn: () => fetchMarketData("fx_rates"),
+    refetchInterval: 300000,
+    staleTime: 240000,
     retry: 2,
   });
 }
