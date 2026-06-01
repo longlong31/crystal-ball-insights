@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Bitcoin, Loader2, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3 } from "lucide-react";
+import { Bitcoin, Loader2, RefreshCw, TrendingUp, TrendingDown, Activity, BarChart3, Search, Crown, Coins } from "lucide-react";
 import {
   AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, PieChart, Pie, Cell,
   BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, CartesianGrid,
@@ -9,7 +9,8 @@ import {
 } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useCryptoMarkets, useCryptoGlobal, useCryptoHistory } from "@/hooks/useMarketData";
+import { Input } from "@/components/ui/input";
+import { useTopCryptoMarkets, useCryptoGlobal, useCryptoHistory, useUsdVndRate } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { CandlestickChart, Candle } from "@/components/platform/CandlestickChart";
 import { CryptoChatPanel } from "@/components/platform/CryptoChatPanel";
@@ -50,14 +51,29 @@ const fmtPrice = (v: number) =>
     ? `$${v.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
     : `$${v.toLocaleString(undefined, { maximumFractionDigits: v < 1 ? 4 : 2 })}`;
 
+const fmtVnd = (usd: number, rate: number) => {
+  const v = usd * rate;
+  if (v >= 1e9) return `${(v / 1e9).toFixed(2)} tỷ ₫`;
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)} triệu ₫`;
+  if (v >= 1e3) return `${v.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} ₫`;
+  return `${v.toLocaleString("vi-VN", { maximumFractionDigits: 2 })} ₫`;
+};
+
 export default function CryptoIntelligence() {
   const [selectedCrypto, setSelectedCrypto] = useState("BTC");
   const [historyDays, setHistoryDays] = useState("90");
+  const [search, setSearch] = useState("");
+  const [showVnd, setShowVnd] = useState(false);
   const { language } = useLanguage();
 
-  const { data: cryptoMarkets, isLoading: marketsLoading, refetch: refetchMarkets } = useCryptoMarkets();
+  const { data: cryptoMarkets, isLoading: marketsLoading, refetch: refetchMarkets } = useTopCryptoMarkets(100);
   const { data: globalData } = useCryptoGlobal();
-  const { data: historyData, isLoading: historyLoading } = useCryptoHistory(selectedCrypto, historyDays);
+  const { data: fxData } = useUsdVndRate();
+  const usdVnd = fxData?.usdVnd ?? 25400;
+  // Resolve CoinGecko id for selected symbol (fallback to symbol if not found)
+  const selectedMarketEarly = cryptoMarkets?.find((c) => c.symbol === selectedCrypto);
+  const selectedCoinId = selectedMarketEarly?.id || selectedCrypto.toLowerCase();
+  const { data: historyData, isLoading: historyLoading } = useCryptoHistory(selectedCoinId, historyDays);
 
   /** Build full candle dataset with indicators */
   const candles: Candle[] = useMemo(() => {
@@ -172,7 +188,16 @@ export default function CryptoIntelligence() {
             {language === "vi" ? "Phân tích chuyên sâu · Real-time từ CoinGecko" : "Pro-grade analytics · Real-time from CoinGecko"}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button
+            variant={showVnd ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowVnd((v) => !v)}
+            title={`1 USD ≈ ${usdVnd.toLocaleString("vi-VN")} ₫`}
+          >
+            <Coins className="w-3 h-3 mr-1" />
+            {showVnd ? "USD + VND" : "USD only"}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => refetchMarkets()}>
             <RefreshCw className="w-3 h-3 mr-1" />
             {language === "vi" ? "Làm mới" : "Refresh"}
@@ -188,67 +213,153 @@ export default function CryptoIntelligence() {
                 {globalData.marketCapChangePercentage24h?.toFixed(2)}% 24h
               </p>
             )}
+            <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+              1 USD ≈ {usdVnd.toLocaleString("vi-VN")} ₫
+            </p>
           </div>
         </div>
       </div>
 
+      {/* Top 10 cards */}
+      <div className="quant-card">
+        <div className="flex items-center justify-between mb-3">
+          <p className="stat-label flex items-center gap-2">
+            <Crown className="w-3.5 h-3.5 text-quant-amber" />
+            {language === "vi" ? "TOP 10 VỐN HÓA" : "TOP 10 BY MARKET CAP"}
+            <span className="text-[10px] ml-1 text-primary font-normal">LIVE</span>
+          </p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {cryptoMarkets?.slice(0, 10).map((c, idx) => {
+            const isSelected = selectedCrypto === c.symbol;
+            const up = (c.priceChangePercentage24h ?? 0) >= 0;
+            return (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCrypto(c.symbol)}
+                className={`relative text-left p-2.5 rounded-lg border transition-all ${
+                  isSelected
+                    ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                    : "bg-muted/20 border-border/30 hover:border-primary/30 hover:bg-muted/40"
+                }`}
+              >
+                <span className="absolute top-1 right-1.5 text-[9px] font-mono text-muted-foreground">#{idx + 1}</span>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <img src={c.image} alt={c.name} className="w-5 h-5 rounded-full" />
+                  <span className="font-mono text-xs font-semibold truncate">{c.symbol}</span>
+                </div>
+                <p className="text-sm font-mono font-medium leading-tight">
+                  ${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}
+                </p>
+                {showVnd && (
+                  <p className="text-[10px] font-mono text-muted-foreground leading-tight">
+                    {fmtVnd(c.currentPrice, usdVnd)}
+                  </p>
+                )}
+                <p className={`text-[10px] font-mono mt-0.5 ${up ? "ticker-green" : "ticker-red"}`}>
+                  {up ? "▲" : "▼"} {Math.abs(c.priceChangePercentage24h ?? 0).toFixed(2)}%
+                </p>
+                {c.sparkline7d.length > 0 && (
+                  <ResponsiveContainer width="100%" height={24}>
+                    <AreaChart data={c.sparkline7d.filter((_, i) => i % 6 === 0).map((v, i) => ({ i, v }))}>
+                      <defs>
+                        <linearGradient id={`tg-${c.symbol}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} stopOpacity={0.35} />
+                          <stop offset="100%" stopColor={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="v" stroke={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fill={`url(#tg-${c.symbol})`} strokeWidth={1.2} dot={false} isAnimationActive={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
       {/* Market Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="quant-card lg:col-span-2">
-          <p className="stat-label mb-3">
-            {language === "vi" ? "Tổng quan thị trường" : "Market Overview"}
-            <span className="text-[10px] ml-2 text-primary font-normal">LIVE</span>
-          </p>
-          <div className="space-y-1">
-            {cryptoMarkets?.map((c) => (
-              <div
-                key={c.symbol}
-                className={`flex items-center gap-4 p-3 rounded-md cursor-pointer transition-colors ${
-                  selectedCrypto === c.symbol ? "bg-primary/10 border border-primary/20" : "hover:bg-muted/30"
-                }`}
-                onClick={() => setSelectedCrypto(c.symbol)}
-              >
-                <div className="flex items-center gap-2 w-28">
-                  <img src={c.image} alt={c.name} className="w-6 h-6 rounded-full" />
-                  <div>
-                    <span className="font-mono font-medium text-sm">{c.symbol}</span>
-                    <p className="text-[10px] text-muted-foreground">{c.name}</p>
+        <div className="quant-card lg:col-span-2 flex flex-col">
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <p className="stat-label">
+              {language === "vi" ? "Tất cả Crypto" : "All Cryptos"}
+              <span className="text-[10px] ml-2 text-primary font-normal">
+                {cryptoMarkets?.length ?? 0} {language === "vi" ? "loại" : "coins"}
+              </span>
+            </p>
+            <div className="relative w-56">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={language === "vi" ? "Tìm theo tên/ký hiệu..." : "Search symbol/name..."}
+                className="h-7 pl-7 text-xs font-mono bg-muted/20 border-border/40"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-[40px_1fr_90px_110px_70px_70px] gap-2 px-3 py-1.5 text-[10px] font-mono text-muted-foreground border-b border-border/30 bg-muted/10">
+            <span>#</span>
+            <span>{language === "vi" ? "Tên" : "Name"}</span>
+            <span className="text-right">7D</span>
+            <span className="text-right">{language === "vi" ? "Giá" : "Price"}</span>
+            <span className="text-right">24h%</span>
+            <span className="text-right hidden md:block">MCap</span>
+          </div>
+          <div className="overflow-y-auto max-h-[520px] divide-y divide-border/20 pr-1">
+            {cryptoMarkets
+              ?.filter((c) => {
+                if (!search.trim()) return true;
+                const q = search.toLowerCase();
+                return c.symbol.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+              })
+              .map((c) => {
+                const up = (c.priceChangePercentage24h ?? 0) >= 0;
+                const isSel = selectedCrypto === c.symbol;
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => setSelectedCrypto(c.symbol)}
+                    className={`grid grid-cols-[40px_1fr_90px_110px_70px_70px] gap-2 items-center px-3 py-2 cursor-pointer transition-colors ${
+                      isSel ? "bg-primary/10" : "hover:bg-muted/30"
+                    }`}
+                  >
+                    <span className="text-[10px] font-mono text-muted-foreground">#{c.marketCapRank}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <img src={c.image} alt={c.name} className="w-5 h-5 rounded-full shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-mono font-medium text-xs">{c.symbol}</span>
+                        <p className="text-[10px] text-muted-foreground truncate">{c.name}</p>
+                      </div>
+                    </div>
+                    <div className="h-7">
+                      {c.sparkline7d.length > 0 && (
+                        <ResponsiveContainer width="100%" height={28}>
+                          <AreaChart data={c.sparkline7d.filter((_, i) => i % 6 === 0).map((v, i) => ({ i, v }))}>
+                            <Area type="monotone" dataKey="v" stroke={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fill={up ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fillOpacity={0.15} strokeWidth={1.2} dot={false} isAnimationActive={false} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-mono">${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}</p>
+                      {showVnd && (
+                        <p className="text-[9px] font-mono text-muted-foreground">{fmtVnd(c.currentPrice, usdVnd)}</p>
+                      )}
+                    </div>
+                    <p className={`text-[10px] font-mono text-right ${up ? "ticker-green" : "ticker-red"}`}>
+                      {up ? "+" : ""}{c.priceChangePercentage24h?.toFixed(2)}%
+                    </p>
+                    <p className="text-[10px] font-mono text-right text-muted-foreground hidden md:block">
+                      {c.marketCap >= 1e9 ? `$${(c.marketCap / 1e9).toFixed(1)}B` : `$${(c.marketCap / 1e6).toFixed(0)}M`}
+                    </p>
                   </div>
-                </div>
-                <div className="flex-1">
-                  {c.sparkline7d.length > 0 && (
-                    <ResponsiveContainer width="100%" height={35}>
-                      <AreaChart data={c.sparkline7d.filter((_, i) => i % 4 === 0).map((v, i) => ({ i, v }))}>
-                        <defs>
-                          <linearGradient id={`cg-${c.symbol}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} stopOpacity={0.3} />
-                            <stop offset="100%" stopColor={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <Area type="monotone" dataKey="v" stroke={CRYPTO_COLORS[c.symbol] || "hsl(185, 80%, 50%)"} fill={`url(#cg-${c.symbol})`} strokeWidth={1.5} dot={false} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-                <div className="text-right w-28">
-                  <p className="text-sm font-mono">${c.currentPrice.toLocaleString(undefined, { maximumFractionDigits: c.currentPrice < 1 ? 4 : 2 })}</p>
-                  <p className={`text-[10px] font-mono ${c.priceChangePercentage24h >= 0 ? "ticker-green" : "ticker-red"}`}>
-                    {c.priceChangePercentage24h >= 0 ? "+" : ""}
-                    {c.priceChangePercentage24h?.toFixed(2)}%
-                  </p>
-                </div>
-                <div className="text-right w-20 hidden md:block">
-                  <p className="text-[10px] text-muted-foreground">24h Vol</p>
-                  <p className="text-xs font-mono">${(c.totalVolume / 1e9).toFixed(1)}B</p>
-                </div>
-                <div className="text-right w-20 hidden lg:block">
-                  <p className="text-[10px] text-muted-foreground">MCap</p>
-                  <p className="text-xs font-mono">${(c.marketCap / 1e9).toFixed(0)}B</p>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
+
 
         <div className="quant-card">
           <p className="stat-label mb-3">{language === "vi" ? "Thị phần" : "Market Dominance"}</p>
@@ -324,6 +435,9 @@ export default function CryptoIntelligence() {
                 <p className="text-2xl font-mono font-semibold">
                   ${selectedMarket.currentPrice.toLocaleString(undefined, { maximumFractionDigits: selectedMarket.currentPrice < 1 ? 4 : 2 })}
                 </p>
+                <p className="text-[11px] font-mono text-muted-foreground">
+                  ≈ {fmtVnd(selectedMarket.currentPrice, usdVnd)}
+                </p>
                 <p className={`text-xs font-mono ${selectedMarket.priceChangePercentage24h >= 0 ? "ticker-green" : "ticker-red"}`}>
                   {selectedMarket.priceChangePercentage24h >= 0 ? "+" : ""}
                   {selectedMarket.priceChangePercentage24h?.toFixed(2)}% (24h)
@@ -358,12 +472,18 @@ export default function CryptoIntelligence() {
           </div>
 
           <Tabs defaultValue="candles">
-            <TabsList className="bg-muted/30 border border-border/30">
+            <TabsList className="bg-muted/30 border border-border/30 flex-wrap h-auto">
               <TabsTrigger value="candles" className="text-xs gap-1">
                 <BarChart3 className="w-3 h-3" /> Candlestick
               </TabsTrigger>
+              <TabsTrigger value="area" className="text-xs gap-1">
+                <Activity className="w-3 h-3" /> {language === "vi" ? "Giá + Volume" : "Price+Vol"}
+              </TabsTrigger>
               <TabsTrigger value="indicators" className="text-xs gap-1">
                 <Activity className="w-3 h-3" /> RSI / MACD
+              </TabsTrigger>
+              <TabsTrigger value="volume" className="text-xs gap-1">
+                <BarChart3 className="w-3 h-3" /> Volume
               </TabsTrigger>
               <TabsTrigger value="drawdown" className="text-xs gap-1">
                 <TrendingDown className="w-3 h-3" /> Drawdown
@@ -388,7 +508,64 @@ export default function CryptoIntelligence() {
               )}
             </TabsContent>
 
+            <TabsContent value="area" className="mt-3">
+              {candles.length ? (
+                <ResponsiveContainer width="100%" height={380}>
+                  <ComposedChart data={candles} margin={{ top: 8, right: 8, bottom: 0, left: -8 }}>
+                    <defs>
+                      <linearGradient id="priceArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(185, 80%, 50%)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="hsl(185, 80%, 50%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="hsl(222, 20%, 14%)" strokeDasharray="2 4" vertical={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(215, 16%, 47%)" }} interval={Math.floor(candles.length / 8)} />
+                    <YAxis yAxisId="price" tick={{ fontSize: 10, fill: "hsl(215, 16%, 47%)" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} tickFormatter={(v) => fmtPrice(v)} />
+                    <YAxis yAxisId="vol" orientation="right" tick={{ fontSize: 9, fill: "hsl(215, 16%, 35%)" }} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1e9).toFixed(1)}B`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "hsl(222, 40%, 7%)", border: "1px solid hsl(222, 20%, 14%)", borderRadius: 6, fontSize: 11 }}
+                      formatter={(value: number, name: string) => {
+                        if (name === "close") return [`${fmtPrice(value)} (${fmtVnd(value, usdVnd)})`, language === "vi" ? "Giá" : "Price"];
+                        if (name === "volume") return [`$${(value / 1e9).toFixed(2)}B`, "Volume"];
+                        return [value, name];
+                      }}
+                    />
+                    <Bar yAxisId="vol" dataKey="volume" fill="hsl(215, 16%, 35%)" fillOpacity={0.4} isAnimationActive={false} />
+                    <Area yAxisId="price" type="monotone" dataKey="close" stroke="hsl(185, 80%, 50%)" fill="url(#priceArea)" strokeWidth={1.8} dot={false} isAnimationActive={false} />
+                    <Line yAxisId="price" type="monotone" dataKey="ema50" stroke="hsl(38, 92%, 55%)" strokeWidth={1.2} dot={false} strokeDasharray="3 3" isAnimationActive={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              ) : <div className="flex items-center justify-center h-72"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+            </TabsContent>
+
+            <TabsContent value="volume" className="mt-3">
+              {candles.length ? (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="stat-label">{language === "vi" ? "Khối lượng giao dịch" : "Trading Volume"}</p>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      24h: ${(selectedMarket.totalVolume / 1e9).toFixed(2)}B · ≈ {fmtVnd(selectedMarket.totalVolume, usdVnd)}
+                    </span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={340}>
+                    <BarChart data={candles} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
+                      <CartesianGrid stroke="hsl(222, 20%, 14%)" strokeDasharray="2 4" vertical={false} />
+                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: "hsl(215, 16%, 47%)" }} interval={Math.floor(candles.length / 8)} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(215, 16%, 47%)" }} tickFormatter={(v) => `${(v / 1e9).toFixed(1)}B`} tickLine={false} axisLine={false} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(222, 40%, 7%)", border: "1px solid hsl(222, 20%, 14%)", borderRadius: 6, fontSize: 11 }} formatter={(v: number) => [`$${(v / 1e9).toFixed(2)}B`, "Volume"]} />
+                      <Bar dataKey="volume" isAnimationActive={false}>
+                        {candles.map((d, i) => (
+                          <Cell key={i} fill={d.close >= d.open ? "hsl(142, 76%, 45%)" : "hsl(0, 72%, 55%)"} fillOpacity={0.6} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </>
+              ) : <div className="flex items-center justify-center h-72"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>}
+            </TabsContent>
+
             <TabsContent value="indicators" className="mt-3">
+
               {tech ? (
                 <div className="space-y-3">
                   <div>
@@ -526,10 +703,20 @@ export default function CryptoIntelligence() {
       {selectedMarket && (
         <CryptoChatPanel
           symbol={selectedCrypto}
+          name={selectedMarket.name}
           price={selectedMarket.currentPrice}
+          priceVnd={selectedMarket.currentPrice * usdVnd}
           change24h={selectedMarket.priceChangePercentage24h}
+          change7d={selectedMarket.priceChangePercentage7d}
           rsi={rsiLast}
           cycle={tech?.cycle}
+          marketCap={selectedMarket.marketCap}
+          volume24h={selectedMarket.totalVolume}
+          ath={selectedMarket.ath}
+          athChangePct={selectedMarket.athChangePercentage}
+          maxDrawdown={tech?.maxDD}
+          volatilityAnn={tech?.vol}
+          rank={selectedMarket.marketCapRank}
         />
       )}
     </div>
