@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid, Sparkles, Crosshair } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, ScatterChart, Scatter, CartesianGrid, Cell } from "recharts";
 import { calculateRSI, calculateMACD, calculateEMA, calculateSMA, calculateBollingerBands, calculateVolatility, calculateBeta, calculateSharpeRatio, calculateMaxDrawdown, calculateVaR, calculateCVaR } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -13,6 +13,11 @@ import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 import { StockComparison } from "@/components/platform/StockComparison";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandlestickChart } from "@/components/platform/CandlestickChart";
+import { MarketFilterBar } from "@/components/platform/stocks/MarketFilterBar";
+import { AIScreener } from "@/components/platform/stocks/AIScreener";
+import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPanel";
+import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
+import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
 const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
@@ -732,6 +737,10 @@ export default function StockAnalysis() {
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showScreener, setShowScreener] = useState(false);
+  const [globalRegion, setGlobalRegion] = useState<'all' | Region>('all');
+  const [globalCap, setGlobalCap] = useState<'all' | CapSize>('all');
+  const [globalSector, setGlobalSector] = useState<'all' | Sector>('all');
+  const [globalSearch, setGlobalSearch] = useState('');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
@@ -915,7 +924,52 @@ export default function StockAnalysis() {
       </div>
 
 
-      {/* Stock Screener Panel */}
+
+
+      {/* Global Market Coverage — Phase 1: region/cap/sector filters */}
+      <MarketFilterBar
+        region={globalRegion}
+        cap={globalCap}
+        sector={globalSector}
+        search={globalSearch}
+        totalCount={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).length}
+        onRegion={setGlobalRegion}
+        onCap={setGlobalCap}
+        onSector={setGlobalSector}
+        onSearch={setGlobalSearch}
+      />
+
+      {/* Global filtered stock grid */}
+      {(globalRegion !== 'all' || globalCap !== 'all' || globalSector !== 'all' || globalSearch) && (
+        <div className="quant-card">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Filtered Universe</p>
+          <div className="max-h-56 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 pr-1">
+            {filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).map((s) => (
+              <button
+                key={s.symbol}
+                onClick={() => { setSelected(s.symbol); setCustomSymbol(''); }}
+                className={`flex flex-col items-start p-2 rounded-md text-left transition-all border ${
+                  selected === s.symbol
+                    ? 'bg-primary/10 border-primary/40'
+                    : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:border-border/30'
+                }`}
+              >
+                <span className="font-mono text-xs font-semibold">{s.symbol}</span>
+                <span className="text-[10px] text-muted-foreground truncate w-full">{s.name}</span>
+                <span className="text-[9px] text-muted-foreground/60 font-mono">{s.exchange} · {s.cap}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Intelligent Stock Discovery */}
+      <AIScreener
+        onSelect={(sym) => { setSelected(sym); setCustomSymbol(''); }}
+        filteredUniverse={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch })}
+      />
+
+      {/* Legacy categorized Stock Screener Panel */}
       <div className="quant-card space-y-3">
         <div className="flex items-center justify-between">
           <button
@@ -1080,6 +1134,8 @@ export default function StockAnalysis() {
         <TabsList className="bg-muted/30 border border-border/30 flex-wrap h-auto">
           <TabsTrigger value="price" className="text-xs">Price & Overlays</TabsTrigger>
           <TabsTrigger value="technicals" className="text-xs">Indicators</TabsTrigger>
+          <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
+          <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
           <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
           <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
@@ -1087,6 +1143,36 @@ export default function StockAnalysis() {
           <TabsTrigger value="company" className="text-xs">🏢 Company</TabsTrigger>
           <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
+
+        {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
+        <TabsContent value="quantplus">
+          {analysis?.returns ? (
+            <QuantMetricsPanel returns={analysis.returns} beta={analysis.beta} />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang tải dữ liệu lịch sử...
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Forecast Tab — Monte Carlo Bull/Base/Bear */}
+        <TabsContent value="forecast">
+          {analysis?.returns && quote ? (
+            <ForecastPanel
+              closes={history?.closes || []}
+              returns={analysis.returns}
+              currentPrice={quote.currentPrice}
+              symbol={selected}
+              formatPrice={(v) => formatCurrency(v, selected)}
+            />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang chuẩn bị mô phỏng...
+            </div>
+          )}
+        </TabsContent>
 
         {/* Price Tab — Candlestick */}
         <TabsContent value="price">
