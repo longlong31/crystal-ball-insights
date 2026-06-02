@@ -921,6 +921,9 @@ export default function StockAnalysis() {
             </div>
           </div>
         )}
+      </div>
+
+
 
 
       {/* Global Market Coverage — Phase 1: region/cap/sector filters */}
