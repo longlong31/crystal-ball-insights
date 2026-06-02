@@ -921,10 +921,52 @@ export default function StockAnalysis() {
             </div>
           </div>
         )}
-      </div>
 
 
-      {/* Stock Screener Panel */}
+      {/* Global Market Coverage — Phase 1: region/cap/sector filters */}
+      <MarketFilterBar
+        region={globalRegion}
+        cap={globalCap}
+        sector={globalSector}
+        search={globalSearch}
+        totalCount={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).length}
+        onRegion={setGlobalRegion}
+        onCap={setGlobalCap}
+        onSector={setGlobalSector}
+        onSearch={setGlobalSearch}
+      />
+
+      {/* Global filtered stock grid */}
+      {(globalRegion !== 'all' || globalCap !== 'all' || globalSector !== 'all' || globalSearch) && (
+        <div className="quant-card">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Filtered Universe</p>
+          <div className="max-h-56 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 pr-1">
+            {filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).map((s) => (
+              <button
+                key={s.symbol}
+                onClick={() => { setSelected(s.symbol); setCustomSymbol(''); }}
+                className={`flex flex-col items-start p-2 rounded-md text-left transition-all border ${
+                  selected === s.symbol
+                    ? 'bg-primary/10 border-primary/40'
+                    : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:border-border/30'
+                }`}
+              >
+                <span className="font-mono text-xs font-semibold">{s.symbol}</span>
+                <span className="text-[10px] text-muted-foreground truncate w-full">{s.name}</span>
+                <span className="text-[9px] text-muted-foreground/60 font-mono">{s.exchange} · {s.cap}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Intelligent Stock Discovery */}
+      <AIScreener
+        onSelect={(sym) => { setSelected(sym); setCustomSymbol(''); }}
+        filteredUniverse={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch })}
+      />
+
+      {/* Legacy categorized Stock Screener Panel */}
       <div className="quant-card space-y-3">
         <div className="flex items-center justify-between">
           <button
