@@ -1,7 +1,7 @@
 # Crystal Ball — Siêu nền tảng AI Phân tích Tài chính & Crypto
 
 <p align="center">
-  <img src="https://quachthanhlong.com/og-image.jpg" alt="Crystal Ball Logo" width="120" />
+  <img src="https://quachthanhlong.com/og-image.jpg" alt="Crystal Ball Logo" width="full" />
 </p>
 
 <p align="center">
