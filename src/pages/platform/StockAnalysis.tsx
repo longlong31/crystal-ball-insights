@@ -737,6 +737,10 @@ export default function StockAnalysis() {
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showScreener, setShowScreener] = useState(false);
+  const [globalRegion, setGlobalRegion] = useState<'all' | Region>('all');
+  const [globalCap, setGlobalCap] = useState<'all' | CapSize>('all');
+  const [globalSector, setGlobalSector] = useState<'all' | Sector>('all');
+  const [globalSearch, setGlobalSearch] = useState('');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
