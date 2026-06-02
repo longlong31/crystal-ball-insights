@@ -84,27 +84,38 @@ serve(async (req) => {
     }
 
     if (type === "crypto_history") {
-      const coinId = symbols?.[0] || "bitcoin";
+      const coinId = (symbols?.[0] || "bitcoin").toString().toLowerCase().trim();
       const days = symbols?.[1] || "30";
-      const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`;
-      
-      const resp = await fetch(url, {
-        headers: { "Accept": "application/json" },
-      });
-      
-      if (!resp.ok) throw new Error(`CoinGecko history API error: ${resp.status}`);
-      
-      const data = await resp.json();
-      
-      return new Response(JSON.stringify({
-        data: {
-          prices: data.prices || [],
-          volumes: data.market_caps || [],
-          totalVolumes: data.total_volumes || [],
+      const url = `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(coinId)}/market_chart?vs_currency=usd&days=${days}`;
+
+      try {
+        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+
+        if (!resp.ok) {
+          console.warn(`CoinGecko history ${resp.status} for ${coinId}`);
+          return new Response(JSON.stringify({
+            data: { prices: [], volumes: [], totalVolumes: [] },
+            warning: `history_unavailable_${resp.status}`,
+            fallback: true,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+        const data = await resp.json();
+        return new Response(JSON.stringify({
+          data: {
+            prices: data.prices || [],
+            volumes: data.market_caps || [],
+            totalVolumes: data.total_volumes || [],
+          }
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      } catch (err) {
+        console.error("crypto_history fetch failed:", err);
+        return new Response(JSON.stringify({
+          data: { prices: [], volumes: [], totalVolumes: [] },
+          warning: "history_fetch_failed",
+          fallback: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     if (type === "fx_rates") {
