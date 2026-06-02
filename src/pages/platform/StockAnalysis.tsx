@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, Activity, Loader2, RefreshCw, Download, FileText, Search, Globe, Star, Building2, DollarSign, FileSpreadsheet, ExternalLink, Filter, ChevronDown, ChevronUp, X, LayoutGrid, Sparkles, Crosshair } from "lucide-react";
 import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, LineChart, Line, ReferenceLine, ComposedChart, ScatterChart, Scatter, CartesianGrid, Cell } from "recharts";
 import { calculateRSI, calculateMACD, calculateEMA, calculateSMA, calculateBollingerBands, calculateVolatility, calculateBeta, calculateSharpeRatio, calculateMaxDrawdown, calculateVaR, calculateCVaR } from "@/lib/technicalIndicators";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -13,6 +13,11 @@ import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 import { StockComparison } from "@/components/platform/StockComparison";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CandlestickChart } from "@/components/platform/CandlestickChart";
+import { MarketFilterBar } from "@/components/platform/stocks/MarketFilterBar";
+import { AIScreener } from "@/components/platform/stocks/AIScreener";
+import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPanel";
+import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
+import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
 const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
