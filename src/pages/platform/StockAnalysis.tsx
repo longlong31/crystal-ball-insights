@@ -1134,6 +1134,8 @@ export default function StockAnalysis() {
         <TabsList className="bg-muted/30 border border-border/30 flex-wrap h-auto">
           <TabsTrigger value="price" className="text-xs">Price & Overlays</TabsTrigger>
           <TabsTrigger value="technicals" className="text-xs">Indicators</TabsTrigger>
+          <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
+          <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
           <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
           <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
@@ -1141,6 +1143,36 @@ export default function StockAnalysis() {
           <TabsTrigger value="company" className="text-xs">🏢 Company</TabsTrigger>
           <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
         </TabsList>
+
+        {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
+        <TabsContent value="quantplus">
+          {analysis?.returns ? (
+            <QuantMetricsPanel returns={analysis.returns} beta={analysis.beta} />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang tải dữ liệu lịch sử...
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Forecast Tab — Monte Carlo Bull/Base/Bear */}
+        <TabsContent value="forecast">
+          {analysis?.returns && quote ? (
+            <ForecastPanel
+              closes={history?.closes || []}
+              returns={analysis.returns}
+              currentPrice={quote.currentPrice}
+              symbol={selected}
+              formatPrice={(v) => formatCurrency(v, selected)}
+            />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang chuẩn bị mô phỏng...
+            </div>
+          )}
+        </TabsContent>
 
         {/* Price Tab — Candlestick */}
         <TabsContent value="price">
