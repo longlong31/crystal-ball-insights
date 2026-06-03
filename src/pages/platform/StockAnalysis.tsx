@@ -1139,6 +1139,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
           <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
           <TabsTrigger value="airesearch" className="text-xs">🤖 AI Research</TabsTrigger>
+          <TabsTrigger value="portfolio" className="text-xs">💼 Portfolio Lab</TabsTrigger>
           <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
           <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
