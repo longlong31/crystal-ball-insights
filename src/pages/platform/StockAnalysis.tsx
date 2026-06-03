@@ -1201,6 +1201,11 @@ export default function StockAnalysis() {
           />
         </TabsContent>
 
+        {/* Portfolio Lab Inline — multi-stock optimization */}
+        <TabsContent value="portfolio">
+          <PortfolioLabInline initialSymbols={[selected]} />
+        </TabsContent>
+
         {/* Price Tab — Candlestick */}
         <TabsContent value="price">
           <div className="quant-card space-y-3 relative overflow-hidden">
