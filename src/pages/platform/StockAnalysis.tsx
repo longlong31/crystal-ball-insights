@@ -18,6 +18,7 @@ import { AIScreener } from "@/components/platform/stocks/AIScreener";
 import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPanel";
 import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
 import { EquityResearchAgents } from "@/components/platform/stocks/EquityResearchAgents";
+import { PortfolioLabInline } from "@/components/platform/stocks/PortfolioLabInline";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1138,6 +1139,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
           <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
           <TabsTrigger value="airesearch" className="text-xs">🤖 AI Research</TabsTrigger>
+          <TabsTrigger value="portfolio" className="text-xs">💼 Portfolio Lab</TabsTrigger>
           <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
           <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
@@ -1197,6 +1199,11 @@ export default function StockAnalysis() {
               maxDrawdown: analysis?.maxDD,
             }}
           />
+        </TabsContent>
+
+        {/* Portfolio Lab Inline — multi-stock optimization */}
+        <TabsContent value="portfolio">
+          <PortfolioLabInline initialSymbols={[selected]} />
         </TabsContent>
 
         {/* Price Tab — Candlestick */}
