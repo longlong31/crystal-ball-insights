@@ -17,6 +17,7 @@ import { MarketFilterBar } from "@/components/platform/stocks/MarketFilterBar";
 import { AIScreener } from "@/components/platform/stocks/AIScreener";
 import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPanel";
 import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
+import { EquityResearchAgents } from "@/components/platform/stocks/EquityResearchAgents";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1136,6 +1137,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="technicals" className="text-xs">Indicators</TabsTrigger>
           <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
           <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
+          <TabsTrigger value="airesearch" className="text-xs">🤖 AI Research</TabsTrigger>
           <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
           <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
           <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
@@ -1172,6 +1174,29 @@ export default function StockAnalysis() {
               Đang chuẩn bị mô phỏng...
             </div>
           )}
+        </TabsContent>
+
+        {/* AI Research — Multi-Agent Equity Analyst */}
+        <TabsContent value="airesearch">
+          <EquityResearchAgents
+            symbol={selected}
+            context={{
+              price: quote?.currentPrice,
+              previousClose: quote?.previousClose,
+              changePercent: quote ? ((quote.currentPrice - quote.previousClose) / quote.previousClose) * 100 : undefined,
+              volume: quote?.volume,
+              dayHigh: quote?.dayHigh,
+              dayLow: quote?.dayLow,
+              fiftyTwoWeekHigh: quote?.fiftyTwoWeekHigh,
+              fiftyTwoWeekLow: quote?.fiftyTwoWeekLow,
+              marketCap: quote?.marketCap,
+              rsi: analysis?.rsi,
+              beta: analysis?.beta,
+              volatility: analysis?.vol,
+              sharpe: analysis?.sharpe,
+              maxDrawdown: analysis?.maxDD,
+            }}
+          />
         </TabsContent>
 
         {/* Price Tab — Candlestick */}

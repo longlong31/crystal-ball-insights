@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.fetch-stock-data]
 verify_jwt = false
+
+[functions.equity-research-ai]
+verify_jwt = false
