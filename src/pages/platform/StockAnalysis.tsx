@@ -1182,8 +1182,8 @@ export default function StockAnalysis() {
             symbol={selected}
             context={{
               price: quote?.currentPrice,
-              change: quote?.change,
-              changePercent: quote?.changePercent,
+              previousClose: quote?.previousClose,
+              changePercent: quote ? ((quote.currentPrice - quote.previousClose) / quote.previousClose) * 100 : undefined,
               volume: quote?.volume,
               dayHigh: quote?.dayHigh,
               dayLow: quote?.dayLow,
