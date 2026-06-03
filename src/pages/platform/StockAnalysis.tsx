@@ -17,6 +17,7 @@ import { MarketFilterBar } from "@/components/platform/stocks/MarketFilterBar";
 import { AIScreener } from "@/components/platform/stocks/AIScreener";
 import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPanel";
 import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
+import { EquityResearchAgents } from "@/components/platform/stocks/EquityResearchAgents";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
