@@ -1176,6 +1176,29 @@ export default function StockAnalysis() {
           )}
         </TabsContent>
 
+        {/* AI Research — Multi-Agent Equity Analyst */}
+        <TabsContent value="airesearch">
+          <EquityResearchAgents
+            symbol={selected}
+            context={{
+              price: quote?.currentPrice,
+              change: quote?.change,
+              changePercent: quote?.changePercent,
+              volume: quote?.volume,
+              dayHigh: quote?.dayHigh,
+              dayLow: quote?.dayLow,
+              fiftyTwoWeekHigh: quote?.fiftyTwoWeekHigh,
+              fiftyTwoWeekLow: quote?.fiftyTwoWeekLow,
+              marketCap: quote?.marketCap,
+              rsi: analysis?.rsi,
+              beta: analysis?.beta,
+              volatility: analysis?.vol,
+              sharpe: analysis?.sharpe,
+              maxDrawdown: analysis?.maxDD,
+            }}
+          />
+        </TabsContent>
+
         {/* Price Tab — Candlestick */}
         <TabsContent value="price">
           <div className="quant-card space-y-3 relative overflow-hidden">
