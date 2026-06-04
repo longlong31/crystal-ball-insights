@@ -1163,6 +1163,25 @@ export default function StockAnalysis() {
           )}
         </TabsContent>
 
+        {/* Quant Models Lab — CAPM, Black-Scholes, ARIMA, GARCH, ML Ensemble */}
+        <TabsContent value="quantmodels">
+          {analysis?.returns && quote ? (
+            <QuantModelsLab
+              symbol={selected}
+              returns={analysis.returns}
+              closes={history?.closes || []}
+              currentPrice={quote.currentPrice}
+              beta={analysis.beta}
+              formatPrice={(v) => formatCurrency(v, selected)}
+            />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang tính toán mô hình...
+            </div>
+          )}
+        </TabsContent>
+
         {/* Forecast Tab — Monte Carlo Bull/Base/Bear */}
         <TabsContent value="forecast">
           {analysis?.returns && quote ? (
