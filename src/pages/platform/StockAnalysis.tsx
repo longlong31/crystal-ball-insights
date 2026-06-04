@@ -1696,6 +1696,20 @@ export default function StockAnalysis() {
         currentPrices={quote ? { [selected]: quote.currentPrice } : {}}
         onSelectSymbol={(sym) => setSelected(sym)}
       />
+
+      {/* Sticky horizontal AI chat bar — bottom of /platform/stocks */}
+      <StockStickyChatBar
+        symbol={selected}
+        context={quote ? {
+          price: quote.currentPrice,
+          changePct: quote.priceChange1d,
+          rsi: analysis?.rsi,
+          beta: analysis?.beta,
+          vol: analysis?.vol,
+          pe: quote.pe,
+          marketCap: quote.marketCap,
+        } : undefined}
+      />
     </div>
   );
 }
