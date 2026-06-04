@@ -175,7 +175,7 @@ export function PlatformLayout({ children }: PlatformLayoutProps) {
           </main>
         </div>
       </div>
-      <PlatformChatDock />
+      {location.pathname !== "/platform/stocks" && <PlatformChatDock />}
     </div>
   );
 }

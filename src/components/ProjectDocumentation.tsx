@@ -565,6 +565,132 @@ export const ProjectDocumentation = () => {
                 ))}
               </div>
             </div>
+
+            {/* ===== Platform Deep-Dive ===== */}
+            <div className="mt-8 space-y-6">
+              <div className="border-l-4 border-primary pl-4">
+                <h3 className="text-xl font-bold">Chi tiết các mô-đun /platform</h3>
+                <p className="text-sm text-muted-foreground">Hướng dẫn đầy đủ từng tab và mô hình định lượng được tích hợp</p>
+              </div>
+
+              {/* /platform/stocks */}
+              <div className="p-5 rounded-2xl bg-card/40 border border-border/30">
+                <h4 className="font-bold text-lg mb-2">📈 /platform/stocks — AI Quant Equity Intelligence</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Nền tảng phân tích cổ phiếu cấp tổ chức, hỗ trợ thị trường VN (HOSE/HNX/UPCoM) + US + EU + Asia với 150+ blue-chips và ETF.
+                </p>
+                <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  {[
+                    ['Price & Overlays', 'Nến Nhật + Bollinger Bands + EMA(12, 50). Range 5D → 2Y.'],
+                    ['Indicators', 'RSI(14), MACD(12,26,9), SMA/EMA, ATR — toolkit TA-Lib / pandas-ta tương đương.'],
+                    ['⚛️ Quant+', '16 chỉ số institutional: Sharpe, Sortino, Treynor, Information Ratio, Alpha, Beta, Skewness, Kurtosis, Tracking Error...'],
+                    ['🧪 Models Lab', 'CAPM (E[R]=Rf+β(Rm−Rf)), Black-Scholes-Merton + Greeks (Δ, Γ, Vega, Θ, ρ), ARIMA AR(2), GARCH(1,1) MLE, ML Ensemble (AR + EMA momentum + GARCH CI).'],
+                    ['🔮 Forecast', 'Mô phỏng Monte Carlo Bull / Base / Bear 1000+ kịch bản, hiển thị fan chart + percentile.'],
+                    ['🤖 AI Research', '6 specialist agents (Fundamental, Technical, Quant, Risk, Macro, Portfolio) + Chief Strategist consensus. Xuất Word.'],
+                    ['💼 Portfolio Lab', 'Tối ưu Efficient Frontier, Max Sharpe, Min Vol, ma trận tương quan, Monte Carlo cho tối đa 10 mã.'],
+                    ['📋 BCTC', 'Báo cáo tài chính chi tiết: Income Statement, Balance Sheet, Cash Flow — quý & năm.'],
+                    ['📊 Statistics', 'Phân phối lợi suất + ACF + skew/kurt + linear regression giá.'],
+                    ['⚠️ Risk', 'VaR 95/99, CVaR, Max Drawdown, volatility cone.'],
+                    ['🏢 Company', 'Hồ sơ doanh nghiệp, sector, employees, website, ngành con.'],
+                    ['📈 Compare', 'So sánh đa cổ phiếu base-100, Pearson correlation matrix.'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="p-3 rounded-lg bg-muted/20 border border-border/20">
+                      <div className="font-semibold text-foreground">{k}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
+                  <span className="font-semibold text-primary">💬 Sticky AI Chat Bar:</span>
+                  <span className="text-muted-foreground"> thanh ngang dưới cùng (Crystal AI) bám sticky khi cuộn, có quick chips (Phân tích kỹ thuật / Định giá CAPM / Khuyến nghị / Rủi ro / So với ngành) và context-aware theo mã đang chọn.</span>
+                </div>
+              </div>
+
+              {/* Models reference */}
+              <div className="p-5 rounded-2xl bg-card/40 border border-border/30">
+                <h4 className="font-bold text-lg mb-3">🧠 Mô hình AI & Định lượng được tích hợp</h4>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="font-semibold text-foreground mb-1">Mô hình định lượng truyền thống</div>
+                    <ul className="list-disc ml-5 space-y-1 text-muted-foreground text-xs">
+                      <li><span className="font-mono text-primary">CAPM</span> — Capital Asset Pricing Model: E[R] = Rf + β·(E[Rm] − Rf). Hồi quy OLS tự cài đặt, tính α, β, R².</li>
+                      <li><span className="font-mono text-primary">Black-Scholes-Merton</span> — Định giá quyền chọn Châu Âu + đầy đủ Greeks (Delta, Gamma, Vega, Theta, Rho). Có hỗ trợ dividend yield q.</li>
+                      <li><span className="font-mono text-primary">ARIMA (AR(p))</span> — Tự hồi quy lợi suất, OLS qua Gauss-Jordan, dự báo đệ quy multi-step. Tương đương statsmodels.tsa.AR.</li>
+                      <li><span className="font-mono text-primary">GARCH(1,1)</span> — Variance clustering, σ²_t = ω + α·r²_{`{t-1}`} + β·σ²_{`{t-1}`}. MLE qua grid search + local refinement.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground mb-1">AI & Machine Learning</div>
+                    <ul className="list-disc ml-5 space-y-1 text-muted-foreground text-xs">
+                      <li><span className="font-mono text-primary">ML Ensemble</span> — Kết hợp AR(2) + EMA(5/20) momentum + GARCH volatility cone (mô phỏng output của LSTM/Transformer/XGBoost/LightGBM cho dự báo giá ngắn hạn).</li>
+                      <li><span className="font-mono text-primary">Multi-Agent Equity Research</span> — 6 chuyên gia AI (Lovable AI Gateway, mặc định Gemini 3 Flash) chạy song song + Chief Strategist tổng hợp Investment Thesis.</li>
+                      <li><span className="font-mono text-primary">Monte Carlo Forecast</span> — 1000+ đường giá theo Geometric Brownian Motion, lấy percentile cho Bull/Base/Bear.</li>
+                      <li><span className="font-mono text-primary">Crystal AI Chatbot</span> — Streaming SSE, context-aware (truyền giá, RSI, β, vol, P/E của mã đang chọn).</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-foreground mb-1">Chỉ báo kỹ thuật (TA-Lib / pandas-ta equivalent)</div>
+                    <ul className="list-disc ml-5 space-y-1 text-muted-foreground text-xs">
+                      <li>RSI(14), MACD(12/26/9), Bollinger Bands(20, 2σ), EMA, SMA, ATR, Volatility, Beta, Sharpe, VaR/CVaR, Max Drawdown.</li>
+                      <li>Tất cả tự cài đặt thuần TypeScript trong <span className="font-mono">src/lib/technicalIndicators.ts</span> & <span className="font-mono">src/lib/quantModels.ts</span>.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Other modules */}
+              <div className="grid md:grid-cols-2 gap-3">
+                {[
+                  {
+                    title: '/platform — Dashboard',
+                    items: ['Tổng quan thị trường VN-Index + Crypto', 'Watchlist + Top Movers', 'Fear & Greed Index real-time', 'Notification realtime (Supabase Realtime)'],
+                  },
+                  {
+                    title: '/platform/crypto — Crypto Intel',
+                    items: ['Top 100 coins (CoinGecko)', 'Candlestick + sentiment', 'Crypto chat panel', 'Realtime refresh 30s'],
+                  },
+                  {
+                    title: '/platform/portfolio — Portfolio Optimizer',
+                    items: ['Efficient Frontier + Max Sharpe + Min Vol', 'Monte Carlo 15K simulations', 'Ràng buộc tỷ trọng tùy chỉnh', 'Risk contribution breakdown'],
+                  },
+                  {
+                    title: '/platform/risk — Risk Engine',
+                    items: ['VaR / CVaR đa phương pháp', 'Stress Testing kịch bản', 'Correlation matrix Pearson', 'Regime Shift detection'],
+                  },
+                  {
+                    title: '/platform/ai-insights — AI Insights',
+                    items: ['Báo cáo AI Gemini', 'Cảnh báo critical / warning', 'Gợi ý phân bổ vốn', 'Sentiment news 30 nguồn'],
+                  },
+                ].map((m) => (
+                  <div key={m.title} className="p-4 rounded-xl bg-card/40 border border-border/30">
+                    <div className="font-semibold mb-2">{m.title}</div>
+                    <ul className="list-disc ml-5 space-y-0.5 text-xs text-muted-foreground">
+                      {m.items.map((it) => <li key={it}>{it}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+
+              {/* Data sources */}
+              <div className="p-5 rounded-2xl bg-card/40 border border-border/30">
+                <h4 className="font-bold text-lg mb-2">🔌 Nguồn dữ liệu & Hạ tầng</h4>
+                <div className="grid md:grid-cols-3 gap-3 text-xs">
+                  {[
+                    ['Yahoo Finance', 'Stocks VN/US/EU/Asia, real-time quote, history, financials'],
+                    ['CoinGecko', 'Crypto top 100, history, market data'],
+                    ['Lovable AI Gateway', 'Gemini 3 Flash / Pro, OpenAI GPT-5 series — multi-agent + chatbot'],
+                    ['Supabase Edge Functions', 'fetch-stock-data, fetch-market-data, equity-research-ai, chatbot-ai...'],
+                    ['Supabase Realtime', 'Notifications, watchlist alerts, community feed'],
+                    ['React Query', 'Cache 30s, auto-retry, graceful degradation'],
+                  ].map(([k, v]) => (
+                    <div key={k} className="p-3 rounded-lg bg-muted/20 border border-border/20">
+                      <div className="font-semibold text-primary font-mono text-[11px]">{k}</div>
+                      <div className="text-muted-foreground mt-1">{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </GlassCard>
         </section>
 

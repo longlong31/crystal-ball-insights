@@ -19,6 +19,8 @@ import { QuantMetricsPanel } from "@/components/platform/stocks/QuantMetricsPane
 import { ForecastPanel } from "@/components/platform/stocks/ForecastPanel";
 import { EquityResearchAgents } from "@/components/platform/stocks/EquityResearchAgents";
 import { PortfolioLabInline } from "@/components/platform/stocks/PortfolioLabInline";
+import { QuantModelsLab } from "@/components/platform/stocks/QuantModelsLab";
+import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChatBar";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1137,6 +1139,7 @@ export default function StockAnalysis() {
           <TabsTrigger value="price" className="text-xs">Price & Overlays</TabsTrigger>
           <TabsTrigger value="technicals" className="text-xs">Indicators</TabsTrigger>
           <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
+          <TabsTrigger value="quantmodels" className="text-xs">🧪 Models Lab</TabsTrigger>
           <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
           <TabsTrigger value="airesearch" className="text-xs">🤖 AI Research</TabsTrigger>
           <TabsTrigger value="portfolio" className="text-xs">💼 Portfolio Lab</TabsTrigger>
@@ -1156,6 +1159,25 @@ export default function StockAnalysis() {
             <div className="quant-card text-center text-xs text-muted-foreground py-10">
               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
               Đang tải dữ liệu lịch sử...
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Quant Models Lab — CAPM, Black-Scholes, ARIMA, GARCH, ML Ensemble */}
+        <TabsContent value="quantmodels">
+          {analysis?.returns && quote ? (
+            <QuantModelsLab
+              symbol={selected}
+              returns={analysis.returns}
+              closes={history?.closes || []}
+              currentPrice={quote.currentPrice}
+              beta={analysis.beta}
+              formatPrice={(v) => formatCurrency(v, selected)}
+            />
+          ) : (
+            <div className="quant-card text-center text-xs text-muted-foreground py-10">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+              Đang tính toán mô hình...
             </div>
           )}
         </TabsContent>
@@ -1673,6 +1695,20 @@ export default function StockAnalysis() {
       <WatchlistPanel
         currentPrices={quote ? { [selected]: quote.currentPrice } : {}}
         onSelectSymbol={(sym) => setSelected(sym)}
+      />
+
+      {/* Sticky horizontal AI chat bar — bottom of /platform/stocks */}
+      <StockStickyChatBar
+        symbol={selected}
+        context={quote ? {
+          price: quote.currentPrice,
+          changePct: quote.priceChange1d,
+          rsi: analysis?.rsi,
+          beta: analysis?.beta,
+          vol: analysis?.vol,
+          pe: quote.pe,
+          marketCap: quote.marketCap,
+        } : undefined}
       />
     </div>
   );
