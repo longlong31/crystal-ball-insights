@@ -22,6 +22,7 @@ import { PortfolioLabInline } from "@/components/platform/stocks/PortfolioLabInl
 import { QuantModelsLab } from "@/components/platform/stocks/QuantModelsLab";
 import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChatBar";
 import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
+import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
