@@ -1307,6 +1307,17 @@ export default function StockAnalysis() {
           <PythonFormulasPanel />
         </TabsContent>
 
+        {/* Python Lab — Pyodide in-browser runner */}
+        <TabsContent value="pythonlab">
+          <PythonRunnerPanel
+            symbol={selected}
+            closes={history?.closes || []}
+            returns={analysis?.returns || []}
+            dates={history?.dates}
+            currentPrice={quote?.currentPrice}
+          />
+        </TabsContent>
+
         <TabsContent value="portfolio">
           <PortfolioLabInline initialSymbols={[selected]} />
         </TabsContent>
