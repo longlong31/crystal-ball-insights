@@ -19,7 +19,7 @@ export const CreatorInfo = () => {
         >
           <div className="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
             <img
-              src="https://www.quachthanhlong.com/long/long.png"
+              src="https://pjzaexnqorlrpctaqiiv.supabase.co/storage/v1/object/public/images/gallery/1773204699949-e5xy8i.jpg"
               alt="Quách Thành Long"
               className="w-full h-full object-cover"
             />
