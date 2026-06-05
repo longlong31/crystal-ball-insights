@@ -1300,6 +1300,11 @@ export default function StockAnalysis() {
         </TabsContent>
 
         {/* Portfolio Lab Inline — multi-stock optimization */}
+        {/* Python Formulas — full reference */}
+        <TabsContent value="formulas">
+          <PythonFormulasPanel />
+        </TabsContent>
+
         <TabsContent value="portfolio">
           <PortfolioLabInline initialSymbols={[selected]} />
         </TabsContent>
