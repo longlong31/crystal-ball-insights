@@ -22,6 +22,7 @@ import { PortfolioLabInline } from "@/components/platform/stocks/PortfolioLabInl
 import { QuantModelsLab } from "@/components/platform/stocks/QuantModelsLab";
 import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChatBar";
 import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
+import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1153,6 +1154,7 @@ export default function StockAnalysis() {
             { group: "🧠 AI & Research", items: [
               { value: "airesearch",   label: "🤖 AI Research" },
               { value: "formulas",     label: "📐 Python Formulas" },
+              { value: "pythonlab",    label: "🐍 Python Lab (Run)" },
             ]},
             { group: "📋 Fundamentals", items: [
               { value: "fundamentals", label: "Fundamentals" },
@@ -1303,6 +1305,17 @@ export default function StockAnalysis() {
         {/* Python Formulas — full reference */}
         <TabsContent value="formulas">
           <PythonFormulasPanel />
+        </TabsContent>
+
+        {/* Python Lab — Pyodide in-browser runner */}
+        <TabsContent value="pythonlab">
+          <PythonRunnerPanel
+            symbol={selected}
+            closes={history?.closes || []}
+            returns={analysis?.returns || []}
+            dates={history?.dates}
+            currentPrice={quote?.currentPrice}
+          />
         </TabsContent>
 
         <TabsContent value="portfolio">
