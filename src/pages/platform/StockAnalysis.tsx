@@ -21,6 +21,7 @@ import { EquityResearchAgents } from "@/components/platform/stocks/EquityResearc
 import { PortfolioLabInline } from "@/components/platform/stocks/PortfolioLabInline";
 import { QuantModelsLab } from "@/components/platform/stocks/QuantModelsLab";
 import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChatBar";
+import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -745,6 +746,7 @@ export default function StockAnalysis() {
   const [globalCap, setGlobalCap] = useState<'all' | CapSize>('all');
   const [globalSector, setGlobalSector] = useState<'all' | Sector>('all');
   const [globalSearch, setGlobalSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('price');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
@@ -1133,23 +1135,97 @@ export default function StockAnalysis() {
         </span>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="price" className="w-full">
-        <TabsList className="bg-muted/30 border border-border/30 flex-wrap h-auto">
-          <TabsTrigger value="price" className="text-xs">Price & Overlays</TabsTrigger>
-          <TabsTrigger value="technicals" className="text-xs">Indicators</TabsTrigger>
-          <TabsTrigger value="quantplus" className="text-xs">⚛️ Quant+</TabsTrigger>
-          <TabsTrigger value="quantmodels" className="text-xs">🧪 Models Lab</TabsTrigger>
-          <TabsTrigger value="forecast" className="text-xs">🔮 Forecast</TabsTrigger>
-          <TabsTrigger value="airesearch" className="text-xs">🤖 AI Research</TabsTrigger>
-          <TabsTrigger value="portfolio" className="text-xs">💼 Portfolio Lab</TabsTrigger>
-          <TabsTrigger value="fundamentals" className="text-xs">Fundamentals</TabsTrigger>
-          <TabsTrigger value="financials" className="text-xs">📋 BCTC</TabsTrigger>
-          <TabsTrigger value="statistics" className="text-xs">📊 Statistics</TabsTrigger>
-          <TabsTrigger value="risk" className="text-xs">⚠️ Risk</TabsTrigger>
-          <TabsTrigger value="company" className="text-xs">🏢 Company</TabsTrigger>
-          <TabsTrigger value="compare" className="text-xs">📈 So sánh</TabsTrigger>
-        </TabsList>
+      {/* Tabs — compact grouped navigator */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {(() => {
+          const TAB_GROUPS: { group: string; items: { value: string; label: string }[] }[] = [
+            { group: "📊 Market", items: [
+              { value: "price",        label: "Price & Overlays" },
+              { value: "technicals",   label: "Indicators" },
+              { value: "compare",      label: "📈 So sánh" },
+            ]},
+            { group: "⚛️ Quant", items: [
+              { value: "quantplus",    label: "Quant+ Metrics" },
+              { value: "quantmodels",  label: "🧪 Models Lab" },
+              { value: "forecast",     label: "🔮 Forecast" },
+              { value: "portfolio",    label: "💼 Portfolio Lab" },
+            ]},
+            { group: "🧠 AI & Research", items: [
+              { value: "airesearch",   label: "🤖 AI Research" },
+              { value: "formulas",     label: "📐 Python Formulas" },
+            ]},
+            { group: "📋 Fundamentals", items: [
+              { value: "fundamentals", label: "Fundamentals" },
+              { value: "financials",   label: "📋 BCTC" },
+              { value: "company",      label: "🏢 Company" },
+            ]},
+            { group: "⚠️ Risk & Stats", items: [
+              { value: "statistics",   label: "📊 Statistics" },
+              { value: "risk",         label: "⚠️ Risk" },
+            ]},
+          ];
+          const QUICK = ["price", "quantplus", "airesearch", "formulas"];
+          const currentLabel = TAB_GROUPS.flatMap(g => g.items).find(i => i.value === activeTab)?.label || activeTab;
+          return (
+            <>
+              {/* Hidden TabsList for a11y / Radix wiring */}
+              <TabsList className="sr-only">
+                {TAB_GROUPS.flatMap(g => g.items).map(i => (
+                  <TabsTrigger key={i.value} value={i.value}>{i.label}</TabsTrigger>
+                ))}
+              </TabsList>
+
+              <div className="flex flex-wrap items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
+                <Select value={activeTab} onValueChange={setActiveTab}>
+                  <SelectTrigger className="h-8 w-[230px] text-xs font-mono bg-background/60">
+                    <LayoutGrid className="w-3.5 h-3.5 mr-1 text-primary" />
+                    <SelectValue>{currentLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[60vh]">
+                    {TAB_GROUPS.map(g => (
+                      <div key={g.group} className="py-1">
+                        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          {g.group}
+                        </div>
+                        {g.items.map(i => (
+                          <SelectItem key={i.value} value={i.value} className="text-xs pl-4">
+                            {i.label}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="hidden md:flex items-center gap-1 ml-1">
+                  <span className="text-[10px] text-muted-foreground mr-1 font-mono">Quick:</span>
+                  {QUICK.map(v => {
+                    const item = TAB_GROUPS.flatMap(g => g.items).find(i => i.value === v);
+                    if (!item) return null;
+                    return (
+                      <button
+                        key={v}
+                        onClick={() => setActiveTab(v)}
+                        className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                          activeTab === v
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background/40 border-border/40 text-muted-foreground hover:text-foreground hover:border-primary/40"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <span className="ml-auto text-[10px] font-mono text-muted-foreground hidden sm:inline">
+                  {selected} · {historyRange.toUpperCase()}
+                </span>
+              </div>
+            </>
+          );
+        })()}
+
 
         {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
         <TabsContent value="quantplus">
@@ -1224,6 +1300,11 @@ export default function StockAnalysis() {
         </TabsContent>
 
         {/* Portfolio Lab Inline — multi-stock optimization */}
+        {/* Python Formulas — full reference */}
+        <TabsContent value="formulas">
+          <PythonFormulasPanel />
+        </TabsContent>
+
         <TabsContent value="portfolio">
           <PortfolioLabInline initialSymbols={[selected]} />
         </TabsContent>
