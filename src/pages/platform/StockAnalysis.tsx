@@ -746,6 +746,7 @@ export default function StockAnalysis() {
   const [globalCap, setGlobalCap] = useState<'all' | CapSize>('all');
   const [globalSector, setGlobalSector] = useState<'all' | Sector>('all');
   const [globalSearch, setGlobalSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<string>('price');
   const { addToWatchlist, removeFromWatchlist, isInWatchlist, checkAlerts } = useWatchlist();
 
   const { data: quote, isLoading: quoteLoading, error: quoteError, refetch: refetchQuote } = useStockQuote(selected);
