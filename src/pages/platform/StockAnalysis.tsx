@@ -1154,6 +1154,7 @@ export default function StockAnalysis() {
             { group: "🧠 AI & Research", items: [
               { value: "airesearch",   label: "🤖 AI Research" },
               { value: "formulas",     label: "📐 Python Formulas" },
+              { value: "pythonlab",    label: "🐍 Python Lab (Run)" },
             ]},
             { group: "📋 Fundamentals", items: [
               { value: "fundamentals", label: "Fundamentals" },
