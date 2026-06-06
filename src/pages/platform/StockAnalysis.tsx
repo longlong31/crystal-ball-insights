@@ -743,6 +743,8 @@ export default function StockAnalysis() {
   const [finPeriod, setFinPeriod] = useState<'annual' | 'quarterly'>('annual');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showScreener, setShowScreener] = useState(false);
+  const [showGlobalCoverage, setShowGlobalCoverage] = useState(false);
+  const [showDiscovery, setShowDiscovery] = useState(false);
   const [globalRegion, setGlobalRegion] = useState<'all' | Region>('all');
   const [globalCap, setGlobalCap] = useState<'all' | CapSize>('all');
   const [globalSector, setGlobalSector] = useState<'all' | Sector>('all');
@@ -933,48 +935,85 @@ export default function StockAnalysis() {
 
 
 
-      {/* Global Market Coverage — Phase 1: region/cap/sector filters */}
-      <MarketFilterBar
-        region={globalRegion}
-        cap={globalCap}
-        sector={globalSector}
-        search={globalSearch}
-        totalCount={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).length}
-        onRegion={setGlobalRegion}
-        onCap={setGlobalCap}
-        onSector={setGlobalSector}
-        onSearch={setGlobalSearch}
-      />
-
-      {/* Global filtered stock grid */}
-      {(globalRegion !== 'all' || globalCap !== 'all' || globalSector !== 'all' || globalSearch) && (
-        <div className="quant-card">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Filtered Universe</p>
-          <div className="max-h-56 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 pr-1">
-            {filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).map((s) => (
-              <button
-                key={s.symbol}
-                onClick={() => { setSelected(s.symbol); setCustomSymbol(''); }}
-                className={`flex flex-col items-start p-2 rounded-md text-left transition-all border ${
-                  selected === s.symbol
-                    ? 'bg-primary/10 border-primary/40'
-                    : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:border-border/30'
-                }`}
-              >
-                <span className="font-mono text-xs font-semibold">{s.symbol}</span>
-                <span className="text-[10px] text-muted-foreground truncate w-full">{s.name}</span>
-                <span className="text-[9px] text-muted-foreground/60 font-mono">{s.exchange} · {s.cap}</span>
-              </button>
-            ))}
+      {/* Global Market Coverage — collapsible */}
+      <div className="quant-card !p-0 overflow-hidden">
+        <button
+          onClick={() => setShowGlobalCoverage(!showGlobalCoverage)}
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Globe className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wide">Global Market Coverage</span>
+            <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded">
+              {filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).length} symbols
+            </span>
+            {(globalRegion !== 'all' || globalCap !== 'all' || globalSector !== 'all' || globalSearch) && (
+              <span className="text-[10px] text-primary bg-primary/10 px-1.5 py-0.5 rounded">filters active</span>
+            )}
           </div>
-        </div>
-      )}
+          {showGlobalCoverage ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showGlobalCoverage && (
+          <div className="p-3 border-t border-border/20 space-y-3">
+            <MarketFilterBar
+              region={globalRegion}
+              cap={globalCap}
+              sector={globalSector}
+              search={globalSearch}
+              totalCount={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).length}
+              onRegion={setGlobalRegion}
+              onCap={setGlobalCap}
+              onSector={setGlobalSector}
+              onSearch={setGlobalSearch}
+            />
+            {(globalRegion !== 'all' || globalCap !== 'all' || globalSector !== 'all' || globalSearch) && (
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Filtered Universe</p>
+                <div className="max-h-56 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1.5 pr-1">
+                  {filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch }).map((s) => (
+                    <button
+                      key={s.symbol}
+                      onClick={() => { setSelected(s.symbol); setCustomSymbol(''); }}
+                      className={`flex flex-col items-start p-2 rounded-md text-left transition-all border ${
+                        selected === s.symbol
+                          ? 'bg-primary/10 border-primary/40'
+                          : 'bg-muted/20 border-transparent hover:bg-muted/40 hover:border-border/30'
+                      }`}
+                    >
+                      <span className="font-mono text-xs font-semibold">{s.symbol}</span>
+                      <span className="text-[10px] text-muted-foreground truncate w-full">{s.name}</span>
+                      <span className="text-[9px] text-muted-foreground/60 font-mono">{s.exchange} · {s.cap}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      {/* AI Intelligent Stock Discovery */}
-      <AIScreener
-        onSelect={(sym) => { setSelected(sym); setCustomSymbol(''); }}
-        filteredUniverse={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch })}
-      />
+      {/* AI Intelligent Stock Discovery — collapsible */}
+      <div className="quant-card !p-0 overflow-hidden">
+        <button
+          onClick={() => setShowDiscovery(!showDiscovery)}
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wide">Intelligent Stock Discovery Engine</span>
+            <span className="text-[10px] text-muted-foreground font-mono bg-muted/40 px-1.5 py-0.5 rounded">AI ranked</span>
+          </div>
+          {showDiscovery ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+        {showDiscovery && (
+          <div className="p-3 border-t border-border/20">
+            <AIScreener
+              onSelect={(sym) => { setSelected(sym); setCustomSymbol(''); }}
+              filteredUniverse={filterStocks({ region: globalRegion, cap: globalCap, sector: globalSector, search: globalSearch })}
+            />
+          </div>
+        )}
+      </div>
 
       {/* Legacy categorized Stock Screener Panel */}
       <div className="quant-card space-y-3">
