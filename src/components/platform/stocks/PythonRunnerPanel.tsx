@@ -1,15 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Play, Loader2, Download, RefreshCw, Sparkles, Terminal, Image as ImageIcon, Cpu } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Play, Loader2, Download, RefreshCw, Sparkles, Terminal, Image as ImageIcon, Cpu, Square, Timer, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-declare global {
-  interface Window {
-    loadPyodide?: (opts: { indexURL: string }) => Promise<any>;
-  }
-}
-
-const PYODIDE_VERSION = "0.26.4";
-const PYODIDE_INDEX = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
 
 interface Props {
   symbol: string;
@@ -19,7 +10,7 @@ interface Props {
   currentPrice?: number;
 }
 
-type Status = "idle" | "loading-runtime" | "loading-pkgs" | "ready" | "running" | "error";
+type Status = "idle" | "booting" | "ready" | "running" | "error";
 
 const TEMPLATES: { id: string; label: string; code: string }[] = [
   {
@@ -129,6 +120,8 @@ metrics = {
   },
 ];
 
+const TIMEOUT_OPTIONS = [10, 20, 30, 60];
+
 export function PythonRunnerPanel({ symbol, closes, returns, currentPrice }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [progress, setProgress] = useState<string>("");
@@ -137,111 +130,100 @@ export function PythonRunnerPanel({ symbol, closes, returns, currentPrice }: Pro
   const [images, setImages] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<Record<string, any> | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
-  const pyRef = useRef<any>(null);
+  const [timeoutSec, setTimeoutSec] = useState<number>(20);
+  const [elapsed, setElapsed] = useState<number>(0);
+  const [collapsed, setCollapsed] = useState<boolean>(false);
 
-  const loadPyodide = useCallback(async () => {
-    if (pyRef.current) return pyRef.current;
-    setStatus("loading-runtime");
-    setProgress("Tải Pyodide runtime (~6MB)...");
-    if (!window.loadPyodide) {
-      await new Promise<void>((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = `${PYODIDE_INDEX}pyodide.js`;
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error("Không tải được Pyodide CDN"));
-        document.head.appendChild(s);
-      });
+  const workerRef = useRef<Worker | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const tickRef = useRef<number | null>(null);
+  const startRef = useRef<number>(0);
+
+  const cleanupTimers = () => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
+  };
+
+  const killWorker = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
     }
-    const py = await window.loadPyodide!({ indexURL: PYODIDE_INDEX });
-    pyRef.current = py;
-
-    setStatus("loading-pkgs");
-    setProgress("Tải numpy, pandas, matplotlib...");
-    await py.loadPackage(["numpy", "pandas", "matplotlib"]);
-
-    setProgress("Khởi tạo backend Agg...");
-    await py.runPythonAsync(`
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import io, base64, json
-def __collect_figs():
-    out = []
-    for n in plt.get_fignums():
-        f = plt.figure(n)
-        buf = io.BytesIO()
-        f.savefig(buf, format="png", dpi=130, bbox_inches="tight",
-                  facecolor="#0b1120", edgecolor="none")
-        out.append("data:image/png;base64," + base64.b64encode(buf.getvalue()).decode())
-        plt.close(f)
-    return out
-plt.rcParams.update({
-    "axes.facecolor":  "#0f172a",
-    "figure.facecolor":"#0b1120",
-    "axes.edgecolor":  "#334155",
-    "axes.labelcolor": "#cbd5e1",
-    "xtick.color":     "#94a3b8",
-    "ytick.color":     "#94a3b8",
-    "axes.titlecolor": "#e2e8f0",
-    "grid.color":      "#1e293b",
-    "text.color":      "#e2e8f0",
-})
-`);
-    setStatus("ready");
-    setProgress("");
-    return py;
+    cleanupTimers();
   }, []);
 
-  const run = useCallback(async () => {
+  useEffect(() => () => killWorker(), [killWorker]);
+
+  const spawn = useCallback(() => {
+    if (workerRef.current) return workerRef.current;
+    const w = new Worker(new URL("../../../workers/pyodideWorker.ts", import.meta.url), { type: "classic" });
+    workerRef.current = w;
+    return w;
+  }, []);
+
+  const run = useCallback(() => {
     setErrorMsg("");
     setStdout("");
     setImages([]);
     setMetrics(null);
-    try {
-      const py = await loadPyodide();
-      setStatus("running");
+    setElapsed(0);
 
-      // Inject context
-      py.globals.set("symbol", symbol);
-      py.globals.set("closes", py.toPy(closes));
-      py.globals.set("returns", py.toPy(returns));
-      py.globals.set("current_price", currentPrice ?? null);
+    const w = spawn();
+    setStatus(workerRef.current ? "running" : "booting");
+    setProgress("Khởi động worker...");
+    startRef.current = performance.now();
 
-      let buf = "";
-      py.setStdout({ batched: (s: string) => { buf += s + "\n"; } });
-      py.setStderr({ batched: (s: string) => { buf += s + "\n"; } });
+    tickRef.current = window.setInterval(() => {
+      setElapsed((performance.now() - startRef.current) / 1000);
+    }, 100);
 
-      // Reset metrics global
-      await py.runPythonAsync(`metrics = None`);
-      await py.runPythonAsync(code);
-
-      // Collect figures
-      const figs = await py.runPythonAsync(`__collect_figs()`);
-      const figList: string[] = figs.toJs();
-      figs.destroy?.();
-
-      // Get metrics
-      let m: Record<string, any> | null = null;
-      const mProxy = py.globals.get("metrics");
-      if (mProxy && typeof mProxy.toJs === "function") {
-        const js = mProxy.toJs({ dict_converter: Object.fromEntries });
-        if (js && typeof js === "object") m = js;
-        mProxy.destroy?.();
-      }
-
-      setStdout(buf.trim());
-      setImages(figList);
-      setMetrics(m);
-      setStatus("ready");
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e));
+    timerRef.current = window.setTimeout(() => {
+      killWorker();
       setStatus("error");
-    }
-  }, [code, loadPyodide, symbol, closes, returns, currentPrice]);
+      setErrorMsg(
+        `⏱️ Hết thời gian (${timeoutSec}s). Worker đã bị dừng để bảo vệ trình duyệt.\n` +
+        `Mẹo: giảm số vòng lặp, vector hoá với numpy, hoặc tăng giới hạn timeout.`
+      );
+    }, timeoutSec * 1000);
 
-  useEffect(() => () => {
-    try { pyRef.current = null; } catch {}
-  }, []);
+    w.onmessage = (e: MessageEvent) => {
+      const d = e.data || {};
+      if (d.type === "progress") {
+        setProgress(d.msg);
+        setStatus((s) => (s === "idle" || s === "booting" ? "booting" : s));
+      } else if (d.type === "done") {
+        cleanupTimers();
+        setStdout(d.stdout || "");
+        setImages(d.figures || []);
+        setMetrics(d.metrics || null);
+        setProgress("");
+        setStatus("ready");
+      } else if (d.type === "error") {
+        cleanupTimers();
+        setErrorMsg(d.message || "Unknown error");
+        setProgress("");
+        setStatus("error");
+      }
+    };
+    w.onerror = (ev) => {
+      cleanupTimers();
+      setErrorMsg(ev.message || "Worker error");
+      setStatus("error");
+    };
+
+    w.postMessage({
+      type: "run",
+      code,
+      ctx: { symbol, closes, returns, currentPrice: currentPrice ?? null },
+    });
+  }, [code, spawn, killWorker, timeoutSec, symbol, closes, returns, currentPrice]);
+
+  const stop = useCallback(() => {
+    killWorker();
+    setStatus("error");
+    setErrorMsg("⏹ Đã dừng theo yêu cầu. Worker bị hủy.");
+    setProgress("");
+  }, [killWorker]);
 
   const downloadImage = (src: string, idx: number) => {
     const a = document.createElement("a");
@@ -251,138 +233,190 @@ plt.rcParams.update({
   };
 
   const dataReady = closes && closes.length > 10 && returns && returns.length > 10;
-  const busy = status === "loading-runtime" || status === "loading-pkgs" || status === "running";
+  const busy = status === "booting" || status === "running";
+  const pctTimeout = Math.min((elapsed / timeoutSec) * 100, 100);
 
   return (
     <div className="quant-card space-y-4">
+      {/* Header */}
       <div className="flex items-center gap-2 flex-wrap">
         <Cpu className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-semibold tracking-wide uppercase">Python Lab — Run In Browser</h3>
+        <h3 className="text-sm font-semibold tracking-wide uppercase">Python Lab — Sandboxed Worker</h3>
         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary">
-          Pyodide v{PYODIDE_VERSION}
+          Pyodide · v0.26.4
+        </span>
+        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 flex items-center gap-1">
+          <Timer className="w-3 h-3" /> Auto-kill {timeoutSec}s
         </span>
         <span className="ml-auto text-[10px] font-mono text-muted-foreground">
           {symbol} · {closes?.length || 0} closes · {returns?.length || 0} returns
         </span>
-      </div>
-
-      <p className="text-xs text-muted-foreground -mt-2">
-        Viết Python (numpy/pandas/matplotlib) chạy trực tiếp trong trình duyệt — không cần backend. Biến có sẵn:
-        <code className="mx-1 px-1 rounded bg-muted/40 font-mono text-[10px]">symbol, closes, returns, current_price</code>.
-        Gán dict <code className="mx-1 px-1 rounded bg-muted/40 font-mono text-[10px]">metrics</code> để hiển thị KPI; mọi
-        <code className="mx-1 px-1 rounded bg-muted/40 font-mono text-[10px]">plt.figure(...)</code> sẽ tự render.
-      </p>
-
-      {/* Template chips */}
-      <div className="flex flex-wrap gap-1.5">
-        {TEMPLATES.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setCode(t.code)}
-            className="text-[10px] px-2 py-1 rounded-full bg-muted/30 hover:bg-primary/15 hover:text-primary border border-border/40 transition-colors"
-          >
-            ⚡ {t.label}
-          </button>
-        ))}
         <button
-          onClick={() => { setStdout(""); setImages([]); setMetrics(null); setErrorMsg(""); }}
-          className="text-[10px] px-2 py-1 rounded-full bg-muted/30 hover:bg-muted/50 border border-border/40 transition-colors ml-auto flex items-center gap-1"
+          onClick={() => setCollapsed(!collapsed)}
+          className="text-muted-foreground hover:text-primary transition-colors"
+          title={collapsed ? "Mở rộng" : "Thu gọn"}
         >
-          <RefreshCw className="w-3 h-3" /> Clear output
+          {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
         </button>
       </div>
 
-      {/* Editor */}
-      <div className="relative">
-        <textarea
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          spellCheck={false}
-          className="w-full h-72 font-mono text-[11px] leading-relaxed bg-background/60 border border-border/40 rounded-md p-3 outline-none focus:border-primary/60 resize-y"
-        />
-        <div className="absolute bottom-2 right-2 text-[9px] font-mono text-muted-foreground bg-background/80 px-1.5 py-0.5 rounded">
-          {code.split("\n").length} dòng
-        </div>
-      </div>
+      {!collapsed && (
+        <>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Chạy Python trong <strong>Web Worker</strong> — không treo trang. Code chạy quá lâu sẽ tự kill theo timeout.
+            Biến có sẵn: <code className="mx-1 px-1 rounded bg-muted/40 font-mono text-[10px]">symbol, closes, returns, current_price</code>.
+            Gán <code className="mx-1 px-1 rounded bg-muted/40 font-mono text-[10px]">metrics = {`{...}`}</code> để show KPI.
+          </p>
 
-      {/* Run + status */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          onClick={run}
-          disabled={busy || !dataReady}
-          className="bg-primary text-primary-foreground hover:opacity-90 h-8"
-        >
-          {busy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
-          {status === "loading-runtime" || status === "loading-pkgs" ? "Đang chuẩn bị runtime..."
-            : status === "running" ? "Đang chạy..." : "Run Python"}
-        </Button>
-        {!dataReady && (
-          <span className="text-[10px] text-amber-500">Chờ dữ liệu lịch sử nạp xong...</span>
-        )}
-        {progress && (
-          <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-primary animate-pulse" /> {progress}
-          </span>
-        )}
-        {status === "ready" && !progress && (
-          <span className="text-[10px] font-mono text-emerald-500">● Runtime ready</span>
-        )}
-      </div>
-
-      {errorMsg && (
-        <pre className="text-[11px] font-mono bg-red-950/30 border border-red-900/40 text-red-300 p-3 rounded-md overflow-x-auto whitespace-pre-wrap">
-{errorMsg}
-        </pre>
-      )}
-
-      {/* Metrics */}
-      {metrics && Object.keys(metrics).length > 0 && (
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-primary" /> Metrics
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {Object.entries(metrics).map(([k, v]) => (
-              <div key={k} className="rounded-md border border-border/40 bg-muted/20 p-2.5">
-                <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{k}</div>
-                <div className="font-mono text-sm text-primary mt-0.5 truncate">{String(v)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Images */}
-      {images.length > 0 && (
-        <div className="space-y-3">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-            <ImageIcon className="w-3 h-3 text-primary" /> Biểu đồ ({images.length})
-          </div>
-          {images.map((src, i) => (
-            <div key={i} className="relative group rounded-md overflow-hidden border border-border/40 bg-[#0b1120]">
-              <img src={src} alt={`figure ${i + 1}`} className="w-full block" />
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {TEMPLATES.map((t) => (
               <button
-                onClick={() => downloadImage(src, i)}
-                className="absolute top-2 right-2 h-7 w-7 rounded-md bg-background/80 hover:bg-primary hover:text-primary-foreground border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Tải PNG"
+                key={t.id}
+                onClick={() => setCode(t.code)}
+                className="text-[10px] px-2 py-1 rounded-full bg-muted/30 hover:bg-primary/15 hover:text-primary border border-border/40 transition-colors"
               >
-                <Download className="w-3.5 h-3.5" />
+                ⚡ {t.label}
+              </button>
+            ))}
+
+            <div className="ml-auto flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-muted-foreground">Timeout:</span>
+              {TIMEOUT_OPTIONS.map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setTimeoutSec(sec)}
+                  className={`text-[10px] px-2 py-1 rounded border transition-colors font-mono ${
+                    timeoutSec === sec
+                      ? "bg-primary/20 text-primary border-primary/50"
+                      : "bg-muted/30 border-border/40 hover:bg-muted/50"
+                  }`}
+                >
+                  {sec}s
+                </button>
+              ))}
+              <button
+                onClick={() => { setStdout(""); setImages([]); setMetrics(null); setErrorMsg(""); }}
+                className="text-[10px] px-2 py-1 rounded-full bg-muted/30 hover:bg-muted/50 border border-border/40 transition-colors flex items-center gap-1"
+              >
+                <RefreshCw className="w-3 h-3" /> Clear
               </button>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Stdout */}
-      {stdout && (
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
-            <Terminal className="w-3 h-3 text-primary" /> Output
           </div>
-          <pre className="text-[11px] font-mono bg-background/60 border border-border/40 p-3 rounded-md overflow-x-auto whitespace-pre-wrap max-h-60">
+
+          {/* Editor */}
+          <div className="relative">
+            <textarea
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              spellCheck={false}
+              className="w-full h-72 font-mono text-[11px] leading-relaxed bg-background/60 border border-border/40 rounded-md p-3 outline-none focus:border-primary/60 resize-y"
+            />
+            <div className="absolute bottom-2 right-2 text-[9px] font-mono text-muted-foreground bg-background/80 px-1.5 py-0.5 rounded">
+              {code.split("\n").length} dòng
+            </div>
+          </div>
+
+          {/* Run + status */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              onClick={run}
+              disabled={busy || !dataReady}
+              className="bg-primary text-primary-foreground hover:opacity-90 h-8"
+            >
+              {busy ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Play className="w-3.5 h-3.5 mr-1.5" />}
+              {status === "booting" ? "Boot runtime..." : status === "running" ? "Đang chạy..." : "Run Python"}
+            </Button>
+            {busy && (
+              <Button onClick={stop} variant="destructive" className="h-8">
+                <Square className="w-3.5 h-3.5 mr-1.5" /> Stop
+              </Button>
+            )}
+            {!dataReady && (
+              <span className="text-[10px] text-amber-500">Chờ dữ liệu lịch sử nạp xong...</span>
+            )}
+            {progress && (
+              <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-primary animate-pulse" /> {progress}
+              </span>
+            )}
+            {status === "ready" && !progress && !busy && (
+              <span className="text-[10px] font-mono text-emerald-500">● Hoàn tất {elapsed > 0 ? `· ${elapsed.toFixed(2)}s` : ""}</span>
+            )}
+          </div>
+
+          {/* Timeout progress bar */}
+          {busy && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+                <span>Elapsed {elapsed.toFixed(1)}s</span>
+                <span>Limit {timeoutSec}s</span>
+              </div>
+              <div className="h-1 bg-muted/40 rounded overflow-hidden">
+                <div
+                  className={`h-full transition-all ${pctTimeout > 75 ? "bg-red-500" : pctTimeout > 50 ? "bg-amber-500" : "bg-primary"}`}
+                  style={{ width: `${pctTimeout}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {errorMsg && (
+            <pre className="text-[11px] font-mono bg-red-950/30 border border-red-900/40 text-red-300 p-3 rounded-md overflow-x-auto whitespace-pre-wrap">
+{errorMsg}
+            </pre>
+          )}
+
+          {/* Metrics */}
+          {metrics && Object.keys(metrics).length > 0 && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-primary" /> Metrics
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.entries(metrics).map(([k, v]) => (
+                  <div key={k} className="rounded-md border border-border/40 bg-muted/20 p-2.5">
+                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{k}</div>
+                    <div className="font-mono text-sm text-primary mt-0.5 truncate">{String(v)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Images */}
+          {images.length > 0 && (
+            <div className="space-y-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="w-3 h-3 text-primary" /> Biểu đồ ({images.length})
+              </div>
+              {images.map((src, i) => (
+                <div key={i} className="relative group rounded-md overflow-hidden border border-border/40 bg-[#0b1120]">
+                  <img src={src} alt={`figure ${i + 1}`} className="w-full block" />
+                  <button
+                    onClick={() => downloadImage(src, i)}
+                    className="absolute top-2 right-2 h-7 w-7 rounded-md bg-background/80 hover:bg-primary hover:text-primary-foreground border border-border/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Tải PNG"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stdout */}
+          {stdout && (
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
+                <Terminal className="w-3 h-3 text-primary" /> Output
+              </div>
+              <pre className="text-[11px] font-mono bg-background/60 border border-border/40 p-3 rounded-md overflow-x-auto whitespace-pre-wrap max-h-60">
 {stdout}
-          </pre>
-        </div>
+              </pre>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
