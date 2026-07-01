@@ -112,7 +112,7 @@ export function StockStickyChatBar({ symbol, context }: Props) {
 
   return (
     <div className="sticky bottom-0 z-40 -mx-4 md:-mx-6 mt-4">
-      <div className="border-t border-border/40 bg-card/85 backdrop-blur-xl shadow-[0_-8px_30px_-12px_hsl(var(--primary)/0.25)]">
+      <div className="border-t border-border/40 bg-card/90 backdrop-blur-xl shadow-[0_-10px_40px_-12px_hsl(var(--primary)/0.35)]">
         <AnimatePresence initial={false}>
           {expanded && (
             <motion.div
@@ -123,22 +123,31 @@ export function StockStickyChatBar({ symbol, context }: Props) {
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              <div className="max-h-[40vh] overflow-y-auto px-4 md:px-6 py-3 space-y-2">
+              <div className="max-h-[60vh] min-h-[320px] overflow-y-auto px-4 md:px-8 py-5 space-y-4">
+                {messages.length === 0 && (
+                  <div className="text-center text-muted-foreground text-sm py-8">
+                    {language === "vi"
+                      ? `👋 Hỏi Crystal AI bất kỳ điều gì về ${symbol || "thị trường"}...`
+                      : `👋 Ask Crystal AI anything about ${symbol || "the market"}...`}
+                  </div>
+                )}
                 {messages.map((m, i) => (
-                  <div key={i} className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}>
+                  <div key={i} className={cn("flex gap-3", m.role === "user" ? "justify-end" : "justify-start")}>
                     {m.role === "assistant" && (
-                      <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles className="w-3 h-3 text-primary" />
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles className="w-4 h-4 text-primary" />
                       </div>
                     )}
                     <div className={cn(
-                      "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                      m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/40 text-foreground",
+                      "max-w-[85%] rounded-2xl px-4 py-3 text-[13px] leading-relaxed",
+                      m.role === "user"
+                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                        : "bg-muted/50 text-foreground border border-border/40",
                     )}>
                       {m.role === "assistant" ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-1 prose-ul:my-1 prose-headings:my-1 prose-headings:text-sm">
+                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-pre:my-2 prose-ul:my-1.5 prose-headings:my-2 prose-headings:text-sm">
                           {m.content ? <ReactMarkdown>{m.content}</ReactMarkdown>
-                            : <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+                            : <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                         </div>
                       ) : (
                         <p className="whitespace-pre-wrap">{m.content}</p>
@@ -152,31 +161,31 @@ export function StockStickyChatBar({ symbol, context }: Props) {
           )}
         </AnimatePresence>
 
-        <div className="px-4 md:px-6 py-2.5 flex items-center gap-2">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+        <div className="px-4 md:px-6 py-3 flex items-center gap-3 flex-wrap md:flex-nowrap">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-md shadow-primary/30">
+              <Sparkles className="w-4 h-4 text-primary-foreground" />
             </div>
             <div className="hidden md:flex flex-col leading-tight">
-              <span className="text-[11px] font-semibold">Crystal AI</span>
-              <span className="text-[9px] font-mono text-muted-foreground">{symbol || "Realtime"}</span>
+              <span className="text-sm font-semibold">Crystal AI</span>
+              <span className="text-[10px] font-mono text-muted-foreground">{symbol || "Realtime"}</span>
             </div>
           </div>
 
           {/* Quick chips */}
-          <div className="flex gap-1 overflow-x-auto no-scrollbar shrink-0 max-w-[40%]">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar shrink-0 max-w-full md:max-w-[38%]">
             {quick.map((q) => (
               <button
                 key={q}
                 onClick={() => send(symbol ? `${q} cho ${symbol}` : q)}
-                className="text-[10px] px-2 py-1 rounded-full bg-muted/40 hover:bg-primary/15 hover:text-primary border border-border/40 whitespace-nowrap transition-colors"
+                className="text-[11px] px-2.5 py-1.5 rounded-full bg-muted/40 hover:bg-primary/15 hover:text-primary border border-border/40 whitespace-nowrap transition-colors"
               >
                 {q}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 flex items-center gap-2 rounded-lg border border-border/50 bg-background/60 focus-within:border-primary/50 transition-colors px-2.5 py-1.5 min-w-0">
+          <div className="flex-1 flex items-center gap-2 rounded-xl border border-border/50 bg-background/70 focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px_hsl(var(--primary)/0.12)] transition-all px-3 py-2 min-w-0">
             <input
               ref={inputRef}
               value={input}
@@ -188,23 +197,23 @@ export function StockStickyChatBar({ symbol, context }: Props) {
             <button
               onClick={() => send()}
               disabled={!input.trim() || streaming}
-              className="h-7 w-7 rounded-md bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 flex items-center justify-center shrink-0"
+              className="h-9 w-9 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-40 flex items-center justify-center shrink-0 shadow-md shadow-primary/20"
             >
-              {streaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+              {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
 
           <button
             onClick={() => setExpanded((e) => !e)}
             title={expanded ? "Thu gọn" : "Mở rộng"}
-            className="h-8 w-8 rounded-md hover:bg-muted/50 flex items-center justify-center text-muted-foreground shrink-0"
+            className="h-9 w-9 rounded-lg hover:bg-muted/50 flex items-center justify-center text-muted-foreground shrink-0 border border-border/40"
           >
             {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
           <button
             onClick={() => setClosed(true)}
             title="Đóng"
-            className="h-8 w-8 rounded-md hover:bg-muted/50 flex items-center justify-center text-muted-foreground shrink-0"
+            className="h-9 w-9 rounded-lg hover:bg-muted/50 flex items-center justify-center text-muted-foreground shrink-0 border border-border/40"
           >
             <X className="w-4 h-4" />
           </button>
