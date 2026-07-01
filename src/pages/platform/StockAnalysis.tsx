@@ -23,6 +23,7 @@ import { QuantModelsLab } from "@/components/platform/stocks/QuantModelsLab";
 import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChatBar";
 import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
 import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
+import { TradingViewPanel } from "@/components/platform/stocks/TradingViewPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1183,6 +1184,7 @@ export default function StockAnalysis() {
               { value: "price",        label: "Price & Overlays" },
               { value: "technicals",   label: "Indicators" },
               { value: "compare",      label: "📈 So sánh" },
+              { value: "tradingview",  label: "📺 TradingView" },
             ]},
             { group: "⚛️ Quant", items: [
               { value: "quantplus",    label: "Quant+ Metrics" },
@@ -1338,6 +1340,11 @@ export default function StockAnalysis() {
               maxDrawdown: analysis?.maxDD,
             }}
           />
+        </TabsContent>
+
+        {/* TradingView embedded widgets */}
+        <TabsContent value="tradingview">
+          <TradingViewPanel symbol={selected} />
         </TabsContent>
 
         {/* Portfolio Lab Inline — multi-stock optimization */}
