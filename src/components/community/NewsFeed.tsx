@@ -62,9 +62,16 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
     return uniqueSources.sort();
   }, [articles]);
 
-  // Filter articles based on search, source, and time
+  // Filter articles based on search, source, time, and topic
   const filteredArticles = useMemo(() => {
+    const topicKeywords = topic ? TOPIC_KEYWORDS[topic] : null;
     return articles.filter(article => {
+      // Topic keyword filter (case-insensitive on title/description/content)
+      if (topicKeywords) {
+        const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
+        if (!topicKeywords.some(kw => hay.includes(kw))) return false;
+      }
+
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
