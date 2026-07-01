@@ -20,9 +20,21 @@ const ITEMS_PER_PAGE = 9;
 
 interface NewsFeedProps {
   category?: string;
+  /** Optional topic key that filters articles by keyword matching in title/description/content. */
+  topic?: "stocks" | "crypto" | "banking" | "realestate" | "tech" | "events";
 }
 
-export const NewsFeed = ({ category = "news" }: NewsFeedProps) => {
+// Vietnamese + English keyword sets — matched case-insensitively against title/description/content.
+const TOPIC_KEYWORDS: Record<NonNullable<NewsFeedProps["topic"]>, string[]> = {
+  stocks: ["cổ phiếu", "chứng khoán", "vn-index", "vnindex", "hose", "hnx", "upcom", "cp ", "mã ck", " stock", "equity", "ipo", "cổ tức", "thị trường chứng khoán"],
+  crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "blockchain", " coin", "altcoin", "tiền số", "tiền mã hóa", "tiền điện tử", "defi", "nft", "binance", "solana"],
+  banking: ["ngân hàng", "sbv", "tín dụng", " bank", "lãi suất", "nợ xấu", "credit", "vietcombank", "bidv", "vietinbank", "techcombank", "mb bank", "acb", "vpbank", "sacombank"],
+  realestate: ["bất động sản", "bđs", "nhà đất", "chung cư", "real estate", "property", "căn hộ", "đất nền", "vinhomes", "novaland", "nhà ở"],
+  tech: ["công nghệ", " ai ", "artificial intelligence", "fintech", "technology", "phần mềm", "startup", "khởi nghiệp", "chuyển đổi số", "digital", "cloud", "chatgpt", "openai", "microsoft", "google", "apple"],
+  events: ["sự kiện", "hội thảo", "hội nghị", "event", "conference", "workshop", "webinar", "diễn đàn", "triển lãm"],
+};
+
+export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
   const { t, language } = useLanguage();
   const dateLocale = language === 'vi' ? vi : enUS;
