@@ -115,7 +115,7 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
 
       return true;
     });
-  }, [articles, searchQuery, sourceFilter, timeFilter]);
+  }, [articles, searchQuery, sourceFilter, timeFilter, topic]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE);

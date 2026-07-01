@@ -230,27 +230,27 @@ export default function Community() {
                 </TabsContent>
 
                 <TabsContent value="stocks" className="mt-0">
-                  <NewsFeed category="news" />
+                  <NewsFeed category="news" topic="stocks" />
                 </TabsContent>
 
                 <TabsContent value="crypto" className="mt-0">
-                  <NewsFeed category="news" />
+                  <NewsFeed category="news" topic="crypto" />
                 </TabsContent>
 
                 <TabsContent value="banking" className="mt-0">
-                  <NewsFeed category="news" />
+                  <NewsFeed category="news" topic="banking" />
                 </TabsContent>
 
                 <TabsContent value="realestate" className="mt-0">
-                  <NewsFeed category="news" />
+                  <NewsFeed category="news" topic="realestate" />
                 </TabsContent>
 
                 <TabsContent value="tech" className="mt-0">
-                  <NewsFeed category="blog" />
+                  <NewsFeed category="blog" topic="tech" />
                 </TabsContent>
 
                 <TabsContent value="events" className="mt-0">
-                  <NewsFeed category="event" />
+                  <NewsFeed category="event" topic="events" />
                 </TabsContent>
 
                 <TabsContent value="blogs" className="mt-0">
