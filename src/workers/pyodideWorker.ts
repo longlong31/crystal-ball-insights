@@ -61,6 +61,7 @@ self.onmessage = async (e: MessageEvent) => {
     py.globals.set("closes", py.toPy(ctx?.closes ?? []));
     py.globals.set("returns", py.toPy(ctx?.returns ?? []));
     py.globals.set("current_price", ctx?.currentPrice ?? null);
+    py.globals.set("__user_code", code || "");
 
     let buf = "";
     py.setStdout({ batched: (s: string) => { buf += s + "\n"; } });
@@ -68,8 +69,22 @@ self.onmessage = async (e: MessageEvent) => {
 
     self.postMessage({ type: "progress", msg: "Đang chạy Python..." });
 
-    await py.runPythonAsync(`metrics = None`);
-    await py.runPythonAsync(code);
+    // Run inside try/except so we surface a real Python traceback instead of a JS PythonError blob.
+    const runResult: string = await py.runPythonAsync(`
+import traceback as __tb
+metrics = None
+try:
+    exec(__user_code, globals())
+    __run_error = None
+except Exception:
+    __run_error = __tb.format_exc()
+__run_error or ""
+`);
+
+    if (runResult && runResult.length > 0) {
+      self.postMessage({ type: "error", message: runResult });
+      return;
+    }
 
     const figsProxy = await py.runPythonAsync(`__collect_figs()`);
     const figs: string[] = figsProxy.toJs();
