@@ -246,7 +246,7 @@ export default function Community() {
                 </TabsContent>
 
                 <TabsContent value="tech" className="mt-0">
-                  <NewsFeed category="blog" topic="tech" />
+                  <NewsFeed category="news" topic="tech" />
                 </TabsContent>
 
                 <TabsContent value="events" className="mt-0">
