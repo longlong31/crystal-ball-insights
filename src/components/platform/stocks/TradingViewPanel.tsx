@@ -242,6 +242,17 @@ export function TradingViewPanel({ symbol }: Props) {
       {/* Settings panel */}
       {showSettings && (
         <div className="p-3 rounded-lg bg-card border border-border/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Tùy chọn hiển thị</p>
+            <button
+              onClick={resetSettings}
+              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-md bg-muted/40 hover:bg-muted/60 text-foreground/70 transition-colors"
+              title="Khôi phục mặc định"
+            >
+              <RotateCcw className="w-3 h-3" /> Mặc định
+            </button>
+          </div>
+
           {/* Interval */}
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Khung thời gian</p>
