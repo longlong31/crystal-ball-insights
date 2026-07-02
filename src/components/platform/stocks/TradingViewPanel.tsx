@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ExternalLink, ChevronDown, ChevronUp, Settings2, RotateCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
