@@ -69,6 +69,22 @@ interface Props {
   symbol: string;
 }
 
+const TV_SETTINGS_KEY = "crystall-tv-panel-settings";
+
+const DEFAULT_SETTINGS = {
+  openChart: true,
+  openProfile: true,
+  openFinancials: false,
+  openTech: false,
+  showSettings: false,
+  interval: "D",
+  style: "1",
+  activeIndicators: ["ma", "rsi", "macd"],
+  zoom: 100,
+};
+
+type Settings = typeof DEFAULT_SETTINGS;
+
 const INTERVALS: { value: string; label: string }[] = [
   { value: "1", label: "1m" },
   { value: "5", label: "5m" },
