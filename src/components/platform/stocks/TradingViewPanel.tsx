@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ExternalLink, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Convert internal ticker (e.g. "ACB.VN", "AAPL", "BTC-USD") to a TradingView
@@ -17,7 +18,7 @@ function toTVSymbol(symbol: string): string {
   if (s.endsWith("=F")) return `COMEX:${s.replace("=F", "")}`;
   if (s.endsWith("-USD")) return `BINANCE:${s.replace("-USD", "USDT")}`;
   if (s.includes(":")) return s;
-  return s; // TradingView resolves plain US tickers
+  return s;
 }
 
 function tvUrl(symbol: string) {
@@ -53,7 +54,7 @@ function TVWidget({ script, config, height }: WidgetProps) {
       if (ref.current) ref.current.innerHTML = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(config), script]);
+  }, [JSON.stringify(config), script, height]);
 
   return (
     <div
@@ -68,12 +69,61 @@ interface Props {
   symbol: string;
 }
 
+const INTERVALS: { value: string; label: string }[] = [
+  { value: "1", label: "1m" },
+  { value: "5", label: "5m" },
+  { value: "15", label: "15m" },
+  { value: "60", label: "1h" },
+  { value: "240", label: "4h" },
+  { value: "D", label: "1D" },
+  { value: "W", label: "1W" },
+  { value: "M", label: "1M" },
+];
+
+const INDICATORS: { key: string; label: string; study: string }[] = [
+  { key: "ma", label: "MA", study: "MASimple@tv-basicstudies" },
+  { key: "ema", label: "EMA", study: "MAExp@tv-basicstudies" },
+  { key: "bb", label: "Bollinger", study: "BB@tv-basicstudies" },
+  { key: "rsi", label: "RSI", study: "RSI@tv-basicstudies" },
+  { key: "macd", label: "MACD", study: "MACD@tv-basicstudies" },
+  { key: "stoch", label: "Stoch", study: "Stochastic@tv-basicstudies" },
+  { key: "vol", label: "Volume", study: "Volume@tv-basicstudies" },
+];
+
+const CHART_STYLES: { value: string; label: string }[] = [
+  { value: "1", label: "Nến" },
+  { value: "8", label: "Heikin Ashi" },
+  { value: "2", label: "Đường" },
+  { value: "3", label: "Area" },
+  { value: "9", label: "Baseline" },
+];
+
 export function TradingViewPanel({ symbol }: Props) {
   const tvSymbol = toTVSymbol(symbol);
+  const isMobile = useIsMobile();
+
   const [openChart, setOpenChart] = useState(true);
   const [openProfile, setOpenProfile] = useState(true);
   const [openFinancials, setOpenFinancials] = useState(false);
   const [openTech, setOpenFundTech] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const [interval, setInterval] = useState("D");
+  const [style, setStyle] = useState("1");
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(["ma", "rsi", "macd"]);
+  const [zoom, setZoom] = useState(100); // percent
+
+  // Adaptive base height by device
+  const baseHeight = isMobile ? 380 : 560;
+  const chartHeight = Math.round((baseHeight * zoom) / 100);
+
+  const studies = useMemo(
+    () => INDICATORS.filter((i) => activeIndicators.includes(i.key)).map((i) => i.study),
+    [activeIndicators],
+  );
+
+  const toggleIndicator = (key: string) =>
+    setActiveIndicators((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
 
   const commonTheme = {
     colorTheme: "dark",
@@ -85,7 +135,7 @@ export function TradingViewPanel({ symbol }: Props) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20 border border-border/30">
+      <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-muted/20 border border-border/30 flex-wrap">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold">TV</div>
           <div>
@@ -93,35 +143,133 @@ export function TradingViewPanel({ symbol }: Props) {
             <p className="text-[10px] font-mono text-muted-foreground">{tvSymbol}</p>
           </div>
         </div>
-        <a
-          href={tvUrl(symbol)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/15 hover:bg-primary/25 text-primary transition-colors"
-        >
-          Xem trên TradingView <ExternalLink className="w-3 h-3" />
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            className="text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted/40 hover:bg-muted/60 text-foreground/80 transition-colors"
+          >
+            <Settings2 className="w-3 h-3" /> Tùy chỉnh
+          </button>
+          <a
+            href={tvUrl(symbol)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/15 hover:bg-primary/25 text-primary transition-colors"
+          >
+            TradingView <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div className="p-3 rounded-lg bg-card border border-border/40 space-y-3">
+          {/* Interval */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Khung thời gian</p>
+            <div className="flex flex-wrap gap-1.5">
+              {INTERVALS.map((it) => (
+                <button
+                  key={it.value}
+                  onClick={() => setInterval(it.value)}
+                  className={`text-[11px] px-2.5 py-1 rounded-md font-mono transition-colors ${
+                    interval === it.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/40 hover:bg-muted/60 text-foreground/80"
+                  }`}
+                >
+                  {it.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Style */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Kiểu biểu đồ</p>
+            <div className="flex flex-wrap gap-1.5">
+              {CHART_STYLES.map((cs) => (
+                <button
+                  key={cs.value}
+                  onClick={() => setStyle(cs.value)}
+                  className={`text-[11px] px-2.5 py-1 rounded-md transition-colors ${
+                    style === cs.value
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted/40 hover:bg-muted/60 text-foreground/80"
+                  }`}
+                >
+                  {cs.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Indicators */}
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Chỉ báo mặc định</p>
+            <div className="flex flex-wrap gap-1.5">
+              {INDICATORS.map((ind) => {
+                const active = activeIndicators.includes(ind.key);
+                return (
+                  <button
+                    key={ind.key}
+                    onClick={() => toggleIndicator(ind.key)}
+                    className={`text-[11px] px-2.5 py-1 rounded-md transition-colors border ${
+                      active
+                        ? "bg-primary/20 border-primary/50 text-primary"
+                        : "bg-muted/30 border-border/40 hover:bg-muted/50 text-foreground/70"
+                    }`}
+                  >
+                    {ind.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Zoom */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Độ phóng đại ({isMobile ? "Mobile" : "Desktop"})
+              </p>
+              <span className="text-[11px] font-mono text-primary">{zoom}% · {chartHeight}px</span>
+            </div>
+            <input
+              type="range"
+              min={60}
+              max={160}
+              step={10}
+              value={zoom}
+              onChange={(e) => setZoom(Number(e.target.value))}
+              className="w-full accent-primary"
+            />
+            <div className="flex justify-between text-[9px] text-muted-foreground mt-0.5">
+              <span>60%</span><span>100%</span><span>160%</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Advanced Chart */}
       <Section title="📈 Biểu đồ nâng cao" open={openChart} onToggle={() => setOpenChart(!openChart)}>
         <TVWidget
           script="tv.js"
-          height={520}
+          height={chartHeight}
           config={{
             ...commonTheme,
             autosize: true,
             symbol: tvSymbol,
-            interval: "D",
+            interval,
             timezone: "Asia/Ho_Chi_Minh",
-            style: "1",
+            style,
             enable_publishing: false,
             hide_top_toolbar: false,
             hide_legend: false,
             withdateranges: true,
             allow_symbol_change: true,
             calendar: false,
-            studies: ["MASimple@tv-basicstudies", "RSI@tv-basicstudies", "MACD@tv-basicstudies"],
+            studies,
           }}
         />
       </Section>
@@ -130,8 +278,8 @@ export function TradingViewPanel({ symbol }: Props) {
       <Section title="🏢 Hồ sơ công ty" open={openProfile} onToggle={() => setOpenProfile(!openProfile)}>
         <TVWidget
           script="embed-widget-symbol-profile.js"
-          height={380}
-          config={{ ...commonTheme, symbol: tvSymbol, width: "100%", height: 380 }}
+          height={isMobile ? 320 : 380}
+          config={{ ...commonTheme, symbol: tvSymbol, width: "100%", height: isMobile ? 320 : 380 }}
         />
       </Section>
 
@@ -139,12 +287,12 @@ export function TradingViewPanel({ symbol }: Props) {
       <Section title="💰 Tài chính chi tiết" open={openFinancials} onToggle={() => setOpenFinancials(!openFinancials)}>
         <TVWidget
           script="embed-widget-financials.js"
-          height={480}
+          height={isMobile ? 400 : 480}
           config={{
             ...commonTheme,
             symbol: tvSymbol,
             width: "100%",
-            height: 480,
+            height: isMobile ? 400 : 480,
             displayMode: "regular",
           }}
         />
@@ -155,19 +303,19 @@ export function TradingViewPanel({ symbol }: Props) {
         <div className="grid md:grid-cols-2 gap-3">
           <TVWidget
             script="embed-widget-technical-analysis.js"
-            height={430}
+            height={isMobile ? 380 : 430}
             config={{
               ...commonTheme,
               symbol: tvSymbol,
-              interval: "1D",
+              interval: interval === "D" ? "1D" : interval === "W" ? "1W" : interval === "M" ? "1M" : `${interval}m`,
               width: "100%",
-              height: 430,
+              height: isMobile ? 380 : 430,
               showIntervalTabs: true,
             }}
           />
           <TVWidget
             script="embed-widget-symbol-info.js"
-            height={430}
+            height={isMobile ? 380 : 430}
             config={{ ...commonTheme, symbol: tvSymbol, width: "100%" }}
           />
         </div>
