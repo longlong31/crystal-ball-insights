@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ExternalLink, ChevronDown, ChevronUp, Settings2, RotateCcw } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
@@ -69,6 +69,22 @@ interface Props {
   symbol: string;
 }
 
+const TV_SETTINGS_KEY = "crystall-tv-panel-settings";
+
+const DEFAULT_SETTINGS = {
+  openChart: true,
+  openProfile: true,
+  openFinancials: false,
+  openTech: false,
+  showSettings: false,
+  interval: "D",
+  style: "1",
+  activeIndicators: ["ma", "rsi", "macd"],
+  zoom: 100,
+};
+
+type Settings = typeof DEFAULT_SETTINGS;
+
 const INTERVALS: { value: string; label: string }[] = [
   { value: "1", label: "1m" },
   { value: "5", label: "5m" },
@@ -102,16 +118,78 @@ export function TradingViewPanel({ symbol }: Props) {
   const tvSymbol = toTVSymbol(symbol);
   const isMobile = useIsMobile();
 
-  const [openChart, setOpenChart] = useState(true);
-  const [openProfile, setOpenProfile] = useState(true);
-  const [openFinancials, setOpenFinancials] = useState(false);
-  const [openTech, setOpenFundTech] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [openChart, setOpenChart] = useState(DEFAULT_SETTINGS.openChart);
+  const [openProfile, setOpenProfile] = useState(DEFAULT_SETTINGS.openProfile);
+  const [openFinancials, setOpenFinancials] = useState(DEFAULT_SETTINGS.openFinancials);
+  const [openTech, setOpenFundTech] = useState(DEFAULT_SETTINGS.openTech);
+  const [showSettings, setShowSettings] = useState(DEFAULT_SETTINGS.showSettings);
 
-  const [interval, setInterval] = useState("D");
-  const [style, setStyle] = useState("1");
-  const [activeIndicators, setActiveIndicators] = useState<string[]>(["ma", "rsi", "macd"]);
-  const [zoom, setZoom] = useState(100); // percent
+  const [interval, setInterval] = useState(DEFAULT_SETTINGS.interval);
+  const [style, setStyle] = useState(DEFAULT_SETTINGS.style);
+  const [activeIndicators, setActiveIndicators] = useState<string[]>(DEFAULT_SETTINGS.activeIndicators);
+  const [zoom, setZoom] = useState(DEFAULT_SETTINGS.zoom);
+
+  // Load persisted settings once on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TV_SETTINGS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Partial<Settings>;
+      if (typeof parsed.openChart === "boolean") setOpenChart(parsed.openChart);
+      if (typeof parsed.openProfile === "boolean") setOpenProfile(parsed.openProfile);
+      if (typeof parsed.openFinancials === "boolean") setOpenFinancials(parsed.openFinancials);
+      if (typeof parsed.openTech === "boolean") setOpenFundTech(parsed.openTech);
+      if (typeof parsed.showSettings === "boolean") setShowSettings(parsed.showSettings);
+      if (INTERVALS.some((i) => i.value === parsed.interval)) setInterval(parsed.interval!);
+      if (CHART_STYLES.some((s) => s.value === parsed.style)) setStyle(parsed.style!);
+      if (Array.isArray(parsed.activeIndicators)) {
+        const valid = parsed.activeIndicators.filter((k) => INDICATORS.some((i) => i.key === k));
+        if (valid.length) setActiveIndicators(valid);
+      }
+      if (typeof parsed.zoom === "number" && parsed.zoom >= 60 && parsed.zoom <= 160) {
+        setZoom(parsed.zoom);
+      }
+    } catch {
+      // Ignore corrupted storage
+    }
+  }, []);
+
+  // Persist whenever any setting changes
+  useEffect(() => {
+    const payload: Settings = {
+      openChart,
+      openProfile,
+      openFinancials,
+      openTech,
+      showSettings,
+      interval,
+      style,
+      activeIndicators,
+      zoom,
+    };
+    try {
+      localStorage.setItem(TV_SETTINGS_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore storage errors (e.g. private mode)
+    }
+  }, [openChart, openProfile, openFinancials, openTech, showSettings, interval, style, activeIndicators, zoom]);
+
+  const resetSettings = useCallback(() => {
+    setOpenChart(DEFAULT_SETTINGS.openChart);
+    setOpenProfile(DEFAULT_SETTINGS.openProfile);
+    setOpenFinancials(DEFAULT_SETTINGS.openFinancials);
+    setOpenFundTech(DEFAULT_SETTINGS.openTech);
+    setShowSettings(DEFAULT_SETTINGS.showSettings);
+    setInterval(DEFAULT_SETTINGS.interval);
+    setStyle(DEFAULT_SETTINGS.style);
+    setActiveIndicators(DEFAULT_SETTINGS.activeIndicators);
+    setZoom(DEFAULT_SETTINGS.zoom);
+    try {
+      localStorage.removeItem(TV_SETTINGS_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   // Adaptive base height by device
   const baseHeight = isMobile ? 380 : 560;
@@ -164,6 +242,17 @@ export function TradingViewPanel({ symbol }: Props) {
       {/* Settings panel */}
       {showSettings && (
         <div className="p-3 rounded-lg bg-card border border-border/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Tùy chọn hiển thị</p>
+            <button
+              onClick={resetSettings}
+              className="text-[10px] flex items-center gap-1 px-2 py-1 rounded-md bg-muted/40 hover:bg-muted/60 text-foreground/70 transition-colors"
+              title="Khôi phục mặc định"
+            >
+              <RotateCcw className="w-3 h-3" /> Mặc định
+            </button>
+          </div>
+
           {/* Interval */}
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Khung thời gian</p>
