@@ -1209,7 +1209,7 @@ export default function StockAnalysis() {
               { value: "risk",         label: "⚠️ Risk" },
             ]},
           ];
-          const QUICK = ["price", "quantplus", "airesearch", "formulas"];
+          const QUICK = ["price", "metrics", "quantplus", "airesearch", "formulas"];
           const currentLabel = TAB_GROUPS.flatMap(g => g.items).find(i => i.value === activeTab)?.label || activeTab;
           return (
             <>
