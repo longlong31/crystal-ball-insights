@@ -24,6 +24,7 @@ import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChat
 import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
 import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { TradingViewPanel } from "@/components/platform/stocks/TradingViewPanel";
+import { ComprehensiveMetricsPanel } from "@/components/platform/stocks/ComprehensiveMetricsPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
@@ -1198,6 +1199,7 @@ export default function StockAnalysis() {
               { value: "pythonlab",    label: "🐍 Python Lab (Run)" },
             ]},
             { group: "📋 Fundamentals", items: [
+              { value: "metrics",      label: "🧭 All Metrics (16 nhóm)" },
               { value: "fundamentals", label: "Fundamentals" },
               { value: "financials",   label: "📋 BCTC" },
               { value: "company",      label: "🏢 Company" },
@@ -1207,7 +1209,7 @@ export default function StockAnalysis() {
               { value: "risk",         label: "⚠️ Risk" },
             ]},
           ];
-          const QUICK = ["price", "quantplus", "airesearch", "formulas"];
+          const QUICK = ["price", "metrics", "quantplus", "airesearch", "formulas"];
           const currentLabel = TAB_GROUPS.flatMap(g => g.items).find(i => i.value === activeTab)?.label || activeTab;
           return (
             <>
@@ -1269,6 +1271,11 @@ export default function StockAnalysis() {
           );
         })()}
 
+
+        {/* All Metrics — 16 categories dashboard */}
+        <TabsContent value="metrics">
+          <ComprehensiveMetricsPanel quote={quote} history={history} analysis={analysis} />
+        </TabsContent>
 
         {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
         <TabsContent value="quantplus">

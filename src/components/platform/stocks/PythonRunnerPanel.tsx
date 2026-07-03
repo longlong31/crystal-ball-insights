@@ -31,6 +31,11 @@ const PY_FILES: PyFile[] = [
   { id: "macd",       label: "MACD (12,26,9)",     path: "/python/06_macd.py",             desc: "MACD, signal line, histogram và đếm giao cắt" },
   { id: "dd",         label: "Max Drawdown",       path: "/python/07_drawdown.py",         desc: "Underwater curve, max drawdown, thời gian hồi phục" },
   { id: "playground", label: "🧪 Playground",       path: "/python/08_playground.py",       desc: "File trống có sẵn context — tự do thử nghiệm code Python" },
+  { id: "valuation",  label: "💰 Valuation Ratios", path: "/python/09_valuation_ratios.py", desc: "P/E, PEG, P/B, EV/EBITDA, FCF Yield, DCF intrinsic value" },
+  { id: "quality",    label: "🏆 Altman & Piotroski", path: "/python/10_quality_scores.py", desc: "Altman Z-Score (risk of bankruptcy) + Piotroski F-Score 9-điểm" },
+  { id: "pca",        label: "🧬 PCA & Correlation", path: "/python/11_pca_correlation.py", desc: "Principal Component Analysis, eigenvalues, correlation matrix" },
+  { id: "techbundle", label: "📈 Tech Bundle",      path: "/python/12_technical_bundle.py", desc: "ATR, ADX, CCI, MFI, Stoch RSI, OBV — bộ chỉ báo kỹ thuật đầy đủ" },
+  { id: "aiscoring",  label: "🤖 AI Scoring",       path: "/python/13_ai_scoring.py",       desc: "Chấm điểm 7 factor + Overall AI Score + Recommendation" },
 ];
 
 const TIMEOUT_OPTIONS = [10, 20, 30, 60];
