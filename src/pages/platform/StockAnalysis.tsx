@@ -1272,6 +1272,11 @@ export default function StockAnalysis() {
         })()}
 
 
+        {/* All Metrics — 16 categories dashboard */}
+        <TabsContent value="metrics">
+          <ComprehensiveMetricsPanel quote={quote} history={history} analysis={analysis} />
+        </TabsContent>
+
         {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
         <TabsContent value="quantplus">
           {analysis?.returns ? (
