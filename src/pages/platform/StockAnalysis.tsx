@@ -1199,6 +1199,7 @@ export default function StockAnalysis() {
               { value: "pythonlab",    label: "🐍 Python Lab (Run)" },
             ]},
             { group: "📋 Fundamentals", items: [
+              { value: "metrics",      label: "🧭 All Metrics (16 nhóm)" },
               { value: "fundamentals", label: "Fundamentals" },
               { value: "financials",   label: "📋 BCTC" },
               { value: "company",      label: "🏢 Company" },
