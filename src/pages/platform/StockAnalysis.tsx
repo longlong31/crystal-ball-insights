@@ -24,6 +24,7 @@ import { StockStickyChatBar } from "@/components/platform/stocks/StockStickyChat
 import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulasPanel";
 import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { TradingViewPanel } from "@/components/platform/stocks/TradingViewPanel";
+import { ComprehensiveMetricsPanel } from "@/components/platform/stocks/ComprehensiveMetricsPanel";
 import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
