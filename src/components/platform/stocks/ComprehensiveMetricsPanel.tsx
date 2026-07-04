@@ -97,15 +97,204 @@ function computeOBV(closes: number[], vols: number[]) {
   return obv;
 }
 
+// -------- Metric dictionary: definition, formula, and why data may be missing --------
+type MetricInfo = { def: string; formula?: string; na?: string };
+const METRIC_INFO: Record<string, MetricInfo> = {
+  // Valuation
+  "P/E":                { def: "Price/Earnings — thị giá trên lợi nhuận mỗi cổ phiếu.", formula: "Price ÷ EPS (TTM)", na: "Thiếu EPS TTM hoặc EPS âm." },
+  "Forward P/E":        { def: "P/E dựa trên EPS dự phóng 12 tháng tới.", formula: "Price ÷ Forward EPS", na: "Nhà cung cấp không có EPS dự phóng." },
+  "PEG":                { def: "P/E điều chỉnh theo tốc độ tăng trưởng EPS.", formula: "P/E ÷ (EPS Growth %)", na: "Thiếu tăng trưởng EPS hoặc EPS Growth = 0." },
+  "P/B":                { def: "Price/Book — thị giá trên giá trị sổ sách/cp.", formula: "Price ÷ Book Value per Share", na: "Thiếu Book Value." },
+  "P/S":                { def: "Price/Sales — thị giá trên doanh thu mỗi cp.", formula: "Market Cap ÷ Revenue", na: "Thiếu doanh thu TTM." },
+  "EV/EBITDA":          { def: "Enterprise Value chia EBITDA — định giá không phụ thuộc cấu trúc vốn.", formula: "(MCap + Debt − Cash) ÷ EBITDA", na: "Cần EBITDA từ báo cáo — chạy 09_valuation_ratios.py." },
+  "EV/Sales":           { def: "Enterprise Value chia doanh thu.", formula: "EV ÷ Revenue (TTM)", na: "Thiếu EV hoặc Revenue." },
+  "Price/Cash Flow":    { def: "Thị giá trên dòng tiền hoạt động.", formula: "Market Cap ÷ Operating Cash Flow", na: "Thiếu OCF." },
+  "Enterprise Value":   { def: "Giá trị doanh nghiệp thực (bao gồm nợ, trừ tiền mặt).", formula: "Market Cap + Total Debt − Cash", na: "Thiếu Total Debt hoặc Cash." },
+  "Market Cap":         { def: "Vốn hoá thị trường.", formula: "Price × Shares Outstanding" },
+  "Book Value/Share":   { def: "Giá trị sổ sách/cp — vốn chủ trên số cp lưu hành.", formula: "Equity ÷ Shares Outstanding" },
+  "Intrinsic Value (DCF)": { def: "Giá trị nội tại theo mô hình chiết khấu dòng tiền.", formula: "Σ FCFₜ/(1+r)ᵗ + TV/(1+r)ⁿ", na: "Cần chạy DCF trong 09_valuation_ratios.py hoặc tab Models Lab." },
+  // Profitability
+  "ROE":                { def: "Return on Equity — sinh lời trên vốn chủ.", formula: "Net Income ÷ Equity" },
+  "ROA":                { def: "Return on Assets — sinh lời trên tổng tài sản.", formula: "Net Income ÷ Total Assets" },
+  "ROIC":               { def: "Return on Invested Capital.", formula: "NOPAT ÷ Invested Capital", na: "Cần NOPAT & Invested Capital từ BCTC chi tiết." },
+  "ROI":                { def: "Return on Investment tổng quát.", formula: "(Gain − Cost) ÷ Cost", na: "Cần khung dự án cụ thể." },
+  "ROCE":               { def: "Return on Capital Employed.", formula: "EBIT ÷ (Assets − Current Liabilities)", na: "Cần EBIT và Current Liabilities." },
+  "Gross Margin":       { def: "Biên lợi nhuận gộp.", formula: "(Revenue − COGS) ÷ Revenue" },
+  "EBITDA Margin":      { def: "Biên EBITDA.", formula: "EBITDA ÷ Revenue", na: "Cần EBITDA từ báo cáo." },
+  "Operating Margin":   { def: "Biên lợi nhuận hoạt động.", formula: "Operating Income ÷ Revenue" },
+  "Net Margin":         { def: "Biên lợi nhuận ròng.", formula: "Net Income ÷ Revenue" },
+  "EPS":                { def: "Earnings per Share — lợi nhuận trên mỗi cp.", formula: "Net Income ÷ Shares Outstanding" },
+  "Diluted EPS":        { def: "EPS pha loãng (bao gồm options, warrants).", formula: "NI ÷ (Shares + Convertibles)", na: "Cần chi tiết cấu trúc vốn." },
+  // Growth
+  "Revenue Growth":     { def: "Tăng trưởng doanh thu YoY.", formula: "(Rev_t − Rev_{t−1}) ÷ Rev_{t−1}" },
+  "EPS Growth":         { def: "Tăng trưởng EPS YoY.", formula: "(EPS_t − EPS_{t−1}) ÷ EPS_{t−1}", na: "Provider không cung cấp lịch sử EPS đủ dài." },
+  "Net Income Growth":  { def: "Tăng trưởng lợi nhuận ròng YoY.", formula: "(NI_t − NI_{t−1}) ÷ NI_{t−1}" },
+  "Operating Income Growth": { def: "Tăng trưởng lợi nhuận hoạt động.", na: "Cần chuỗi Operating Income từ BCTC." },
+  "Cash Flow Growth":   { def: "Tăng trưởng OCF.", na: "Cần lịch sử OCF nhiều năm." },
+  "Free Cash Flow Growth": { def: "Tăng trưởng FCF.", na: "Cần lịch sử FCF nhiều năm." },
+  "CAGR 3Y (price)":    { def: "Tăng trưởng kép giá 3 năm.", formula: "(P_end/P_start)^(1/3) − 1", na: "Chuỗi giá < 3 năm." },
+  "CAGR 5Y (price)":    { def: "Tăng trưởng kép giá 5 năm.", formula: "(P_end/P_start)^(1/5) − 1", na: "Chuỗi giá < 5 năm." },
+  // Liquidity
+  "Current Ratio":      { def: "Khả năng thanh toán ngắn hạn.", formula: "Current Assets ÷ Current Liabilities" },
+  "Quick Ratio":        { def: "Thanh toán nhanh (không tính hàng tồn kho).", formula: "(CA − Inventory) ÷ CL", na: "Cần Inventory từ Balance Sheet." },
+  "Cash Ratio":         { def: "Tỉ lệ tiền mặt trên nợ ngắn hạn.", formula: "Cash ÷ Current Liabilities", na: "Cần Current Liabilities." },
+  "Working Capital":    { def: "Vốn lưu động ròng.", formula: "Current Assets − Current Liabilities", na: "Cần CA & CL." },
+  "Current Assets":     { def: "Tài sản ngắn hạn." , na: "Cần Balance Sheet." },
+  "Current Liabilities":{ def: "Nợ ngắn hạn.", na: "Cần Balance Sheet." },
+  // Leverage
+  "Debt/Equity":        { def: "Tỉ lệ nợ trên vốn chủ.", formula: "Total Debt ÷ Total Equity" },
+  "Debt/Assets":        { def: "Tỉ lệ nợ trên tài sản.", formula: "Total Debt ÷ Total Assets", na: "Cần Total Assets." },
+  "Interest Coverage":  { def: "Khả năng thanh toán lãi vay.", formula: "EBIT ÷ Interest Expense", na: "Cần Interest Expense." },
+  "Financial Leverage": { def: "Hệ số đòn bẩy tài chính.", formula: "Total Assets ÷ Equity", na: "Cần Total Assets & Equity." },
+  "Long-term Debt":     { def: "Nợ dài hạn.", na: "Cần Balance Sheet chi tiết." },
+  "Net Debt":           { def: "Nợ ròng.", formula: "Total Debt − Cash" },
+  // Cash flow
+  "Operating Cash Flow":{ def: "Dòng tiền từ hoạt động kinh doanh." },
+  "Investing Cash Flow":{ def: "Dòng tiền từ đầu tư.", na: "Cần Cash Flow Statement chi tiết." },
+  "Financing Cash Flow":{ def: "Dòng tiền từ tài chính.", na: "Cần Cash Flow Statement chi tiết." },
+  "Free Cash Flow":     { def: "Dòng tiền tự do.", formula: "OCF − CapEx" },
+  "CapEx (OCF − FCF)":  { def: "Chi đầu tư ước tính.", formula: "Operating CF − Free CF" },
+  "FCF Yield":          { def: "Lợi suất dòng tiền tự do.", formula: "FCF ÷ Market Cap" },
+  // Market
+  "Volume":             { def: "Khối lượng giao dịch phiên." },
+  "Average Volume":     { def: "Khối lượng trung bình (thường 30 ngày)." },
+  "Float":              { def: "Số cp tự do lưu thông.", na: "Cần dữ liệu ownership." },
+  "Shares Outstanding": { def: "Tổng số cp đang lưu hành.", na: "Chưa được provider trả về." },
+  "Insider Ownership":  { def: "Tỉ lệ sở hữu của ban lãnh đạo.", na: "Cần dữ liệu insider filings." },
+  "Institutional Ownership": { def: "Tỉ lệ sở hữu tổ chức.", na: "Cần dữ liệu 13F filings." },
+  "Short Interest":     { def: "Khối lượng bán khống.", na: "Không có API short interest." },
+  "Short Ratio":        { def: "Days-to-cover.", formula: "Short Interest ÷ Avg Volume", na: "Cần Short Interest." },
+  "Relative Volume":    { def: "Vol phiên vs trung bình.", formula: "Volume ÷ Avg Volume" },
+  // Technical
+  "RSI(14)":            { def: "Relative Strength Index — quá mua/bán.", formula: "100 − 100/(1 + AvgGain/AvgLoss)" },
+  "MACD":               { def: "Moving Average Convergence Divergence.", formula: "EMA(12) − EMA(26)" },
+  "MACD Signal":        { def: "Đường tín hiệu MACD.", formula: "EMA(9) của MACD" },
+  "BB Upper":           { def: "Dải Bollinger trên.", formula: "SMA(20) + 2·σ(20)" },
+  "BB Lower":           { def: "Dải Bollinger dưới.", formula: "SMA(20) − 2·σ(20)" },
+  "EMA 12":             { def: "Trung bình mũ 12 phiên.", formula: "EMA_t = α·P_t + (1−α)·EMA_{t−1}, α=2/13" },
+  "EMA 26":             { def: "Trung bình mũ 26 phiên." },
+  "EMA 50":             { def: "Trung bình mũ 50 phiên — xu hướng trung hạn." },
+  "SMA 20":             { def: "Trung bình đơn giản 20 phiên." },
+  "VWAP":               { def: "Giá trung bình theo khối lượng.", formula: "Σ(TP·V) ÷ ΣV, TP=(H+L+C)/3" },
+  "ATR(14)":            { def: "Average True Range — biên độ dao động thực.", formula: "AVG(max(H−L, |H−C_{−1}|, |L−C_{−1}|))" },
+  "OBV":                { def: "On-Balance Volume — dòng tiền tích luỹ.", formula: "OBV_t = OBV_{t−1} ± V_t" },
+  "ADX / CCI / MFI / StochRSI": { def: "Bộ chỉ báo nâng cao.", na: "Chạy 12_technical_bundle.py trong Python Lab." },
+  "Ichimoku / Fibonacci": { def: "Mô hình Ichimoku Cloud & Fibonacci retracement.", na: "Xem trực quan trong TradingView Panel." },
+  // Risk
+  "Beta":               { def: "Hệ số beta so với thị trường.", formula: "Cov(r_i, r_m) ÷ Var(r_m)" },
+  "Alpha (CAPM, annual)": { def: "Lợi nhuận vượt trội so với CAPM.", formula: "α = R_i − [Rf + β(Rm − Rf)]", na: "Cần chuỗi lợi suất thị trường thực." },
+  "Volatility (annual)":{ def: "Độ biến động chuẩn hoá năm.", formula: "σ_daily × √252" },
+  "Historical Vol":     { def: "Volatility lịch sử (annual)." },
+  "Implied Volatility": { def: "Volatility ngụ ý từ giá option.", na: "Cần option chain — chưa tích hợp." },
+  "Std Dev (daily)":    { def: "Độ lệch chuẩn lợi suất ngày.", formula: "√(Σ(r−r̄)² ÷ (n−1))" },
+  "Variance (daily)":   { def: "Phương sai lợi suất ngày.", formula: "σ²" },
+  "Covariance":         { def: "Hiệp phương sai giữa 2 tài sản.", na: "Cần ≥2 chuỗi — dùng Portfolio Lab." },
+  "Correlation":        { def: "Hệ số tương quan Pearson.", na: "Cần ≥2 chuỗi — dùng Portfolio Lab." },
+  "Correlation Matrix": { def: "Ma trận tương quan.", na: "Dùng tab Portfolio/Stock Comparison." },
+  "Max Drawdown":       { def: "Sụt giảm tối đa từ đỉnh.", formula: "min((P_t − max P_{≤t}) ÷ max P_{≤t})" },
+  "Downside Deviation": { def: "Độ lệch chuẩn phần lợi suất âm.", formula: "√(Σ min(r−MAR,0)² ÷ n)" },
+  "Tracking Error":     { def: "Sai số theo dõi so với benchmark.", formula: "σ(r_p − r_b)", na: "Cần benchmark cụ thể." },
+  "VaR 95% (1d)":       { def: "Value at Risk — tổn thất tối đa với 95% tin cậy.", formula: "−percentile(r, 5%)" },
+  "CVaR 95% (1d)":      { def: "Conditional VaR — kỳ vọng lỗ khi vượt VaR.", formula: "−E[r | r ≤ −VaR]" },
+  "Expected Shortfall": { def: "Đồng nghĩa CVaR." },
+  // Portfolio
+  "Sharpe Ratio":       { def: "Lợi nhuận vượt trội trên đơn vị rủi ro tổng.", formula: "(R − Rf) ÷ σ" },
+  "Sortino Ratio":      { def: "Sharpe chỉ tính rủi ro downside.", formula: "(R − Rf) ÷ DownsideDev" },
+  "Treynor Ratio":      { def: "Excess return trên beta.", formula: "(R − Rf) ÷ β", na: "Yêu cầu benchmark thị trường thực." },
+  "Information Ratio":  { def: "Active return trên tracking error.", formula: "(R_p − R_b) ÷ TE", na: "Cần benchmark." },
+  "Calmar Ratio":       { def: "CAGR trên Max Drawdown.", formula: "CAGR ÷ |MaxDD|" },
+  "Jensen Alpha":       { def: "Alpha theo CAPM.", na: "Cần benchmark." },
+  "Active Return":      { def: "R_portfolio − R_benchmark.", na: "Cần benchmark." },
+  "Active Risk":        { def: "σ(R_p − R_b) — chính là Tracking Error.", na: "Cần benchmark." },
+  // Momentum
+  "Momentum 1M":        { def: "Đà giá 1 tháng.", formula: "P_t/P_{t−21} − 1" },
+  "Momentum 3M":        { def: "Đà giá 3 tháng.", formula: "P_t/P_{t−63} − 1" },
+  "Momentum 6M":        { def: "Đà giá 6 tháng.", formula: "P_t/P_{t−126} − 1" },
+  "Earnings Momentum":  { def: "Đà tăng trưởng EPS gần nhất.", na: "Cần chuỗi EPS quý." },
+  "Volume Momentum":    { def: "So sánh vol 20 phiên gần với 20 phiên trước.", formula: "AvgVol(0..20)/AvgVol(20..40) − 1" },
+  // Quality
+  "Piotroski F-Score":  { def: "Chấm điểm chất lượng 9 tiêu chí.", na: "Chạy 10_quality_scores.py." },
+  "Altman Z-Score":     { def: "Chỉ số dự báo phá sản.", formula: "1.2A + 1.4B + 3.3C + 0.6D + 1.0E", na: "Chạy 10_quality_scores.py." },
+  "Beneish M-Score":    { def: "Chỉ số phát hiện gian lận báo cáo.", na: "Cần 8 biến kế toán chi tiết." },
+  "Earnings Quality":   { def: "Chất lượng lợi nhuận (OCF/NI).", na: "Cần OCF và Net Income." },
+  "Accrual Ratio":      { def: "Tỷ trọng khoản kế toán dồn tích.", na: "Cần chi tiết BS + CF." },
+  // Dividend
+  "Dividend Yield":     { def: "Cổ tức trên giá.", formula: "DPS ÷ Price" },
+  "Dividend Growth":    { def: "Tăng trưởng cổ tức YoY.", na: "Cần lịch sử chi trả." },
+  "Dividend CAGR":      { def: "Tăng trưởng kép cổ tức.", na: "Cần lịch sử ≥3 năm." },
+  "Payout Ratio":       { def: "Tỉ lệ chi trả từ lợi nhuận.", formula: "DPS ÷ EPS", na: "Cần DPS." },
+  "Ex-Dividend Date":   { def: "Ngày giao dịch không hưởng quyền.", na: "Provider chưa trả về." },
+  "Dividend History":   { def: "Lịch sử chi trả.", na: "Cần API dividend history." },
+  // Health
+  "Debt Coverage (OCF/Debt)": { def: "Khả năng trả nợ từ OCF.", formula: "OCF ÷ Total Debt" },
+  "Bankruptcy Risk":    { def: "Rủi ro phá sản định tính.", na: "Dùng Altman Z-Score." },
+  "Solvency Score":     { def: "Chỉ số dung nạp nợ ròng.", formula: "(Cash − Debt) ÷ (Cash + Debt)" },
+  // Quant advanced
+  "Z-Score (last return)": { def: "Chuẩn hoá lợi suất phiên gần nhất.", formula: "(r_t − r̄) ÷ σ" },
+  "Skewness":           { def: "Độ lệch phân phối lợi suất.", formula: "E[(r−μ)³] ÷ σ³" },
+  "Kurtosis (excess)":  { def: "Độ nhọn (excess) — đo đuôi.", formula: "E[(r−μ)⁴] ÷ σ⁴ − 3" },
+  "Autocorrelation (lag 1)": { def: "Tự tương quan lag 1.", formula: "Corr(r_t, r_{t−1})" },
+  "Rolling Volatility 20D": { def: "Volatility trượt 20 phiên (annualized)." },
+  "Rolling Correlation":{ def: "Tương quan trượt.", na: "Cần ≥2 chuỗi — Portfolio Lab." },
+  "Rolling Beta":       { def: "Beta trượt.", na: "Cần benchmark — Portfolio Lab." },
+  "Covariance Matrix":  { def: "Ma trận hiệp phương sai.", na: "Cần rổ tài sản — Portfolio Lab." },
+  "Eigenvalues / PCA":  { def: "Trị riêng / phân tích thành phần chính.", na: "Chạy 11_pca_correlation.py." },
+  "Monte Carlo":        { def: "Mô phỏng ngẫu nhiên GBM.", na: "Xem tab Forecast hoặc 04_monte_carlo_gbm.py." },
+  "GARCH Volatility":   { def: "Volatility có điều kiện, mô hình GARCH(1,1).", na: "Cần thư viện chuyên — Models Lab." },
+  "CAPM E[R] (annual)": { def: "Kỳ vọng lợi nhuận theo CAPM.", formula: "Rf + β·(Rm − Rf)" },
+  "Fama-French 3F":     { def: "Mô hình 3 nhân tố (MKT, SMB, HML).", na: "Cần dữ liệu factor Fama-French." },
+  "Fama-French 5F":     { def: "5 nhân tố (+ RMW, CMA).", na: "Cần dữ liệu factor." },
+  "Carhart 4F":         { def: "3F + Momentum (UMD).", na: "Cần dữ liệu factor." },
+  "Black-Litterman":    { def: "Mô hình phối kết hợp kỳ vọng tiên nghiệm.", na: "Yêu cầu views và ma trận covariance." },
+  "Efficient Frontier": { def: "Đường biên hiệu quả Markowitz.", na: "Dùng Portfolio Lab." },
+  "Information Coefficient": { def: "Corr(dự báo, thực tế) — sức mạnh tín hiệu.", na: "Cần model dự báo." },
+  // AI scores
+  "Overall AI Score":   { def: "Điểm tổng hợp (0-100) theo 7 nhân tố.", formula: "0.25·F + 0.15·T + 0.15·M + 0.15·G + 0.15·Q + 0.10·R + 0.05·V" },
+  "Fundamental Score":  { def: "Điểm cơ bản (ROE, ROA, biên, D/E, tăng trưởng)." },
+  "Technical Score":    { def: "Điểm kỹ thuật (RSI, EMA50, MACD)." },
+  "Momentum Score":     { def: "Điểm đà (1M + 3M returns)." },
+  "Growth Score":       { def: "Điểm tăng trưởng (Revenue & Earnings)." },
+  "Quality Score":      { def: "Điểm chất lượng (biên gộp, biên hoạt động, current ratio, ROE)." },
+  "Risk Score (adj.)":  { def: "Điểm rủi ro nghịch đảo (thấp = rủi ro cao).", formula: "100 − vol·150 − |MaxDD|·100" },
+  "Value Score":        { def: "Điểm định giá (P/E, P/B, FCF Yield)." },
+  "Sentiment Score":    { def: "Điểm tâm lý thị trường.", na: "Dùng tab AI Research / Fear & Greed." },
+  "ESG Score":          { def: "Điểm ESG.", na: "Chưa tích hợp provider ESG." },
+  "Institutional Score":{ def: "Sức mua tổ chức.", na: "Cần dữ liệu 13F." },
+  "Smart Money Score":  { def: "Dòng tiền thông minh.", na: "Cần dữ liệu insider + options flow." },
+};
+
 // -------- UI primitives --------
 function Cell({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   const isNA = value === "—" || value === "" || value === null || value === undefined;
+  const info = METRIC_INFO[label];
   return (
-    <div className="rounded-md border border-border/40 bg-muted/20 p-2.5 group hover:border-primary/40 transition-colors" title={hint}>
-      <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate">{label}</div>
+    <div className="relative rounded-md border border-border/40 bg-muted/20 p-2.5 hover:border-primary/40 transition-colors group cursor-help">
+      <div className="flex items-center gap-1">
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground truncate flex-1">{label}</div>
+        {(info || hint) && (
+          <span className="text-[9px] font-mono text-muted-foreground/60 group-hover:text-primary transition-colors">ⓘ</span>
+        )}
+      </div>
       <div className={`font-mono text-[13px] mt-0.5 truncate ${isNA ? "text-muted-foreground/50" : "text-primary"}`}>
         {value}
       </div>
+      {(info || hint) && (
+        <div className="pointer-events-none absolute z-50 left-0 top-full mt-1 w-64 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rounded-md border border-primary/40 bg-popover/95 backdrop-blur-sm shadow-lg p-2.5 text-left">
+          <div className="text-[10px] font-semibold text-primary mb-1">{label}</div>
+          {info?.def && <div className="text-[10px] text-foreground/90 leading-snug mb-1">{info.def}</div>}
+          {info?.formula && (
+            <div className="text-[10px] font-mono text-emerald-400/90 leading-snug mb-1">
+              <span className="text-muted-foreground">ƒ:</span> {info.formula}
+            </div>
+          )}
+          {hint && <div className="text-[10px] text-muted-foreground leading-snug mb-1">{hint}</div>}
+          {isNA && (info?.na || !info) && (
+            <div className="text-[10px] text-amber-400/90 leading-snug border-t border-border/40 pt-1 mt-1">
+              <span className="font-semibold">Vì sao "—":</span> {info?.na || "Provider hiện chưa trả về dữ liệu này cho mã đang chọn."}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
