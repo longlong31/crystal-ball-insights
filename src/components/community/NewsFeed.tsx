@@ -34,6 +34,17 @@ const TOPIC_KEYWORDS: Record<NonNullable<NewsFeedProps["topic"]>, string[]> = {
   events: ["sự kiện", "hội thảo", "hội nghị", "event", "conference", "workshop", "webinar", "diễn đàn", "triển lãm"],
 };
 
+// Server appends these suffixes to `source` — an authoritative topic tag from
+// the feed itself. Matching this short-circuits keyword scanning.
+const TOPIC_SOURCE_TAG: Record<NonNullable<NewsFeedProps["topic"]>, string> = {
+  stocks: "· Chứng khoán",
+  crypto: "· Crypto",
+  banking: "· Ngân hàng",
+  realestate: "· BĐS",
+  tech: "· Công nghệ",
+  events: "· Sự kiện",
+};
+
 export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
   const { t, language } = useLanguage();
