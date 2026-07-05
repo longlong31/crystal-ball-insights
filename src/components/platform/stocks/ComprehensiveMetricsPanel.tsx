@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ChevronDown, ChevronRight, LayoutGrid, TrendingUp, DollarSign, Activity,
   Percent, Layers, Wallet, BarChart3, LineChart, Shield, Gauge, Zap,
-  Award, Coins, HeartPulse, Sparkles, Sigma,
+  Award, Coins, HeartPulse, Sparkles, Sigma, Search, X,
 } from "lucide-react";
 import type { StockQuote, StockHistory } from "@/hooks/useStockData";
 
@@ -263,6 +263,30 @@ const METRIC_INFO: Record<string, MetricInfo> = {
   "Smart Money Score":  { def: "Dòng tiền thông minh.", na: "Cần dữ liệu insider + options flow." },
 };
 
+// -------- Category mapping for search / jump-to --------
+const METRIC_CATEGORIES: { id: string; label: string; metrics: string[] }[] = [
+  { id: "val", label: "Valuation", metrics: ["P/E","Forward P/E","PEG","P/B","P/S","EV/EBITDA","EV/Sales","Price/Cash Flow","Enterprise Value","Market Cap","Book Value/Share","Intrinsic Value (DCF)"] },
+  { id: "prof", label: "Profitability", metrics: ["ROE","ROA","ROIC","ROI","ROCE","Gross Margin","EBITDA Margin","Operating Margin","Net Margin","EPS","Diluted EPS"] },
+  { id: "growth", label: "Growth", metrics: ["Revenue Growth","EPS Growth","Net Income Growth","Operating Income Growth","Cash Flow Growth","Free Cash Flow Growth","CAGR 3Y (price)","CAGR 5Y (price)"] },
+  { id: "liq", label: "Liquidity", metrics: ["Current Ratio","Quick Ratio","Cash Ratio","Working Capital","Current Assets","Current Liabilities"] },
+  { id: "lev", label: "Leverage", metrics: ["Debt/Equity","Debt/Assets","Interest Coverage","Financial Leverage","Long-term Debt","Net Debt"] },
+  { id: "cf", label: "Cash Flow", metrics: ["Operating Cash Flow","Investing Cash Flow","Financing Cash Flow","Free Cash Flow","CapEx (OCF − FCF)","FCF Yield"] },
+  { id: "mkt", label: "Market", metrics: ["Volume","Average Volume","Float","Shares Outstanding","Insider Ownership","Institutional Ownership","Short Interest","Short Ratio","Relative Volume"] },
+  { id: "tech", label: "Technical", metrics: ["RSI(14)","MACD","MACD Signal","BB Upper","BB Lower","EMA 12","EMA 26","EMA 50","SMA 20","VWAP","ATR(14)","OBV","ADX / CCI / MFI / StochRSI","Ichimoku / Fibonacci"] },
+  { id: "risk", label: "Risk", metrics: ["Beta","Alpha (CAPM, annual)","Volatility (annual)","Historical Vol","Implied Volatility","Std Dev (daily)","Variance (daily)","Covariance","Correlation","Correlation Matrix","Max Drawdown","Downside Deviation","Tracking Error","VaR 95% (1d)","CVaR 95% (1d)","Expected Shortfall"] },
+  { id: "port", label: "Portfolio", metrics: ["Sharpe Ratio","Sortino Ratio","Treynor Ratio","Information Ratio","Calmar Ratio","Jensen Alpha","Active Return","Active Risk"] },
+  { id: "mom", label: "Momentum", metrics: ["Momentum 1M","Momentum 3M","Momentum 6M","Earnings Momentum","Volume Momentum"] },
+  { id: "qual", label: "Quality", metrics: ["Piotroski F-Score","Altman Z-Score","Beneish M-Score","Earnings Quality","Accrual Ratio"] },
+  { id: "div", label: "Dividend", metrics: ["Dividend Yield","Dividend Growth","Dividend CAGR","Payout Ratio","Ex-Dividend Date","Dividend History"] },
+  { id: "health", label: "Health", metrics: ["Debt Coverage (OCF/Debt)","Bankruptcy Risk","Solvency Score"] },
+  { id: "quant", label: "Quant+", metrics: ["Z-Score (last return)","Skewness","Kurtosis (excess)","Autocorrelation (lag 1)","Rolling Volatility 20D","Rolling Correlation","Rolling Beta","Covariance Matrix","Eigenvalues / PCA","Monte Carlo","GARCH Volatility","CAPM E[R] (annual)","Fama-French 3F","Fama-French 5F","Carhart 4F","Black-Litterman","Efficient Frontier","Information Coefficient"] },
+  { id: "ai", label: "AI Scores", metrics: ["Overall AI Score","Fundamental Score","Technical Score","Momentum Score","Growth Score","Quality Score","Risk Score (adj.)","Value Score","Sentiment Score","ESG Score","Institutional Score","Smart Money Score"] },
+];
+function categoryOf(label: string): string {
+  for (const c of METRIC_CATEGORIES) if (c.metrics.includes(label)) return c.label;
+  return "Other";
+}
+
 // -------- UI primitives --------
 function Cell({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   const isNA = value === "—" || value === "" || value === null || value === undefined;
@@ -340,6 +364,20 @@ function Section({
 
 export function ComprehensiveMetricsPanel({ quote, history, analysis }: Props) {
   const [expandAll, setExpandAll] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<string>("All");
+
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q && activeCat === "All") return null;
+    const entries = Object.entries(METRIC_INFO).filter(([label, info]) => {
+      if (activeCat !== "All" && categoryOf(label) !== activeCat) return false;
+      if (!q) return true;
+      const hay = `${label} ${info.def || ""} ${info.formula || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+    return entries;
+  }, [query, activeCat]);
 
   const m = useMemo(() => {
     const q: any = quote || {};
@@ -529,8 +567,92 @@ export function ComprehensiveMetricsPanel({ quote, history, analysis }: Props) {
         </div>
       </div>
 
+      {/* Search & Filter */}
+      <div className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Search className="w-3.5 h-3.5 text-primary" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm chỉ số theo tên, định nghĩa hoặc công thức (VD: sharpe, EV/EBITDA, drawdown)…"
+            className="flex-1 bg-transparent border-b border-border/40 focus:border-primary/60 outline-none text-xs font-mono py-1 px-1 placeholder:text-muted-foreground/50"
+          />
+          {(query || activeCat !== "All") && (
+            <button
+              onClick={() => { setQuery(""); setActiveCat("All"); }}
+              className="text-[10px] px-2 py-1 rounded bg-muted/40 hover:bg-muted/60 border border-border/40 flex items-center gap-1"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground mr-1">Lọc theo nhóm:</span>
+          {["All", ...METRIC_CATEGORIES.map((c) => c.label)].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCat(cat)}
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${
+                activeCat === cat
+                  ? "bg-primary/25 text-primary border-primary/50"
+                  : "bg-muted/20 text-muted-foreground border-border/40 hover:bg-muted/40"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search Results */}
+      {searchResults && (
+        <div className="rounded-lg border border-primary/30 bg-background/40 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Kết quả {query && `cho "${query}"`}
+              {activeCat !== "All" && ` — ${activeCat}`}
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground ml-auto">
+              {searchResults.length} chỉ số
+            </span>
+          </div>
+          {searchResults.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground italic py-4 text-center">
+              Không tìm thấy chỉ số nào phù hợp. Thử từ khoá khác hoặc bỏ bộ lọc nhóm.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
+              {searchResults.map(([label, info]) => (
+                <div key={label} className="rounded-md border border-border/40 bg-muted/10 p-2.5 hover:border-primary/40 transition-colors">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <div className="text-[11px] font-semibold text-primary truncate">{label}</div>
+                    <span className="ml-auto text-[9px] font-mono uppercase text-muted-foreground shrink-0">
+                      {categoryOf(label)}
+                    </span>
+                  </div>
+                  {info.def && <div className="text-[10px] text-foreground/85 leading-snug mb-1">{info.def}</div>}
+                  {info.formula && (
+                    <div className="text-[10px] font-mono text-emerald-400/90 leading-snug mb-1">
+                      <span className="text-muted-foreground">ƒ:</span> {info.formula}
+                    </div>
+                  )}
+                  {info.na && (
+                    <div className="text-[9px] text-amber-400/80 leading-snug border-t border-border/40 pt-1 mt-1">
+                      <span className="font-semibold">Trạng thái "—":</span> {info.na}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sections */}
       <div className="space-y-2" key={expandAll ? "open" : "closed"}>
+
         {/* 1. Valuation */}
         <Section id="val" title="1. Valuation (Định giá)" icon={DollarSign}
           count={cnt([q.pe, q.forwardPe, q.pe && q.earningsGrowth, q.pb, q.ps, null, m.ev, m.ev, m.priceCF, q.marketCap, q.bookValue])}

@@ -280,3 +280,140 @@ Trục thiết kế:
 **Crystall Quant Platform** — biến sức mạnh của Bloomberg Terminal thành một tab mở trong trình duyệt của mọi nhà đầu tư Việt Nam.
 
 _© Quách Thành Long — [quachthanhlong.com](https://quachthanhlong.com)_
+
+---
+
+## 12. Trực quan hoá kiến trúc
+
+### 12.1 Tổng quan các lớp
+
+![Kiến trúc dashboard phân tích cổ phiếu — 5 lớp UI/Data/Compute/AI/Storage](src/assets/dashboard-architecture.jpg)
+
+Sơ đồ chia hệ thống thành 5 lớp độc lập, dễ thay thế từng phần:
+
+- **UI Layer** — React 18 + Tailwind + shadcn/ui, TradingView iframe cho biểu đồ chuyên sâu, các panel modular (Dashboard, Charts, Screener, News, Fear & Greed, Portfolio).
+- **Data Layer** — Yahoo Finance (quote/history/financials), CoinGecko (crypto), RSS (news feeds đa nguồn); tất cả gọi qua Supabase Edge Functions để né CORS và cache tại biên.
+- **Compute Layer** — TypeScript analytics (RSI/MACD/Bollinger/Beta/Sharpe/VaR trong `src/lib/technicalIndicators.ts`, `src/lib/portfolioOptimizer.ts`) song song với **Pyodide WASM** để chạy `numpy` / `pandas` / `matplotlib` / `scipy` ngay trong trình duyệt.
+- **AI Layer** — Gemini qua Lovable AI Gateway (Equity Research, Chatbot, Market Insights) + Fear & Greed heuristic từ 30+ nguồn tin.
+- **Storage Layer** — Supabase (auth, watchlist, portfolio, cloud history, community, admin roles) + LocalStorage (drafts Python, thiết lập TradingView, UI preferences).
+
+### 12.2 Bản mẫu giao diện đích
+
+![Bản mẫu giao diện Dashboard cổ phiếu — biểu đồ nến, radar AI Score, lưới KPI](src/assets/dashboard-preview.jpg)
+
+Layout tham chiếu hướng tới:
+
+1. **Header sticky** với mã CP, giá realtime, % thay đổi, market cap, timestamp.
+2. **Timeframe chips** (1D / 5D / 1M / 6M / 1Y / 2Y / Max) + **Section switcher** (Price & Overlays / Indicators / So sánh / TradingView / Quant+ Metrics / Models Lab / Forecast / Portfolio Lab / AI Research / Python Formulas).
+3. **Panel chính**: candlestick + volume + overlays (EMA/BB/VWAP/Fibonacci) — tuỳ chọn TradingView hoặc chart nội bộ.
+4. **AI Score card** — Radar 7 nhân tố + Overall (0–100) + Recommendation badge (STRONG BUY … SELL).
+5. **KPI Grid 16 nhóm** — Valuation / Profitability / Growth / Liquidity / Leverage / Cash Flow / Market / Technical / Risk / Portfolio / Momentum / Quality / Dividend / Health / Quant+ / AI Scores. Mỗi ô có tooltip **Định nghĩa + Công thức + Lý do "—"**.
+6. **Bottom drawer** — News, Community, Chatbot dock.
+
+### 12.3 Luồng dữ liệu (data pipeline)
+
+![Data pipeline: API raw → Edge Functions → React Query → Analytics → UI + AI + LocalStorage](src/assets/dashboard-dataflow.jpg)
+
+Mọi request đi theo 1 pipeline nhất quán:
+
+```
+Raw API  →  Supabase Edge Fn  →  React Query (30s cache)  →  Analytics engine
+                                                                   ├─ AI Gateway (insight)
+                                                                   └─ LocalStorage (drafts/settings)
+                                                                   ↓
+                                                              UI panels
+```
+
+- Edge Function chuẩn hoá schema (VN vs US, thousand separators, VND vs USD).
+- React Query đảm nhiệm cache, dedupe, refetch 30 giây và error boundaries.
+- Analytics engine (TS + Pyodide) chạy hoàn toàn client-side để không tốn credit backend.
+- Kết quả cache vào LocalStorage theo namespace: `crystall-py-lab:*`, `crystall-tv:*`, `crystall-watchlist:*`.
+
+---
+
+## 13. Chức năng đầy đủ tab "Phân tích cổ phiếu"
+
+Dưới đây là danh mục hoàn chỉnh các module đã implement trong `src/pages/platform/StockAnalysis.tsx` và các panel con.
+
+### 13.1 Khối Market (dữ liệu thị trường)
+
+| Module | File | Mô tả |
+|---|---|---|
+| Price & Overlays | `CandlestickChart.tsx` | Nến + Volume + EMA(12/26/50) + BB + VWAP; tuỳ chỉnh timeframe. |
+| Indicators panel | `QuantMetricsPanel.tsx` | RSI, MACD, ATR, ADX, Stoch, MFI (từ `technicalIndicators.ts`). |
+| So sánh | `StockComparison.tsx` | Base-100, tối đa 8 mã, ma trận Pearson tương quan. |
+| TradingView | `TradingViewPanel.tsx` | Widget chính hãng — nhớ khung TF/chỉ báo/kiểu chart/zoom qua LocalStorage. |
+| Market Filter Bar | `MarketFilterBar.tsx` | Chuyển sàn US/VN, chỉ số, ETF, sector. |
+
+### 13.2 Khối Quant
+
+| Module | File | Mô tả |
+|---|---|---|
+| **Quant+ Metrics (All Metrics — 16 nhóm)** | `ComprehensiveMetricsPanel.tsx` | 140+ chỉ số, **tooltip định nghĩa + công thức + lý do "—"**, **search bar + filter theo nhóm** để tìm nhanh, collapsible sections, progress bar hoàn thiện. |
+| Models Lab | `QuantModelsLab.tsx` | 30 mô hình định lượng, regression suite, ML classifiers. |
+| Forecast | `ForecastPanel.tsx` | Monte Carlo GBM, ARIMA-lite, ensemble forecast. |
+| Portfolio Lab | `PortfolioLabInline.tsx` + `PortfolioOptimizerPanel.tsx` | Efficient Frontier, Max Sharpe, Min Vol, Black-Litterman placeholder. |
+
+### 13.3 Khối AI & Research
+
+| Module | File | Mô tả |
+|---|---|---|
+| AI Research | `EquityResearchAgents.tsx` | 5 agent (Buffett/Munger/Damodaran/Graham/Wood) chạy song song, tổng hợp verdict. |
+| AI Screener | `AIScreener.tsx` | Lọc cổ phiếu bằng natural language → điều kiện fundamental. |
+| Python Formulas | `PythonFormulasPanel.tsx` + `PythonRunnerPanel.tsx` | 13 file `.py` template, editor có draft persistence, download `.py`, reset, clear output. |
+| Sticky Chat Bar | `StockStickyChatBar.tsx` + `PlatformChatDock.tsx` | Hỏi–đáp streaming SSE với context là mã đang xem. |
+
+### 13.4 Search & Filter (mới bổ sung)
+
+Trong tab **Quant+ Metrics** đã thêm:
+
+- **Ô tìm kiếm free-text** — khớp theo tên chỉ số, định nghĩa, hoặc công thức (VD: `sharpe`, `EV/EBITDA`, `drawdown`, `piotroski`).
+- **Chip lọc theo nhóm** — 16 category chips (`Valuation`, `Profitability`, …, `AI Scores`), toggle nhanh.
+- **Panel Kết quả** hiển thị dạng thẻ: label + nhóm + định nghĩa + công thức + lý do "—" nếu chưa có dữ liệu. Scrollable, tối đa 3 cột.
+- Trạng thái được lưu trong local state (không persist — sạch mỗi lần mở lại, tránh nhiễu).
+
+### 13.5 Ma trận chức năng theo mục tiêu người dùng
+
+| Người dùng cần… | Vào đâu |
+|---|---|
+| Xem giá + kỹ thuật nhanh | Price & Overlays / TradingView |
+| So sánh nhiều mã | So sánh (Base-100) |
+| Kiểm tra định giá | Quant+ Metrics → nhóm **Valuation** hoặc `09_valuation_ratios.py` |
+| Đánh giá chất lượng DN | Quant+ Metrics → **Quality** hoặc `10_quality_scores.py` (Altman-Z + Piotroski) |
+| Backtest mô hình | Models Lab / Pipeline Builder |
+| Dự báo | Forecast (Monte Carlo GBM) |
+| Tối ưu danh mục | Portfolio Lab |
+| Nghiên cứu cơ bản sâu | AI Research (5 agents) |
+| Viết code phân tích riêng | Python Formulas → Playground `08_playground.py` |
+| Tìm hiểu 1 chỉ số cụ thể | **Search bar** trong Quant+ Metrics |
+
+---
+
+## 14. Đánh giá & lộ trình
+
+### 14.1 So sánh nhanh
+
+| Tiêu chí | Crystall Quant | Bloomberg Terminal | TradingView | Yahoo Finance |
+|---|---|---|---|---|
+| Chỉ số fundamentals | 140+ (có tooltip công thức) | 300+ | ~40 | ~30 |
+| Chạy code Python trong browser | ✅ Pyodide 13 templates | ❌ | ❌ (Pine Script) | ❌ |
+| Search chỉ số theo công thức | ✅ | ✅ (`HELP`) | ❌ | ❌ |
+| AI multi-agent research | ✅ 5 agents | ⚠️ AiQ (chat) | ❌ | ❌ |
+| Giá | Miễn phí | ~$2,000/tháng | $15–60/tháng | Miễn phí |
+
+### 14.2 Độ chính xác
+
+- **Chỉ số kỹ thuật (RSI/MACD/BB/ATR)**: khớp TradingView trong sai số làm tròn `1e-6`.
+- **Sharpe/Sortino/VaR**: kiểm chứng cross-check với Python (`pandas` + `numpy`) trong `02_volatility_sharpe.py`, `03_var_cvar.py`.
+- **DCF / Altman-Z / Piotroski**: công thức chuẩn học thuật; hạn chế duy nhất là chất lượng input BCTC do provider (Yahoo VN đôi khi thiếu Interest Expense, EBITDA).
+- **AI Score heuristic**: mang tính tham khảo, có breakdown theo 7 nhân tố + confidence %. Không phải khuyến nghị đầu tư.
+
+### 14.3 Mở rộng tương lai (roadmap)
+
+- [ ] **Option chain + Implied Volatility surface** (khi có provider).
+- [ ] **13F filings + Insider trades** → điền Institutional / Smart Money Score.
+- [ ] **GARCH(1,1) & EGARCH** trong Python Lab.
+- [ ] **Fama-French 3F/5F/Carhart 4F** với dataset factors update hàng tháng.
+- [ ] **Multi-asset backtest engine** với transaction cost + slippage.
+- [ ] **Custom saved screeners** (persist qua Supabase, share cộng đồng).
+- [ ] **Export báo cáo PDF/Docx** cho từng mã CP đơn lẻ (đã có cho project analysis).
