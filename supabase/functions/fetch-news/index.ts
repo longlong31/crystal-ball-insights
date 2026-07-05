@@ -6,97 +6,83 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Extended news sources including international outlets
-const NEWS_SOURCES = [
-  // Vietnamese sources
-  {
-    name: "VnExpress",
-    url: "https://vnexpress.net/rss/tin-moi-nhat.rss",
-    category: "news",
-    language: "vi"
-  },
-  {
-    name: "Tuổi Trẻ",
-    url: "https://tuoitre.vn/rss/tin-moi-nhat.rss",
-    category: "news",
-    language: "vi"
-  },
-  {
-    name: "Dân Trí",
-    url: "https://dantri.com.vn/rss/home.rss",
-    category: "news",
-    language: "vi"
-  },
-  {
-    name: "Thanh Niên",
-    url: "https://thanhnien.vn/rss/home.rss",
-    category: "news",
-    language: "vi"
-  },
-  {
-    name: "VietnamNet",
-    url: "https://vietnamnet.vn/rss/tin-moi-nhat.rss",
-    category: "news",
-    language: "vi"
-  },
-  // International sources
-  {
-    name: "BBC News",
-    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
-    category: "news",
-    language: "en"
-  },
-  {
-    name: "Reuters",
-    url: "https://www.reutersagency.com/feed/?taxonomy=best-sectors&post_type=best",
-    category: "news",
-    language: "en"
-  },
-  {
-    name: "CNN",
-    url: "http://rss.cnn.com/rss/edition_world.rss",
-    category: "news",
-    language: "en"
-  },
-  {
-    name: "The Guardian",
-    url: "https://www.theguardian.com/world/rss",
-    category: "news",
-    language: "en"
-  },
-  {
-    name: "Al Jazeera",
-    url: "https://www.aljazeera.com/xml/rss/all.xml",
-    category: "news",
-    language: "en"
-  },
-  // Tech news
-  {
-    name: "TechCrunch",
-    url: "https://techcrunch.com/feed/",
-    category: "blog",
-    language: "en"
-  },
-  {
-    name: "The Verge",
-    url: "https://www.theverge.com/rss/index.xml",
-    category: "blog",
-    language: "en"
-  },
-  // Business/Finance
-  {
-    name: "Bloomberg",
-    url: "https://feeds.bloomberg.com/markets/news.rss",
-    category: "news",
-    language: "en"
-  },
-  {
-    name: "CafeF",
-    url: "https://cafef.vn/rss/home.rss",
-    category: "news",
-    language: "vi"
-  }
+// Topic-tagged RSS sources. `topic` is embedded into the `source` label
+// (e.g. "CafeF · Chứng khoán") so the client-side classifier reliably groups
+// articles even when the RSS content doesn't contain obvious keywords.
+type Topic = "general" | "stocks" | "crypto" | "banking" | "realestate" | "tech" | "events";
+
+const NEWS_SOURCES: {
+  name: string; url: string; category: string; language: string; topic: Topic;
+}[] = [
+  // ------------------- General VN -------------------
+  { name: "VnExpress",   url: "https://vnexpress.net/rss/tin-moi-nhat.rss",    category: "news", language: "vi", topic: "general" },
+  { name: "Tuổi Trẻ",    url: "https://tuoitre.vn/rss/tin-moi-nhat.rss",       category: "news", language: "vi", topic: "general" },
+  { name: "Dân Trí",     url: "https://dantri.com.vn/rss/home.rss",            category: "news", language: "vi", topic: "general" },
+  { name: "Thanh Niên",  url: "https://thanhnien.vn/rss/home.rss",             category: "news", language: "vi", topic: "general" },
+  { name: "VietnamNet",  url: "https://vietnamnet.vn/rss/tin-moi-nhat.rss",    category: "news", language: "vi", topic: "general" },
+
+  // ------------------- International General -------------------
+  { name: "BBC News",    url: "https://feeds.bbci.co.uk/news/world/rss.xml",           category: "news", language: "en", topic: "general" },
+  { name: "CNN",         url: "http://rss.cnn.com/rss/edition_world.rss",              category: "news", language: "en", topic: "general" },
+  { name: "The Guardian",url: "https://www.theguardian.com/world/rss",                 category: "news", language: "en", topic: "general" },
+  { name: "Al Jazeera",  url: "https://www.aljazeera.com/xml/rss/all.xml",             category: "news", language: "en", topic: "general" },
+
+  // ------------------- Stocks / Finance VN -------------------
+  { name: "CafeF",       url: "https://cafef.vn/thi-truong-chung-khoan.rss",   category: "news", language: "vi", topic: "stocks" },
+  { name: "CafeF",       url: "https://cafef.vn/doanh-nghiep.rss",             category: "news", language: "vi", topic: "stocks" },
+  { name: "VnEconomy",   url: "https://vneconomy.vn/chung-khoan.rss",          category: "news", language: "vi", topic: "stocks" },
+  { name: "VietStock",   url: "https://vietstock.vn/rss/chung-khoan.rss",      category: "news", language: "vi", topic: "stocks" },
+  { name: "Đầu Tư",      url: "https://baodautu.vn/rss/chung-khoan.rss",       category: "news", language: "vi", topic: "stocks" },
+  { name: "NDH",         url: "https://ndh.vn/rss/chung-khoan.rss",            category: "news", language: "vi", topic: "stocks" },
+
+  // ------------------- Stocks / Finance International -------------------
+  { name: "Bloomberg",   url: "https://feeds.bloomberg.com/markets/news.rss",           category: "news", language: "en", topic: "stocks" },
+  { name: "MarketWatch", url: "https://feeds.content.dowjones.io/public/rss/mw_topstories", category: "news", language: "en", topic: "stocks" },
+  { name: "Yahoo Finance", url: "https://finance.yahoo.com/news/rssindex",              category: "news", language: "en", topic: "stocks" },
+  { name: "Seeking Alpha", url: "https://seekingalpha.com/market_currents.xml",         category: "news", language: "en", topic: "stocks" },
+  { name: "Reuters",     url: "https://www.reutersagency.com/feed/?taxonomy=best-sectors&post_type=best", category: "news", language: "en", topic: "stocks" },
+
+  // ------------------- Crypto -------------------
+  { name: "CoinDesk",    url: "https://www.coindesk.com/arc/outboundfeeds/rss/",        category: "news", language: "en", topic: "crypto" },
+  { name: "Cointelegraph", url: "https://cointelegraph.com/rss",                        category: "news", language: "en", topic: "crypto" },
+  { name: "Decrypt",     url: "https://decrypt.co/feed",                                category: "news", language: "en", topic: "crypto" },
+  { name: "Bitcoin Magazine", url: "https://bitcoinmagazine.com/.rss/full/",            category: "news", language: "en", topic: "crypto" },
+  { name: "Coin68",      url: "https://coin68.com/feed/",                               category: "news", language: "vi", topic: "crypto" },
+  { name: "TapChiBitcoin", url: "https://tapchibitcoin.io/feed",                        category: "news", language: "vi", topic: "crypto" },
+
+  // ------------------- Banking / Macro -------------------
+  { name: "CafeF",       url: "https://cafef.vn/tai-chinh-ngan-hang.rss",      category: "news", language: "vi", topic: "banking" },
+  { name: "VnEconomy",   url: "https://vneconomy.vn/tai-chinh.rss",            category: "news", language: "vi", topic: "banking" },
+  { name: "Đầu Tư",      url: "https://baodautu.vn/rss/tai-chinh-ngan-hang.rss", category: "news", language: "vi", topic: "banking" },
+  { name: "Reuters",     url: "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best", category: "news", language: "en", topic: "banking" },
+  { name: "Financial Times", url: "https://www.ft.com/companies/banks?format=rss",     category: "news", language: "en", topic: "banking" },
+
+  // ------------------- Real Estate -------------------
+  { name: "CafeLand",    url: "https://cafeland.vn/feed/",                     category: "news", language: "vi", topic: "realestate" },
+  { name: "CafeF",       url: "https://cafef.vn/bat-dong-san.rss",             category: "news", language: "vi", topic: "realestate" },
+  { name: "Đầu Tư",      url: "https://baodautu.vn/rss/bat-dong-san.rss",      category: "news", language: "vi", topic: "realestate" },
+  { name: "VnEconomy",   url: "https://vneconomy.vn/bat-dong-san.rss",         category: "news", language: "vi", topic: "realestate" },
+
+  // ------------------- Tech -------------------
+  { name: "TechCrunch",  url: "https://techcrunch.com/feed/",                  category: "blog", language: "en", topic: "tech" },
+  { name: "The Verge",   url: "https://www.theverge.com/rss/index.xml",        category: "blog", language: "en", topic: "tech" },
+  { name: "Ars Technica",url: "https://feeds.arstechnica.com/arstechnica/index", category: "blog", language: "en", topic: "tech" },
+  { name: "Wired",       url: "https://www.wired.com/feed/rss",                category: "blog", language: "en", topic: "tech" },
+  { name: "GenK",        url: "https://genk.vn/rss/home.rss",                  category: "blog", language: "vi", topic: "tech" },
+  { name: "ICTNews",     url: "https://ictnews.vietnamnet.vn/rss/home.rss",    category: "blog", language: "vi", topic: "tech" },
 ];
+
+// Human-readable topic suffix appended to source labels — enables the client
+// classifier to group articles by topic regardless of body language.
+const TOPIC_SUFFIX: Record<Topic, string> = {
+  general:    "",
+  stocks:     " · Chứng khoán",
+  crypto:     " · Crypto",
+  banking:    " · Ngân hàng",
+  realestate: " · BĐS",
+  tech:       " · Công nghệ",
+  events:     " · Sự kiện",
+};
 
 interface NewsItem {
   source: string;
