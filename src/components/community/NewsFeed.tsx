@@ -76,11 +76,16 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   // Filter articles based on search, source, time, and topic
   const filteredArticles = useMemo(() => {
     const topicKeywords = topic ? TOPIC_KEYWORDS[topic] : null;
+    const topicTag = topic ? TOPIC_SOURCE_TAG[topic] : null;
     return articles.filter(article => {
-      // Topic keyword filter (case-insensitive on title/description/content)
-      if (topicKeywords) {
-        const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
-        if (!topicKeywords.some(kw => hay.includes(kw))) return false;
+      // Topic filter — accept if server-tagged source matches, else fall back
+      // to case-insensitive keyword scan of title/description/content.
+      if (topicKeywords && topicTag) {
+        const sourceMatches = article.source?.includes(topicTag);
+        if (!sourceMatches) {
+          const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
+          if (!topicKeywords.some(kw => hay.includes(kw))) return false;
+        }
       }
 
       // Search filter
