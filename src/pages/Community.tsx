@@ -14,6 +14,7 @@ import { CommunityPostForm } from "@/components/community/CommunityPostForm";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CommunityAdminPanel } from "@/components/community/CommunityAdminPanel";
 import { NewsFeed } from "@/components/community/NewsFeed";
+import { CategoryOverviewGrid } from "@/components/community/CategoryOverviewGrid";
 import { Footer } from "@/components/Footer";
 
 const statCards = [
