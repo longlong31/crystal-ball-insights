@@ -567,8 +567,92 @@ export function ComprehensiveMetricsPanel({ quote, history, analysis }: Props) {
         </div>
       </div>
 
+      {/* Search & Filter */}
+      <div className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <Search className="w-3.5 h-3.5 text-primary" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm chỉ số theo tên, định nghĩa hoặc công thức (VD: sharpe, EV/EBITDA, drawdown)…"
+            className="flex-1 bg-transparent border-b border-border/40 focus:border-primary/60 outline-none text-xs font-mono py-1 px-1 placeholder:text-muted-foreground/50"
+          />
+          {(query || activeCat !== "All") && (
+            <button
+              onClick={() => { setQuery(""); setActiveCat("All"); }}
+              className="text-[10px] px-2 py-1 rounded bg-muted/40 hover:bg-muted/60 border border-border/40 flex items-center gap-1"
+            >
+              <X className="w-3 h-3" /> Clear
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground mr-1">Lọc theo nhóm:</span>
+          {["All", ...METRIC_CATEGORIES.map((c) => c.label)].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCat(cat)}
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full border transition-colors ${
+                activeCat === cat
+                  ? "bg-primary/25 text-primary border-primary/50"
+                  : "bg-muted/20 text-muted-foreground border-border/40 hover:bg-muted/40"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Search Results */}
+      {searchResults && (
+        <div className="rounded-lg border border-primary/30 bg-background/40 p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Kết quả {query && `cho "${query}"`}
+              {activeCat !== "All" && ` — ${activeCat}`}
+            </span>
+            <span className="text-[10px] font-mono text-muted-foreground ml-auto">
+              {searchResults.length} chỉ số
+            </span>
+          </div>
+          {searchResults.length === 0 ? (
+            <div className="text-[11px] text-muted-foreground italic py-4 text-center">
+              Không tìm thấy chỉ số nào phù hợp. Thử từ khoá khác hoặc bỏ bộ lọc nhóm.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-96 overflow-y-auto pr-1">
+              {searchResults.map(([label, info]) => (
+                <div key={label} className="rounded-md border border-border/40 bg-muted/10 p-2.5 hover:border-primary/40 transition-colors">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <div className="text-[11px] font-semibold text-primary truncate">{label}</div>
+                    <span className="ml-auto text-[9px] font-mono uppercase text-muted-foreground shrink-0">
+                      {categoryOf(label)}
+                    </span>
+                  </div>
+                  {info.def && <div className="text-[10px] text-foreground/85 leading-snug mb-1">{info.def}</div>}
+                  {info.formula && (
+                    <div className="text-[10px] font-mono text-emerald-400/90 leading-snug mb-1">
+                      <span className="text-muted-foreground">ƒ:</span> {info.formula}
+                    </div>
+                  )}
+                  {info.na && (
+                    <div className="text-[9px] text-amber-400/80 leading-snug border-t border-border/40 pt-1 mt-1">
+                      <span className="font-semibold">Trạng thái "—":</span> {info.na}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Sections */}
       <div className="space-y-2" key={expandAll ? "open" : "closed"}>
+
         {/* 1. Valuation */}
         <Section id="val" title="1. Valuation (Định giá)" icon={DollarSign}
           count={cnt([q.pe, q.forwardPe, q.pe && q.earningsGrowth, q.pb, q.ps, null, m.ev, m.ev, m.priceCF, q.marketCap, q.bookValue])}
