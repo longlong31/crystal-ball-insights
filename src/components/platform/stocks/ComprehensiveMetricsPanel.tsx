@@ -364,6 +364,20 @@ function Section({
 
 export function ComprehensiveMetricsPanel({ quote, history, analysis }: Props) {
   const [expandAll, setExpandAll] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState<string>("All");
+
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q && activeCat === "All") return null;
+    const entries = Object.entries(METRIC_INFO).filter(([label, info]) => {
+      if (activeCat !== "All" && categoryOf(label) !== activeCat) return false;
+      if (!q) return true;
+      const hay = `${label} ${info.def || ""} ${info.formula || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+    return entries;
+  }, [query, activeCat]);
 
   const m = useMemo(() => {
     const q: any = quote || {};
