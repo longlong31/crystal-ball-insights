@@ -263,6 +263,30 @@ const METRIC_INFO: Record<string, MetricInfo> = {
   "Smart Money Score":  { def: "Dòng tiền thông minh.", na: "Cần dữ liệu insider + options flow." },
 };
 
+// -------- Category mapping for search / jump-to --------
+const METRIC_CATEGORIES: { id: string; label: string; metrics: string[] }[] = [
+  { id: "val", label: "Valuation", metrics: ["P/E","Forward P/E","PEG","P/B","P/S","EV/EBITDA","EV/Sales","Price/Cash Flow","Enterprise Value","Market Cap","Book Value/Share","Intrinsic Value (DCF)"] },
+  { id: "prof", label: "Profitability", metrics: ["ROE","ROA","ROIC","ROI","ROCE","Gross Margin","EBITDA Margin","Operating Margin","Net Margin","EPS","Diluted EPS"] },
+  { id: "growth", label: "Growth", metrics: ["Revenue Growth","EPS Growth","Net Income Growth","Operating Income Growth","Cash Flow Growth","Free Cash Flow Growth","CAGR 3Y (price)","CAGR 5Y (price)"] },
+  { id: "liq", label: "Liquidity", metrics: ["Current Ratio","Quick Ratio","Cash Ratio","Working Capital","Current Assets","Current Liabilities"] },
+  { id: "lev", label: "Leverage", metrics: ["Debt/Equity","Debt/Assets","Interest Coverage","Financial Leverage","Long-term Debt","Net Debt"] },
+  { id: "cf", label: "Cash Flow", metrics: ["Operating Cash Flow","Investing Cash Flow","Financing Cash Flow","Free Cash Flow","CapEx (OCF − FCF)","FCF Yield"] },
+  { id: "mkt", label: "Market", metrics: ["Volume","Average Volume","Float","Shares Outstanding","Insider Ownership","Institutional Ownership","Short Interest","Short Ratio","Relative Volume"] },
+  { id: "tech", label: "Technical", metrics: ["RSI(14)","MACD","MACD Signal","BB Upper","BB Lower","EMA 12","EMA 26","EMA 50","SMA 20","VWAP","ATR(14)","OBV","ADX / CCI / MFI / StochRSI","Ichimoku / Fibonacci"] },
+  { id: "risk", label: "Risk", metrics: ["Beta","Alpha (CAPM, annual)","Volatility (annual)","Historical Vol","Implied Volatility","Std Dev (daily)","Variance (daily)","Covariance","Correlation","Correlation Matrix","Max Drawdown","Downside Deviation","Tracking Error","VaR 95% (1d)","CVaR 95% (1d)","Expected Shortfall"] },
+  { id: "port", label: "Portfolio", metrics: ["Sharpe Ratio","Sortino Ratio","Treynor Ratio","Information Ratio","Calmar Ratio","Jensen Alpha","Active Return","Active Risk"] },
+  { id: "mom", label: "Momentum", metrics: ["Momentum 1M","Momentum 3M","Momentum 6M","Earnings Momentum","Volume Momentum"] },
+  { id: "qual", label: "Quality", metrics: ["Piotroski F-Score","Altman Z-Score","Beneish M-Score","Earnings Quality","Accrual Ratio"] },
+  { id: "div", label: "Dividend", metrics: ["Dividend Yield","Dividend Growth","Dividend CAGR","Payout Ratio","Ex-Dividend Date","Dividend History"] },
+  { id: "health", label: "Health", metrics: ["Debt Coverage (OCF/Debt)","Bankruptcy Risk","Solvency Score"] },
+  { id: "quant", label: "Quant+", metrics: ["Z-Score (last return)","Skewness","Kurtosis (excess)","Autocorrelation (lag 1)","Rolling Volatility 20D","Rolling Correlation","Rolling Beta","Covariance Matrix","Eigenvalues / PCA","Monte Carlo","GARCH Volatility","CAPM E[R] (annual)","Fama-French 3F","Fama-French 5F","Carhart 4F","Black-Litterman","Efficient Frontier","Information Coefficient"] },
+  { id: "ai", label: "AI Scores", metrics: ["Overall AI Score","Fundamental Score","Technical Score","Momentum Score","Growth Score","Quality Score","Risk Score (adj.)","Value Score","Sentiment Score","ESG Score","Institutional Score","Smart Money Score"] },
+];
+function categoryOf(label: string): string {
+  for (const c of METRIC_CATEGORIES) if (c.metrics.includes(label)) return c.label;
+  return "Other";
+}
+
 // -------- UI primitives --------
 function Cell({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   const isNA = value === "—" || value === "" || value === null || value === undefined;
