@@ -209,9 +209,11 @@ async function fetchRSSFeed(source: typeof NEWS_SOURCES[0]): Promise<NewsItem[]>
     // Match both <item> (RSS) and <entry> (Atom) elements
     const items = xml.match(/<item>([\s\S]*?)<\/item>|<entry>([\s\S]*?)<\/entry>/g) || [];
 
+    // Compose display label with topic suffix so client can group by topic.
+    const label = source.name + (TOPIC_SUFFIX[source.topic] || "");
     const parsedItems = items
-      .slice(0, 10) // Get 10 items per source
-      .map(item => parseRSSItem(item, source.name, source.category, source.language))
+      .slice(0, 12) // Get up to 12 items per source
+      .map(item => parseRSSItem(item, label, source.category, source.language))
       .filter((item): item is NewsItem => item !== null);
     
     console.log(`Fetched ${parsedItems.length} items from ${source.name}`);
