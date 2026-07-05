@@ -34,6 +34,17 @@ const TOPIC_KEYWORDS: Record<NonNullable<NewsFeedProps["topic"]>, string[]> = {
   events: ["sự kiện", "hội thảo", "hội nghị", "event", "conference", "workshop", "webinar", "diễn đàn", "triển lãm"],
 };
 
+// Server appends these suffixes to `source` — an authoritative topic tag from
+// the feed itself. Matching this short-circuits keyword scanning.
+const TOPIC_SOURCE_TAG: Record<NonNullable<NewsFeedProps["topic"]>, string> = {
+  stocks: "· Chứng khoán",
+  crypto: "· Crypto",
+  banking: "· Ngân hàng",
+  realestate: "· BĐS",
+  tech: "· Công nghệ",
+  events: "· Sự kiện",
+};
+
 export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
   const { t, language } = useLanguage();
@@ -65,11 +76,16 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   // Filter articles based on search, source, time, and topic
   const filteredArticles = useMemo(() => {
     const topicKeywords = topic ? TOPIC_KEYWORDS[topic] : null;
+    const topicTag = topic ? TOPIC_SOURCE_TAG[topic] : null;
     return articles.filter(article => {
-      // Topic keyword filter (case-insensitive on title/description/content)
-      if (topicKeywords) {
-        const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
-        if (!topicKeywords.some(kw => hay.includes(kw))) return false;
+      // Topic filter — accept if server-tagged source matches, else fall back
+      // to case-insensitive keyword scan of title/description/content.
+      if (topicKeywords && topicTag) {
+        const sourceMatches = article.source?.includes(topicTag);
+        if (!sourceMatches) {
+          const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
+          if (!topicKeywords.some(kw => hay.includes(kw))) return false;
+        }
       }
 
       // Search filter

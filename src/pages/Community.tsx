@@ -14,6 +14,7 @@ import { CommunityPostForm } from "@/components/community/CommunityPostForm";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CommunityAdminPanel } from "@/components/community/CommunityAdminPanel";
 import { NewsFeed } from "@/components/community/NewsFeed";
+import { CategoryOverviewGrid } from "@/components/community/CategoryOverviewGrid";
 import { Footer } from "@/components/Footer";
 
 const statCards = [
@@ -167,6 +168,16 @@ export default function Community() {
               ))}
             </div>
           </div>
+        </motion.div>
+
+        {/* Category Overview */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="mb-6"
+        >
+          <CategoryOverviewGrid onSelectTopic={setActiveTab} activeTab={activeTab} />
         </motion.div>
 
         {/* Tabs Section */}
