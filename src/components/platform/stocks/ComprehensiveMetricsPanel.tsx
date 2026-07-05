@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import {
   ChevronDown, ChevronRight, LayoutGrid, TrendingUp, DollarSign, Activity,
   Percent, Layers, Wallet, BarChart3, LineChart, Shield, Gauge, Zap,
-  Award, Coins, HeartPulse, Sparkles, Sigma,
+  Award, Coins, HeartPulse, Sparkles, Sigma, Search, X,
 } from "lucide-react";
 import type { StockQuote, StockHistory } from "@/hooks/useStockData";
 
