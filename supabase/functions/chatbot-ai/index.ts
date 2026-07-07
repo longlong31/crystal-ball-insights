@@ -126,8 +126,8 @@ serve(async (req) => {
     }
 
     const langInstruction = language === 'en' 
-      ? '\n\n**IMPORTANT: Respond in English as the user has set English as their language.**'
-      : '\n\n**IMPORTANT: Trả lời bằng tiếng Việt.**';
+      ? '\n\n**IMPORTANT: Respond in English. All transparency rules still apply: cite sources inline like (Source: Yahoo Finance · intraday quote), add a short _Why:_ line for each claim, include an Evidence table when multiple claims are made, end analytical answers with **Confidence:** High/Medium/Low, flag data gaps with ⚠️ Limitation, never fabricate numbers, and add the not-investment-advice disclaimer under buy/sell calls.**'
+      : '\n\n**IMPORTANT: Trả lời bằng tiếng Việt và TUÂN THỦ NGHIÊM các quy tắc minh bạch & nguồn dữ liệu ở trên (trích nguồn inline, "Vì sao", Evidence Table, Độ tin cậy, cảnh báo giới hạn, disclaimer).**';
 
     const systemPrompt = SYSTEM_KNOWLEDGE + qaContext + communityContext + newsContext + langInstruction;
 
