@@ -149,7 +149,7 @@ serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages,
           temperature: 0.7,
-          max_tokens: 2000,
+          max_tokens: 3000,
           stream: true,
         }),
       });
@@ -185,7 +185,7 @@ serve(async (req) => {
           model: "google/gemini-3-flash-preview",
           messages,
           temperature: 0.7,
-          max_tokens: 2000,
+          max_tokens: 3000,
         }),
       });
 
