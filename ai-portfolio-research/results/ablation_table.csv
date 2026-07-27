@@ -1,4 +1,4 @@
 Tinh chat,Sharpe,Delta_vs_A
-A (temporal self-attention),1.1810018008967962,0.0
-A + B (cross-asset attention),1.111779659015011,-0.0692221418817851
-A + B + C (Sharpe-aware loss),1.3750931522233658,0.19409135132656963
+A (temporal self-attention),0.6633509947271522,0.0
+A + B (cross-asset attention),0.5567410078241115,-0.10660998690304069
+A + B + C (Sharpe-aware loss),0.6568600464848373,-0.006490948242314887
