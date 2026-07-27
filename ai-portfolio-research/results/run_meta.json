@@ -1,0 +1,23 @@
+{
+  "tickers": [
+    "AAPL",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "JPM",
+    "JNJ",
+    "PG",
+    "XOM",
+    "NVDA",
+    "KO",
+    "DIS",
+    "WMT",
+    "TLT",
+    "GLD"
+  ],
+  "n_train": 1904,
+  "n_valid": 680,
+  "n_test": 1044,
+  "n_rebalances": 50,
+  "elapsed_sec": 466.8
+}
