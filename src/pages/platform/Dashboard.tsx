@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart3, Zap, Shield, Brain, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -8,6 +8,17 @@ import { useCryptoMarkets, useCryptoGlobal } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { WatchlistPanel } from "@/components/platform/WatchlistPanel";
 import { FearGreedGauge } from "@/components/platform/FearGreedGauge";
+
+const Market3DUniverse = lazy(() => import("@/components/platform/Market3DUniverse"));
+const CapitalFlowBoard = lazy(() => import("@/components/platform/CapitalFlowBoard"));
+
+function PanelSkeleton({ height }: { height: number }) {
+  return (
+    <div className="quant-card flex items-center justify-center" style={{ height }}>
+      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
 
 const TICKER_COLORS = {
   up: "hsl(142, 76%, 45%)",
