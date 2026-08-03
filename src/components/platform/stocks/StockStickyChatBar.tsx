@@ -4,7 +4,7 @@ import {
   Send, Sparkles, Loader2, ChevronDown, X, Maximize2, Minimize2,
   LineChart, Calculator, Shield, PieChart, Globe2, Newspaper, Brain, Layers, Zap, Wand2, RefreshCcw,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { CitedMarkdown } from "@/components/platform/CitedMarkdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -430,7 +430,15 @@ export function StockStickyChatBar({ symbol, context }: Props) {
                       )}>
                         {m.role === "assistant" ? (
                           <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-pre:my-2 prose-ul:my-1.5 prose-headings:my-2 prose-headings:text-sm">
-                            {m.content ? <ReactMarkdown>{m.content}</ReactMarkdown>
+                            {m.content ? (
+                              <CitedMarkdown
+                                content={m.content}
+                                rawContext={
+                                  symbol
+                                    ? `symbol=${symbol}\n${context ? JSON.stringify(context, null, 2) : "(không có dữ liệu context)"}`
+                                    : undefined
+                                }
+                              />
                               : <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
                           </div>
                         ) : (
