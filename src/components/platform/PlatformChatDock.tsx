@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles, Loader2, X, Maximize2, Minimize2, MessageSquare, Zap } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { CitedMarkdown } from "@/components/platform/CitedMarkdown";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
 
@@ -203,7 +203,7 @@ export function PlatformChatDock() {
                     {m.role === "assistant" ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-1 prose-ul:my-1 prose-headings:my-2 prose-headings:text-sm">
                         {m.content ? (
-                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                          <CitedMarkdown content={m.content} />
                         ) : (
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                         )}
