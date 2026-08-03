@@ -159,6 +159,16 @@ export default function Dashboard() {
         <MetricCard label="Daily P&L" value={`$${dailyPnL.toLocaleString()}`} change={dailyPnLPct} icon={DollarSign} color="hsl(142, 76%, 45%)" />
       </div>
 
+      {/* 3D market universe + realtime capital flow */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+        <Suspense fallback={<PanelSkeleton height={452} />}>
+          <Market3DUniverse />
+        </Suspense>
+        <Suspense fallback={<PanelSkeleton height={452} />}>
+          <CapitalFlowBoard />
+        </Suspense>
+      </div>
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
         <div className="quant-card lg:col-span-2">
