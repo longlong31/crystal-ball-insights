@@ -439,7 +439,9 @@ export function StockStickyChatBar({ symbol, context }: Props) {
                                     : undefined
                                 }
                               />
-                              : <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                            ) : (
+                              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                            )}
                           </div>
                         ) : (
                           <p className="whitespace-pre-wrap">{m.content}</p>
