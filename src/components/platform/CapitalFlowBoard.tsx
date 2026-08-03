@@ -45,8 +45,8 @@ export function CapitalFlowBoard() {
   const outflow = totalVol - inflow;
   const netPct = ((inflow - outflow) / totalVol) * 100;
 
-  const srcX = 90;
-  const dstX = W - 210;
+  const srcX = 168;
+  const dstX = W - 190;
   const bandTop = 30;
   const bandH = H - 60;
 
