@@ -160,11 +160,11 @@ export default function Dashboard() {
       </div>
 
       {/* 3D market universe + realtime capital flow */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+      <div className="space-y-3">
         <Suspense fallback={<PanelSkeleton height={452} />}>
           <Market3DUniverse />
         </Suspense>
-        <Suspense fallback={<PanelSkeleton height={452} />}>
+        <Suspense fallback={<PanelSkeleton height={420} />}>
           <CapitalFlowBoard />
         </Suspense>
       </div>
