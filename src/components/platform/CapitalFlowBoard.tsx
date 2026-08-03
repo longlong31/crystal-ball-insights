@@ -5,7 +5,7 @@ import { useTopCryptoMarkets } from "@/hooks/useMarketData";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const W = 900;
-const H = 320;
+const H = 380;
 
 function fmt(n: number) {
   if (n >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
@@ -52,7 +52,7 @@ export function CapitalFlowBoard() {
 
   let cursor = bandTop;
   const bands = flows.map((f) => {
-    const h = Math.max((f.volume / totalVol) * bandH, 8);
+    const h = Math.max((f.volume / totalVol) * bandH, 26);
     const y = cursor;
     cursor += h + 2;
     return { ...f, y, h };
