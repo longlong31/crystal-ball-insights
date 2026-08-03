@@ -93,7 +93,7 @@ export function CapitalFlowBoard() {
       </div>
 
       <div className="rounded-lg border border-border/40 bg-background/40 overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[640px]" style={{ height: H }}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[720px] h-auto">
           <defs>
             <linearGradient id="cfSrc" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="hsl(185, 80%, 50%)" />
