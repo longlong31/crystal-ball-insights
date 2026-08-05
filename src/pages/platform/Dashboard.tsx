@@ -11,6 +11,7 @@ import { FearGreedGauge } from "@/components/platform/FearGreedGauge";
 
 const Market3DUniverse = lazy(() => import("@/components/platform/Market3DUniverse"));
 const CapitalFlowBoard = lazy(() => import("@/components/platform/CapitalFlowBoard"));
+const Stock3DUniverse = lazy(() => import("@/components/platform/Stock3DUniverse"));
 
 function PanelSkeleton({ height }: { height: number }) {
   return (
@@ -163,6 +164,9 @@ export default function Dashboard() {
       <div className="space-y-3">
         <Suspense fallback={<PanelSkeleton height={452} />}>
           <Market3DUniverse />
+        </Suspense>
+        <Suspense fallback={<PanelSkeleton height={472} />}>
+          <Stock3DUniverse />
         </Suspense>
         <Suspense fallback={<PanelSkeleton height={420} />}>
           <CapitalFlowBoard />
