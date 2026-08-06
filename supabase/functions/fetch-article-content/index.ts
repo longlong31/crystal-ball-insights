@@ -111,7 +111,8 @@ function extractImages(html: string, base: string): string[] {
       } catch { /* ignore */ }
     }
     if (!/^https?:\/\//.test(url)) continue;
-    if (/(logo|icon|avatar|sprite|pixel|1x1|blank)\./i.test(url)) continue;
+    if (/\.svg(\?|$)/i.test(url)) continue;
+    if (/(logo|icon|sprite|pixel|1x1|blank|placeholder)/i.test(url)) continue;
     if (!out.includes(url)) out.push(url);
   }
   return out;
