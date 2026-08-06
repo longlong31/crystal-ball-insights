@@ -14,6 +14,8 @@ import { vi, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { classifyTopic, matchesTopic, TOPIC_META } from "@/lib/newsTopics";
+
 
 type TimeFilter = "all" | "today" | "week" | "month";
 const ITEMS_PER_PAGE = 9;
@@ -24,26 +26,8 @@ interface NewsFeedProps {
   topic?: "stocks" | "crypto" | "banking" | "realestate" | "tech" | "events";
 }
 
-// Vietnamese + English keyword sets — matched case-insensitively against title/description/content.
-const TOPIC_KEYWORDS: Record<NonNullable<NewsFeedProps["topic"]>, string[]> = {
-  stocks: ["cổ phiếu", "chứng khoán", "vn-index", "vnindex", "hose", "hnx", "upcom", "cp ", "mã ck", " stock", "equity", "ipo", "cổ tức", "thị trường chứng khoán"],
-  crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "blockchain", " coin", "altcoin", "tiền số", "tiền mã hóa", "tiền điện tử", "defi", "nft", "binance", "solana"],
-  banking: ["ngân hàng", "sbv", "tín dụng", " bank", "lãi suất", "nợ xấu", "credit", "vietcombank", "bidv", "vietinbank", "techcombank", "mb bank", "acb", "vpbank", "sacombank"],
-  realestate: ["bất động sản", "bđs", "nhà đất", "chung cư", "real estate", "property", "căn hộ", "đất nền", "vinhomes", "novaland", "nhà ở"],
-  tech: ["công nghệ", " ai ", "artificial intelligence", "fintech", "technology", "phần mềm", "startup", "khởi nghiệp", "chuyển đổi số", "digital", "cloud", "chatgpt", "openai", "microsoft", "google", "apple"],
-  events: ["sự kiện", "hội thảo", "hội nghị", "event", "conference", "workshop", "webinar", "diễn đàn", "triển lãm"],
-};
+// Topic classification is shared with the detail page — see src/lib/newsTopics.ts
 
-// Server appends these suffixes to `source` — an authoritative topic tag from
-// the feed itself. Matching this short-circuits keyword scanning.
-const TOPIC_SOURCE_TAG: Record<NonNullable<NewsFeedProps["topic"]>, string> = {
-  stocks: "· Chứng khoán",
-  crypto: "· Crypto",
-  banking: "· Ngân hàng",
-  realestate: "· BĐS",
-  tech: "· Công nghệ",
-  events: "· Sự kiện",
-};
 
 export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
