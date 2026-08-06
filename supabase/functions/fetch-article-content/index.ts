@@ -84,6 +84,9 @@ function extractParagraphs(html: string): string[] {
       .trim();
     if (!text || text.length < 25) continue;
     if (/^(chia sẻ|tags?|xem thêm|đọc thêm|advertisement|share this|related)/i.test(text)) continue;
+    // Menu/nav leftovers: short list items with no sentence punctuation.
+    if (tag === "li" && text.length < 90 && !/[.,;:?!]/.test(text)) continue;
+    if (/^(email|hotline|điện thoại|fax|địa chỉ)\s*:/i.test(text)) continue;
     if (seen.has(text)) continue;
     seen.add(text);
     if (tag === "h2" || tag === "h3") text = `## ${text}`;
@@ -91,6 +94,9 @@ function extractParagraphs(html: string): string[] {
     else if (tag === "blockquote") text = `> ${text}`;
     paragraphs.push(text);
   }
+
+  // Drop leading menu/heading fragments before the first real body paragraph.
+  while (paragraphs.length && /^(- |## )/.test(paragraphs[0])) paragraphs.shift();
 
   if (paragraphs.length === 0) {
     const plain = decodeEntities(best.replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ").trim();
