@@ -14,6 +14,8 @@ import { vi, enUS } from "date-fns/locale";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
+import { classifyTopic, matchesTopic, TOPIC_META } from "@/lib/newsTopics";
+
 
 type TimeFilter = "all" | "today" | "week" | "month";
 const ITEMS_PER_PAGE = 9;
@@ -24,26 +26,8 @@ interface NewsFeedProps {
   topic?: "stocks" | "crypto" | "banking" | "realestate" | "tech" | "events";
 }
 
-// Vietnamese + English keyword sets — matched case-insensitively against title/description/content.
-const TOPIC_KEYWORDS: Record<NonNullable<NewsFeedProps["topic"]>, string[]> = {
-  stocks: ["cổ phiếu", "chứng khoán", "vn-index", "vnindex", "hose", "hnx", "upcom", "cp ", "mã ck", " stock", "equity", "ipo", "cổ tức", "thị trường chứng khoán"],
-  crypto: ["bitcoin", "btc", "eth", "ethereum", "crypto", "blockchain", " coin", "altcoin", "tiền số", "tiền mã hóa", "tiền điện tử", "defi", "nft", "binance", "solana"],
-  banking: ["ngân hàng", "sbv", "tín dụng", " bank", "lãi suất", "nợ xấu", "credit", "vietcombank", "bidv", "vietinbank", "techcombank", "mb bank", "acb", "vpbank", "sacombank"],
-  realestate: ["bất động sản", "bđs", "nhà đất", "chung cư", "real estate", "property", "căn hộ", "đất nền", "vinhomes", "novaland", "nhà ở"],
-  tech: ["công nghệ", " ai ", "artificial intelligence", "fintech", "technology", "phần mềm", "startup", "khởi nghiệp", "chuyển đổi số", "digital", "cloud", "chatgpt", "openai", "microsoft", "google", "apple"],
-  events: ["sự kiện", "hội thảo", "hội nghị", "event", "conference", "workshop", "webinar", "diễn đàn", "triển lãm"],
-};
+// Topic classification is shared with the detail page — see src/lib/newsTopics.ts
 
-// Server appends these suffixes to `source` — an authoritative topic tag from
-// the feed itself. Matching this short-circuits keyword scanning.
-const TOPIC_SOURCE_TAG: Record<NonNullable<NewsFeedProps["topic"]>, string> = {
-  stocks: "· Chứng khoán",
-  crypto: "· Crypto",
-  banking: "· Ngân hàng",
-  realestate: "· BĐS",
-  tech: "· Công nghệ",
-  events: "· Sự kiện",
-};
 
 export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
   const { articles, loading, refreshNews, refetch } = useNewsArticles(category, 100);
@@ -75,18 +59,10 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
 
   // Filter articles based on search, source, time, and topic
   const filteredArticles = useMemo(() => {
-    const topicKeywords = topic ? TOPIC_KEYWORDS[topic] : null;
-    const topicTag = topic ? TOPIC_SOURCE_TAG[topic] : null;
     return articles.filter(article => {
-      // Topic filter — accept if server-tagged source matches, else fall back
-      // to case-insensitive keyword scan of title/description/content.
-      if (topicKeywords && topicTag) {
-        const sourceMatches = article.source?.includes(topicTag);
-        if (!sourceMatches) {
-          const hay = `${article.title} ${article.description ?? ""} ${article.content ?? ""}`.toLowerCase();
-          if (!topicKeywords.some(kw => hay.includes(kw))) return false;
-        }
-      }
+      // Topic filter — weighted score over source tag + title/body keywords.
+      if (topic && !matchesTopic(article, topic)) return false;
+
 
       // Search filter
       if (searchQuery) {
@@ -352,12 +328,19 @@ export const NewsFeed = ({ category = "news", topic }: NewsFeedProps) => {
                             <Newspaper className="w-12 h-12 text-primary/40" />
                           </div>
                         )}
+                        {/* Topic chip overlay */}
+                        <span className={`absolute top-2 left-2 rounded-full border px-2 py-[2px] text-[10px] font-mono backdrop-blur-md ${TOPIC_META[classifyTopic(article)].className}`}>
+                          {language === 'vi'
+                            ? TOPIC_META[classifyTopic(article)].label
+                            : TOPIC_META[classifyTopic(article)].labelEn}
+                        </span>
                       </div>
                       
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 flex-wrap">
                         <Badge variant="secondary" className="bg-primary/10 text-primary font-medium">
-                          {article.source}
+                          {article.source.split(" · ")[0]}
                         </Badge>
+
                         <Badge variant="outline" className="gap-1">
                           <Globe className="w-3 h-3" />
                           {article.language === 'vi' ? 'VI' : 'EN'}
