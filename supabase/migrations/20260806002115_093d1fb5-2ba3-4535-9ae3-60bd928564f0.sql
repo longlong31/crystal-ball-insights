@@ -1,0 +1,1 @@
+UPDATE public.news_articles SET content = NULL WHERE id = 'd250b361-2708-4e9d-9f62-c9b03efb896e';
