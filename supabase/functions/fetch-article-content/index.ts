@@ -142,6 +142,11 @@ serve(async (req) => {
       url = url || existing?.source_url || undefined;
     }
 
+    // Some feeds store links wrapped in CDATA — unwrap and trim before use.
+    if (url) {
+      url = url.replace(/^<!\[CDATA\[/, "").replace(/\]\]>$/, "").trim();
+    }
+
     if (!url || !/^https?:\/\//.test(url)) {
       return new Response(JSON.stringify({ success: false, error: "Missing or invalid url" }), {
         status: 400,
