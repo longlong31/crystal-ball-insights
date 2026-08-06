@@ -21,7 +21,8 @@ function decodeEntities(s: string): string {
     .replace(/&ldquo;|&rdquo;/g, '"')
     .replace(/&rsquo;|&lsquo;/g, "'")
     .replace(/&mdash;|&ndash;/g, "–")
-    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)));
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)));
 }
 
 /** Strip scripts/styles/nav/aside/footer/forms and comment blocks. */
