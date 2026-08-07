@@ -234,7 +234,11 @@ export function QuantMetricsPanel({
                   {c.label}
                   <div className="font-semibold mt-0.5">{c.value}{c.unit || ""}</div>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{explain(c.explainKey!, c.raw)}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {Number.isFinite(c.raw)
+                    ? explain(c.explainKey!, c.raw)
+                    : "Chưa có dữ liệu chỉ số thị trường (benchmark) để tính chỉ tiêu này."}
+                </p>
               </div>
             ))}
         </div>
