@@ -154,12 +154,13 @@ export function QuantMetricsPanel({
   const annStd = stdDaily * Math.sqrt(252);
   const annDStd = dStd * Math.sqrt(252);
 
-  // Synth market returns (best-effort: if not provided, derive scaled noise)
-  const mktReturns = returns.map((r) => r * (0.85 + Math.random() * 0.3));
-  const mktMeanAnn = (marketReturn ?? mean(mktReturns) * 252);
-  const cov = covariance(returns, mktReturns);
-  const corr = correlation(returns, mktReturns);
-  const trackingErr = std(returns.map((r, i) => r - mktReturns[i])) * Math.sqrt(252);
+  // Real benchmark returns (aligned by trading date upstream). No synthetic fallback.
+  const hasMkt = !!marketReturns && marketReturns.length >= 20 && marketReturns.length === returns.length;
+  const mktReturns = hasMkt ? marketReturns! : [];
+  const mktMeanAnn = marketReturn ?? (hasMkt ? mean(mktReturns) * 252 : NaN);
+  const cov = hasMkt ? covariance(returns, mktReturns) : NaN;
+  const corr = hasMkt ? correlation(returns, mktReturns) : NaN;
+  const trackingErr = hasMkt ? std(returns.map((r, i) => r - mktReturns[i])) * Math.sqrt(252) : NaN;
 
   // Risk-adjusted ratios
   const excess = annMean - riskFreeRate;
