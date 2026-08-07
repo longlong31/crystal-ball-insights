@@ -9,6 +9,10 @@ interface Props {
   closes: number[];           // historical closes
   currentPrice: number;
   beta?: number;
+  /** Real benchmark daily returns aligned with alignedReturns */
+  marketReturns?: number[];
+  alignedReturns?: number[];
+  benchmarkSymbol?: string;
   formatPrice?: (v: number) => string;
 }
 
@@ -24,22 +28,26 @@ function StatRow({ label, value, hint }: { label: string; value: string; hint?: 
   );
 }
 
-export function QuantModelsLab({ symbol, returns, closes, currentPrice, beta, formatPrice }: Props) {
+export function QuantModelsLab({ symbol, returns, closes, currentPrice, beta, marketReturns, alignedReturns, benchmarkSymbol, formatPrice }: Props) {
   const fmt = formatPrice ?? ((v: number) => v.toFixed(2));
 
-  // Synth market returns proxy: slightly noisy version of asset returns scaled by beta
-  const marketReturns = useMemo(
-    () => returns.map((r) => (beta && beta !== 0 ? r / beta : r) * (0.9 + Math.random() * 0.2)),
-    [returns, beta],
+  // Real benchmark returns (aligned by trading date). Falls back to asset returns
+  // scaled by beta only when the index series is unavailable.
+  const hasMkt = !!marketReturns && marketReturns.length >= 30;
+  const capmAsset = hasMkt ? (alignedReturns ?? returns) : returns;
+  const capmMarket = useMemo(
+    () => (hasMkt ? marketReturns! : returns.map((r) => (beta && beta !== 0 ? r / beta : r))),
+    [hasMkt, marketReturns, returns, beta],
   );
 
   const [riskFree, setRiskFree] = useState(4);          // %
   const [expectedMkt, setExpectedMkt] = useState(10);   // %
 
   const capmRes = useMemo(
-    () => capm(returns, marketReturns, riskFree / 100, expectedMkt / 100),
-    [returns, marketReturns, riskFree, expectedMkt],
+    () => capm(capmAsset, capmMarket, riskFree / 100, expectedMkt / 100),
+    [capmAsset, capmMarket, riskFree, expectedMkt],
   );
+
 
   // Black-Scholes inputs
   const [strike, setStrike] = useState(currentPrice);

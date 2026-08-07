@@ -758,11 +758,55 @@ export default function StockAnalysis() {
   const { data: history, isLoading: historyLoading } = useStockHistory(selected, historyRange);
   const { data: financials, isLoading: financialsLoading } = useStockFinancials(selected);
 
+  // Real benchmark index for the market leg of Beta/Alpha/CAPM (no synthetic data)
+  const benchmarkSymbol = useMemo(() => {
+    const s = selected.toUpperCase();
+    if (s.endsWith('.VN')) return '^VNINDEX';
+    if (s.endsWith('.T')) return '^N225';
+    if (s.endsWith('.HK')) return '^HSI';
+    if (s.endsWith('.L')) return '^FTSE';
+    if (s.endsWith('.DE') || s.endsWith('.PA') || s.endsWith('.AS') || s.endsWith('.MI')) return '^STOXX50E';
+    if (s.endsWith('.SS') || s.endsWith('.SZ')) return '000001.SS';
+    if (s.endsWith('.KS')) return '^KS11';
+    if (s.endsWith('.AX')) return '^AXJO';
+    if (s.endsWith('.NS') || s.endsWith('.BO')) return '^NSEI';
+    return '^GSPC';
+  }, [selected]);
+
+  const { data: benchHistory } = useStockHistory(benchmarkSymbol, historyRange);
+
   const analysis = useMemo(() => {
     if (!history || !history.closes || history.closes.length < 30) return null;
     const closes = history.closes.filter(c => c > 0);
     const returns = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
-    const marketReturns = returns.map(r => r * (0.8 + Math.random() * 0.4));
+
+    // Align asset & benchmark returns by trading date (intersection)
+    let marketReturns: number[] = [];
+    let alignedReturns = returns;
+    if (benchHistory?.closes?.length && benchHistory.dates?.length && history.dates?.length) {
+      const benchMap = new Map<string, number>();
+      benchHistory.dates.forEach((d, i) => {
+        const c = benchHistory.closes[i];
+        if (c > 0) benchMap.set(d, c);
+      });
+      const pairs: { a: number; b: number }[] = [];
+      for (let i = 1; i < history.dates.length; i++) {
+        const d0 = history.dates[i - 1];
+        const d1 = history.dates[i];
+        const a0 = history.closes[i - 1];
+        const a1 = history.closes[i];
+        const b0 = benchMap.get(d0);
+        const b1 = benchMap.get(d1);
+        if (a0 > 0 && a1 > 0 && b0 && b1) {
+          pairs.push({ a: (a1 - a0) / a0, b: (b1 - b0) / b0 });
+        }
+      }
+      if (pairs.length >= 30) {
+        alignedReturns = pairs.map(p => p.a);
+        marketReturns = pairs.map(p => p.b);
+      }
+    }
+
     const rsi = calculateRSI(closes);
     const macd = calculateMACD(closes);
     const ema12 = calculateEMA(closes, 12);
@@ -771,7 +815,7 @@ export default function StockAnalysis() {
     const sma20 = calculateSMA(closes, 20);
     const bb = calculateBollingerBands(closes);
     const vol = calculateVolatility(returns);
-    const beta = calculateBeta(returns, marketReturns);
+    const beta = marketReturns.length >= 30 ? calculateBeta(alignedReturns, marketReturns) : 1;
     const sharpe = calculateSharpeRatio(returns);
     const maxDD = calculateMaxDrawdown(closes);
     const chartData = history.dates.map((date, i) => ({
@@ -785,8 +829,16 @@ export default function StockAnalysis() {
       ema12: ema12[i], ema26: ema26[i], ema50: ema50[i], sma20: sma20[i],
       bbUpper: bb[i]?.upper, bbLower: bb[i]?.lower, bbMiddle: bb[i]?.middle,
     }));
-    return { chartData, vol, beta, sharpe, maxDD, rsi: rsi[rsi.length - 1] || 50, returns };
-  }, [history]);
+    return {
+      chartData, vol, beta, sharpe, maxDD,
+      rsi: rsi[rsi.length - 1] || 50,
+      returns,
+      marketReturns,
+      alignedReturns,
+      benchmarkSymbol,
+      hasBenchmark: marketReturns.length >= 30,
+    };
+  }, [history, benchHistory, benchmarkSymbol]);
 
   const stats = useMemo(() => {
     if (!analysis?.returns || analysis.returns.length < 10) return null;
@@ -1280,7 +1332,12 @@ export default function StockAnalysis() {
         {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
         <TabsContent value="quantplus">
           {analysis?.returns ? (
-            <QuantMetricsPanel returns={analysis.returns} beta={analysis.beta} />
+            <QuantMetricsPanel
+              returns={analysis.hasBenchmark ? analysis.alignedReturns : analysis.returns}
+              beta={analysis.beta}
+              marketReturns={analysis.marketReturns}
+              benchmarkSymbol={analysis.benchmarkSymbol}
+            />
           ) : (
             <div className="quant-card text-center text-xs text-muted-foreground py-10">
               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -1298,6 +1355,9 @@ export default function StockAnalysis() {
               closes={history?.closes || []}
               currentPrice={quote.currentPrice}
               beta={analysis.beta}
+              marketReturns={analysis.marketReturns}
+              alignedReturns={analysis.alignedReturns}
+              benchmarkSymbol={analysis.benchmarkSymbol}
               formatPrice={(v) => formatCurrency(v, selected)}
             />
           ) : (
