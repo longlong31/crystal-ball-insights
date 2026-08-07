@@ -130,6 +130,8 @@ export function QuantMetricsPanel({
   beta,
   marketReturn,
   riskFreeRate = 0.04,
+  marketReturns,
+  benchmarkSymbol,
 }: QuantMetricsProps) {
   if (!returns || returns.length < 20) {
     return (
