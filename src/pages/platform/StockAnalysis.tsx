@@ -761,7 +761,7 @@ export default function StockAnalysis() {
   // Real benchmark index for the market leg of Beta/Alpha/CAPM (no synthetic data)
   const benchmarkSymbol = useMemo(() => {
     const s = selected.toUpperCase();
-    if (s.endsWith('.VN')) return '^VNINDEX';
+    if (s.endsWith('.VN')) return 'VNM'; // VanEck Vietnam ETF (Yahoo không phục vụ ^VNINDEX)
     if (s.endsWith('.T')) return '^N225';
     if (s.endsWith('.HK')) return '^HSI';
     if (s.endsWith('.L')) return '^FTSE';
