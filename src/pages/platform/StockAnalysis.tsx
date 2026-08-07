@@ -758,11 +758,55 @@ export default function StockAnalysis() {
   const { data: history, isLoading: historyLoading } = useStockHistory(selected, historyRange);
   const { data: financials, isLoading: financialsLoading } = useStockFinancials(selected);
 
+  // Real benchmark index for the market leg of Beta/Alpha/CAPM (no synthetic data)
+  const benchmarkSymbol = useMemo(() => {
+    const s = selected.toUpperCase();
+    if (s.endsWith('.VN')) return '^VNINDEX';
+    if (s.endsWith('.T')) return '^N225';
+    if (s.endsWith('.HK')) return '^HSI';
+    if (s.endsWith('.L')) return '^FTSE';
+    if (s.endsWith('.DE') || s.endsWith('.PA') || s.endsWith('.AS') || s.endsWith('.MI')) return '^STOXX50E';
+    if (s.endsWith('.SS') || s.endsWith('.SZ')) return '000001.SS';
+    if (s.endsWith('.KS')) return '^KS11';
+    if (s.endsWith('.AX')) return '^AXJO';
+    if (s.endsWith('.NS') || s.endsWith('.BO')) return '^NSEI';
+    return '^GSPC';
+  }, [selected]);
+
+  const { data: benchHistory } = useStockHistory(benchmarkSymbol, historyRange);
+
   const analysis = useMemo(() => {
     if (!history || !history.closes || history.closes.length < 30) return null;
     const closes = history.closes.filter(c => c > 0);
     const returns = closes.slice(1).map((c, i) => (c - closes[i]) / closes[i]);
-    const marketReturns = returns.map(r => r * (0.8 + Math.random() * 0.4));
+
+    // Align asset & benchmark returns by trading date (intersection)
+    let marketReturns: number[] = [];
+    let alignedReturns = returns;
+    if (benchHistory?.closes?.length && benchHistory.dates?.length && history.dates?.length) {
+      const benchMap = new Map<string, number>();
+      benchHistory.dates.forEach((d, i) => {
+        const c = benchHistory.closes[i];
+        if (c > 0) benchMap.set(d, c);
+      });
+      const pairs: { a: number; b: number }[] = [];
+      for (let i = 1; i < history.dates.length; i++) {
+        const d0 = history.dates[i - 1];
+        const d1 = history.dates[i];
+        const a0 = history.closes[i - 1];
+        const a1 = history.closes[i];
+        const b0 = benchMap.get(d0);
+        const b1 = benchMap.get(d1);
+        if (a0 > 0 && a1 > 0 && b0 && b1) {
+          pairs.push({ a: (a1 - a0) / a0, b: (b1 - b0) / b0 });
+        }
+      }
+      if (pairs.length >= 30) {
+        alignedReturns = pairs.map(p => p.a);
+        marketReturns = pairs.map(p => p.b);
+      }
+    }
+
     const rsi = calculateRSI(closes);
     const macd = calculateMACD(closes);
     const ema12 = calculateEMA(closes, 12);
