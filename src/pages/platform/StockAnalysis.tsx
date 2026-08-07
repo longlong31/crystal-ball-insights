@@ -815,7 +815,7 @@ export default function StockAnalysis() {
     const sma20 = calculateSMA(closes, 20);
     const bb = calculateBollingerBands(closes);
     const vol = calculateVolatility(returns);
-    const beta = calculateBeta(returns, marketReturns);
+    const beta = marketReturns.length >= 30 ? calculateBeta(alignedReturns, marketReturns) : 1;
     const sharpe = calculateSharpeRatio(returns);
     const maxDD = calculateMaxDrawdown(closes);
     const chartData = history.dates.map((date, i) => ({
@@ -829,8 +829,16 @@ export default function StockAnalysis() {
       ema12: ema12[i], ema26: ema26[i], ema50: ema50[i], sma20: sma20[i],
       bbUpper: bb[i]?.upper, bbLower: bb[i]?.lower, bbMiddle: bb[i]?.middle,
     }));
-    return { chartData, vol, beta, sharpe, maxDD, rsi: rsi[rsi.length - 1] || 50, returns };
-  }, [history]);
+    return {
+      chartData, vol, beta, sharpe, maxDD,
+      rsi: rsi[rsi.length - 1] || 50,
+      returns,
+      marketReturns,
+      alignedReturns,
+      benchmarkSymbol,
+      hasBenchmark: marketReturns.length >= 30,
+    };
+  }, [history, benchHistory, benchmarkSymbol]);
 
   const stats = useMemo(() => {
     if (!analysis?.returns || analysis.returns.length < 10) return null;
