@@ -1332,7 +1332,12 @@ export default function StockAnalysis() {
         {/* Quant+ Tab — institutional metrics + AI plain-text insights */}
         <TabsContent value="quantplus">
           {analysis?.returns ? (
-            <QuantMetricsPanel returns={analysis.returns} beta={analysis.beta} />
+            <QuantMetricsPanel
+              returns={analysis.hasBenchmark ? analysis.alignedReturns : analysis.returns}
+              beta={analysis.beta}
+              marketReturns={analysis.marketReturns}
+              benchmarkSymbol={analysis.benchmarkSymbol}
+            />
           ) : (
             <div className="quant-card text-center text-xs text-muted-foreground py-10">
               <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
@@ -1350,6 +1355,9 @@ export default function StockAnalysis() {
               closes={history?.closes || []}
               currentPrice={quote.currentPrice}
               beta={analysis.beta}
+              marketReturns={analysis.marketReturns}
+              alignedReturns={analysis.alignedReturns}
+              benchmarkSymbol={analysis.benchmarkSymbol}
               formatPrice={(v) => formatCurrency(v, selected)}
             />
           ) : (
