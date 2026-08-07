@@ -170,23 +170,27 @@ export function QuantMetricsPanel({
   const alpha = annMean - (riskFreeRate + beta * (mktMeanAnn - riskFreeRate));
   const information = trackingErr > 0 ? (annMean - mktMeanAnn) / trackingErr : 0;
 
+  const fx = (v: number, d = 3) => (Number.isFinite(v) ? v.toFixed(d) : "—");
+  const fpct = (v: number, d = 2) => (Number.isFinite(v) ? (v * 100).toFixed(d) : "—");
+  const fexp = (v: number, d = 2) => (Number.isFinite(v) ? v.toExponential(d) : "—");
+
   const cards: { label: string; value: string; unit?: string; explainKey?: string; raw: number; tone?: "primary" | "warning" | "danger" }[] = [
-    { label: "Mean Return", value: (annMean * 100).toFixed(2), unit: "%/y", raw: annMean },
-    { label: "Volatility", value: (annStd * 100).toFixed(2), unit: "%/y", raw: annStd, tone: annStd > 0.4 ? "danger" : annStd > 0.25 ? "warning" : undefined },
-    { label: "Variance", value: varDaily.toExponential(3), raw: varDaily },
-    { label: "Downside σ", value: (annDStd * 100).toFixed(2), unit: "%/y", raw: annDStd },
-    { label: "Beta", value: beta.toFixed(2), explainKey: "Beta", raw: beta },
-    { label: "Alpha", value: (alpha * 100).toFixed(2), unit: "%/y", explainKey: "Alpha", raw: alpha, tone: alpha < -0.05 ? "danger" : alpha > 0.05 ? undefined : undefined },
-    { label: "Sharpe", value: sharpe.toFixed(3), explainKey: "Sharpe", raw: sharpe },
-    { label: "Sortino", value: sortino.toFixed(3), explainKey: "Sortino", raw: sortino },
-    { label: "Treynor", value: treynor.toFixed(3), explainKey: "Treynor", raw: treynor },
-    { label: "Information", value: information.toFixed(3), explainKey: "Information", raw: information },
-    { label: "Skewness", value: sk.toFixed(3), explainKey: "Skewness", raw: sk },
-    { label: "Kurtosis", value: ku.toFixed(3), explainKey: "Kurtosis", raw: ku, tone: ku > 5 ? "warning" : undefined },
-    { label: "Covariance (mkt)", value: cov.toExponential(2), raw: cov },
-    { label: "Correlation (mkt)", value: corr.toFixed(3), raw: corr },
-    { label: "Tracking Error", value: (trackingErr * 100).toFixed(2), unit: "%/y", raw: trackingErr },
-    { label: "Risk-free rate", value: (riskFreeRate * 100).toFixed(2), unit: "%/y", raw: riskFreeRate },
+    { label: "Mean Return", value: fpct(annMean), unit: "%/y", raw: annMean },
+    { label: "Volatility", value: fpct(annStd), unit: "%/y", raw: annStd, tone: annStd > 0.4 ? "danger" : annStd > 0.25 ? "warning" : undefined },
+    { label: "Variance", value: fexp(varDaily, 3), raw: varDaily },
+    { label: "Downside σ", value: fpct(annDStd), unit: "%/y", raw: annDStd },
+    { label: "Beta", value: fx(beta, 2), explainKey: "Beta", raw: beta },
+    { label: "Alpha", value: fpct(alpha), unit: Number.isFinite(alpha) ? "%/y" : undefined, explainKey: "Alpha", raw: alpha, tone: alpha < -0.05 ? "danger" : undefined },
+    { label: "Sharpe", value: fx(sharpe), explainKey: "Sharpe", raw: sharpe },
+    { label: "Sortino", value: fx(sortino), explainKey: "Sortino", raw: sortino },
+    { label: "Treynor", value: fx(treynor), explainKey: "Treynor", raw: treynor },
+    { label: "Information", value: fx(information), explainKey: "Information", raw: information },
+    { label: "Skewness", value: fx(sk), explainKey: "Skewness", raw: sk },
+    { label: "Kurtosis", value: fx(ku), explainKey: "Kurtosis", raw: ku, tone: ku > 5 ? "warning" : undefined },
+    { label: "Covariance (mkt)", value: fexp(cov), raw: cov },
+    { label: "Correlation (mkt)", value: fx(corr), raw: corr },
+    { label: "Tracking Error", value: fpct(trackingErr), unit: Number.isFinite(trackingErr) ? "%/y" : undefined, raw: trackingErr },
+    { label: "Risk-free rate", value: fpct(riskFreeRate), unit: "%/y", raw: riskFreeRate },
   ];
 
   return (
@@ -200,9 +204,13 @@ export function QuantMetricsPanel({
             </p>
           </div>
           <span className="text-[10px] text-muted-foreground font-mono">
-            n={returns.length} · annualized
+            n={returns.length} · annualized ·{" "}
+            {hasMkt
+              ? `benchmark ${benchmarkSymbol ?? "index"} (Yahoo Finance)`
+              : "benchmark N/A — chỉ số liên quan thị trường hiển thị —"}
           </span>
         </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {cards.map((c) => (
             <MetricCard key={c.label} label={c.label} value={c.value} unit={c.unit} tone={c.tone} />
