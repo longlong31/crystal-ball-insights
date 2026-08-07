@@ -5,6 +5,9 @@ interface QuantMetricsProps {
   beta: number;
   marketReturn?: number;
   riskFreeRate?: number; // annualized
+  /** Real benchmark daily returns aligned 1:1 with `returns` (empty = unavailable) */
+  marketReturns?: number[];
+  benchmarkSymbol?: string;
 }
 
 function mean(arr: number[]) {
