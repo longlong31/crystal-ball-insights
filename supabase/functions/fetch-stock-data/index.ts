@@ -120,10 +120,14 @@ async function fetchHistory(symbol: string, range: string = "1y") {
     `${YAHOO_QUOTE_URL}/${symbol}?interval=${interval}&range=${range}&includePrePost=false`,
     { headers: { "User-Agent": "Mozilla/5.0" } }
   );
+  // Unknown/unsupported symbol (e.g. some index tickers): degrade gracefully
+  // instead of failing the whole request with a 500.
+  const EMPTY = { dates: [], closes: [], highs: [], lows: [], opens: [], volumes: [], unavailable: true };
+  if (resp.status === 404 || resp.status === 400) return EMPTY;
   if (!resp.ok) throw new Error(`Yahoo Finance error: ${resp.status}`);
   const data = await resp.json();
   const result = data.chart?.result?.[0];
-  if (!result) throw new Error(`No history for ${symbol}`);
+  if (!result) return EMPTY;
 
   const timestamps = result.timestamp || [];
   const quote = result.indicators?.quote?.[0] || {};
