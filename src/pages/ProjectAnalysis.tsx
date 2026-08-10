@@ -13,6 +13,8 @@ import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
 import { FinancialStatementReader } from "@/components/FinancialStatementReader";
 import { StressTestingPanel } from "@/components/StressTestingPanel";
 import { ProjectAnalysisHistory } from "@/components/ProjectAnalysisHistory";
+import { IndustryAnalysisPanel } from "@/components/IndustryAnalysisPanel";
+
 import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
