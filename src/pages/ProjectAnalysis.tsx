@@ -292,9 +292,17 @@ const ProjectAnalysis = () => {
                       </Button>
                     </div>
                   </div>
-                  <ProjectResultsDisplay results={results} params={params} loading={isCalculating} />
+                  <div className="space-y-6">
+                    <IndustryAnalysisPanel
+                      params={params}
+                      results={results}
+                      onApplyPreset={(p) => { setParams(p); setResults(null); }}
+                    />
+                    <ProjectResultsDisplay results={results} params={params} loading={isCalculating} />
+                  </div>
                 </div>
               )}
+
 
               {activeTab === "sensitivity" && (
                 <>
