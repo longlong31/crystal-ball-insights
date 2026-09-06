@@ -151,6 +151,68 @@ def render_investment_decision(summary_df):
     )
 
 
+def render_apt_explanation(summary_df):
+    if summary_df is None or "APT_3Factor" not in summary_df.index:
+        return
+    apt = summary_df.loc["APT_3Factor"]
+    equal = summary_df.loc["EqualWeight"] if "EqualWeight" in summary_df.index else None
+    capm = summary_df.loc["CAPM"] if "CAPM" in summary_df.index else None
+    cnn = summary_df.loc["CNN"] if "CNN" in summary_df.index else None
+    proposed = summary_df.loc["Proposed-A+B+C"] if "Proposed-A+B+C" in summary_df.index else None
+
+    st.subheader("APT_3Factor là gì?")
+    st.markdown(
+        f"""
+        <div class="section-card">
+        <b>APT_3Factor</b> là baseline tài chính định lượng dựa trên
+        <b>Arbitrage Pricing Theory</b>. Thay vì dự báo lợi suất chỉ bằng một biến thị trường như CAPM,
+        APT giả định lợi suất tài sản được giải thích bởi nhiều nhân tố rủi ro. Trong dự án này,
+        nhóm xây dựng ba nhân tố trailing, không nhìn trước tương lai:
+        <br><br>
+        <b>1. MKT</b>: lợi suất vượt trội của thị trường, tính từ benchmark SPY trừ risk-free rate.<br>
+        <b>2. MOM</b>: momentum factor, long nhóm tài sản có momentum 21 phiên cao và short nhóm momentum thấp.<br>
+        <b>3. VOL</b>: low-volatility factor, long nhóm tài sản biến động thấp và short nhóm biến động cao.
+        <br><br>
+        Với mỗi ngày tái cân bằng, hệ thống hồi quy rolling từng tài sản trên ba nhân tố này,
+        dự báo lợi suất kỳ vọng 21 phiên tiếp theo, sau đó đưa vào bộ tối ưu <b>Max-Sharpe</b>
+        để sinh trọng số đầu tư.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    rows = []
+    if equal is not None:
+        rows.append(["So với EqualWeight", apt["Sharpe"] - equal["Sharpe"], apt["AnnReturn"] - equal["AnnReturn"], apt["MaxDrawdown"] - equal["MaxDrawdown"], "APT có Sharpe và lợi suất cao hơn, drawdown cũng ít âm hơn."])
+    if capm is not None:
+        rows.append(["So với CAPM", apt["Sharpe"] - capm["Sharpe"], apt["AnnReturn"] - capm["AnnReturn"], apt["MaxDrawdown"] - capm["MaxDrawdown"], "APT giữ lợi suất gần tương đương CAPM nhưng giảm volatility và drawdown rất mạnh."])
+    if cnn is not None:
+        rows.append(["So với CNN", apt["Sharpe"] - cnn["Sharpe"], apt["AnnReturn"] - cnn["AnnReturn"], apt["MaxDrawdown"] - cnn["MaxDrawdown"], "APT vượt mô hình deep learning tốt nhất nhờ prior tài chính và ít overfit hơn."])
+    if proposed is not None:
+        rows.append(["So với Proposed-A+B+C", apt["Sharpe"] - proposed["Sharpe"], apt["AnnReturn"] - proposed["AnnReturn"], apt["MaxDrawdown"] - proposed["MaxDrawdown"], "APT vượt mô hình đề xuất đầy đủ trong setting dữ liệu hiện tại."])
+
+    comparison = pd.DataFrame(
+        rows,
+        columns=["Đối chiếu", "Chênh Sharpe", "Chênh AnnReturn", "Chênh MaxDrawdown", "Diễn giải"],
+    )
+    comparison["Chênh AnnReturn"] = comparison["Chênh AnnReturn"] * 100
+    comparison["Chênh MaxDrawdown"] = comparison["Chênh MaxDrawdown"] * 100
+    st.dataframe(comparison.round(4), width="stretch")
+
+    st.markdown(
+        f"""
+        <div class="ok-box">
+        <b>Khẳng định đầu tư:</b> chọn APT_3Factor vì đây là phương án có
+        Sharpe cao nhất toàn bộ mô hình (<b>{apt['Sharpe']:.3f}</b>), lợi suất năm
+        <b>{pct(apt['AnnReturn'])}</b>, Max Drawdown <b>{pct(apt['MaxDrawdown'])}</b>
+        và Calmar <b>{apt['Calmar']:.3f}</b>. Nói cách khác, APT_3Factor không chỉ sinh lợi cao,
+        mà còn cho tỷ suất sinh lợi điều chỉnh rủi ro tốt nhất trên test set ngoài mẫu.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def strategy_weight_fn(strategy: str, ds, X, y, sample_dates, tickers, masks, rf_series, max_weight):
     returns = ds["returns"]
     try:
@@ -174,6 +236,107 @@ def strategy_weight_fn(strategy: str, ds, X, y, sample_dates, tickers, masks, rf
     except Exception as exc:
         st.warning(f"Không thể dựng chiến lược {strategy}: {exc}")
     return None
+
+
+def selected_strategy_weights(strategy: str, ds, X, y, sample_dates, all_tickers, selected_tickers, masks, rf_series, max_weight):
+    if not selected_tickers:
+        return None, "Chưa chọn tài sản trong Portfolio universe."
+
+    returns = ds["returns"][selected_tickers]
+    effective_max = max(float(max_weight), 1.0 / len(selected_tickers))
+    asof = pd.DatetimeIndex([sample_dates[-1]])
+
+    try:
+        if strategy == "Equal-Weight":
+            return pd.Series(opt.equal_weight(len(selected_tickers)), index=selected_tickers), None
+
+        if strategy == "Risk-Parity":
+            window = returns.loc[returns.index <= sample_dates[-1]].tail(cfg.COV_LOOKBACK).values
+            cov = opt.shrinkage_covariance(window)
+            return pd.Series(opt.risk_parity_weight(cov), index=selected_tickers), None
+
+        if strategy == "60/40":
+            raw = pd.Series(0.0, index=selected_tickers)
+            eq = [t for t in selected_tickers if t in cfg.EQUITY_TICKERS]
+            div = [t for t in selected_tickers if t in cfg.DIVERSIFIERS]
+            if eq:
+                raw.loc[eq] = 0.6 / len(eq)
+            if div:
+                raw.loc[div] = 0.4 / len(div)
+            if raw.sum() <= 0:
+                raw[:] = 1.0 / len(raw)
+            return raw / raw.sum(), None
+
+        if strategy == "CAPM":
+            pred = capm_baseline.predict_mu_df(ds["returns"], ds["bench_returns"], ds["rf"], all_tickers, asof)
+            mu = pred[selected_tickers].iloc[0].values
+        elif strategy == "APT (3-Factor)":
+            factors = apt_baseline.build_factors(ds["returns"], ds["bench_returns"], ds["rf"])
+            pred = apt_baseline.predict_mu_df(ds["returns"], factors, all_tickers, asof)
+            mu = pred[selected_tickers].iloc[0].values
+        elif strategy == "Linear Regression":
+            model, panel = reg_baseline.fit(X, y, sample_dates, all_tickers, masks["train"])
+            pred = reg_baseline.predict_mu_df(model, panel, all_tickers, asof)
+            mu = pred[selected_tickers].iloc[0].values
+        else:
+            return None, f"Chưa hỗ trợ strategy: {strategy}"
+
+        window = returns.loc[returns.index <= sample_dates[-1]].tail(cfg.COV_LOOKBACK).values
+        cov = opt.shrinkage_covariance(window)
+        rf_val = float(rf_series.loc[rf_series.index <= sample_dates[-1]].iloc[-1])
+        weights = opt.max_sharpe_weight(mu, cov, rf=rf_val / 252 * cfg.HORIZON, max_weight=effective_max)
+        warning = None
+        if effective_max > max_weight:
+            warning = f"Max weight {max_weight:.2f} không khả thi với {len(selected_tickers)} tài sản; app dùng mức khả thi tối thiểu {effective_max:.2f}."
+        return pd.Series(weights, index=selected_tickers), warning
+    except Exception as exc:
+        return None, f"Không tính được danh mục cho {strategy}: {exc}"
+
+
+def render_live_strategy_panel(ds, X, y, sample_dates, all_tickers, selected_tickers, masks, strategy, rf_series, max_weight):
+    st.subheader("Live Strategy Allocation")
+    weights, warning = selected_strategy_weights(
+        strategy, ds, X, y, sample_dates, all_tickers, selected_tickers, masks, rf_series, max_weight
+    )
+    if warning:
+        st.warning(warning)
+    if weights is None:
+        return
+
+    window = ds["returns"][weights.index].loc[ds["returns"].index <= sample_dates[-1]].tail(cfg.COV_LOOKBACK)
+    mu_ann = window.mean().values * 252
+    cov_ann = opt.shrinkage_covariance(window.values) * 252
+    w = weights.values
+    exp_return = float(w @ mu_ann)
+    exp_vol = float(np.sqrt(max(w @ cov_ann @ w, 1e-12)))
+    rf_ann = float(rf_series.loc[rf_series.index <= sample_dates[-1]].iloc[-1])
+    exp_sharpe = (exp_return - rf_ann) / exp_vol if exp_vol > 0 else 0.0
+    max_actual = float(weights.max())
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Selected Strategy", strategy)
+    c2.metric("Expected Return", pct(exp_return))
+    c3.metric("Expected Vol", pct(exp_vol))
+    c4.metric("Expected Sharpe", f"{exp_sharpe:.2f}")
+    c5.metric("Max Actual Weight", pct(max_actual))
+
+    col1, col2 = st.columns([1.2, 1])
+    with col1:
+        fig, ax = plt.subplots(figsize=(8.8, 3.6))
+        top_weights = weights.sort_values(ascending=True)
+        ax.barh(top_weights.index, top_weights.values * 100, color="#38bdf8")
+        ax.axvline(max_weight * 100, color="#fb7185", linestyle="--", linewidth=1.2, label="Max weight setting")
+        ax.set_xlabel("Weight (%)")
+        ax.set_title(f"Trọng số thay đổi theo Strategy / Model và Max weight: {strategy}")
+        ax.legend()
+        ax.grid(axis="x", alpha=0.2)
+        st.pyplot(fig)
+    with col2:
+        st.dataframe(weights.sort_values(ascending=False).mul(100).round(2).rename("Weight (%)"), width="stretch")
+        if strategy in {"APT (3-Factor)", "CAPM", "Linear Regression"}:
+            st.info("Max weight đang tác động trực tiếp vào bài toán tối ưu Max-Sharpe.")
+        else:
+            st.info("Đây là rule-based strategy, nên trọng số chủ yếu theo luật của chiến lược thay vì dự báo mu_hat.")
 
 
 def header(ds, sample_dates, masks, meta):
@@ -282,6 +445,8 @@ def render_model_evaluation(summary_df):
     c2.metric("Best by Return", best_return.name, pct(best_return["AnnReturn"]))
     c3.metric("Best by MDD", best_drawdown.name, pct(best_drawdown["MaxDrawdown"]))
     c4.metric("Best by Calmar", best_calmar.name, f"{best_calmar['Calmar']:.3f}")
+
+    render_apt_explanation(summary_df)
 
     st.subheader("Vì sao mô hình này tốt nhất?")
     compare_names = [
@@ -628,13 +793,12 @@ def render_ai_portfolio_optimization(ds, X, y, sample_dates, tickers, masks, sel
     if len(selected_tickers) < 2:
         st.warning("Cần chọn ít nhất 2 tài sản.")
         return
-    wfn = strategy_weight_fn(strategy, ds, X, y, sample_dates, tickers, masks, rf_series, max_weight)
-    if wfn is None:
-        st.error("Không tạo được weight function. Hãy chọn APT, CAPM, Equal-Weight, 60/40 hoặc Risk-Parity.")
+    w, warning = selected_strategy_weights(strategy, ds, X, y, sample_dates, tickers, selected_tickers, masks, rf_series, max_weight)
+    if warning:
+        st.warning(warning)
+    if w is None:
+        st.error("Không tạo được trọng số danh mục. Hãy chọn APT, CAPM, Equal-Weight, 60/40, Risk-Parity hoặc Linear Regression.")
         return
-    w_full = wfn(sample_dates[-1])
-    w = pd.Series(w_full, index=tickers).loc[selected_tickers]
-    w = w / w.sum()
     col1, col2 = st.columns([1.25, 1])
     with col1:
         fig, ax = plt.subplots(figsize=(8.5, 4.2))
@@ -712,6 +876,7 @@ def main():
     st.title("Crystal Ball - AI Portfolio Research")
     header(ds, sample_dates, masks, meta)
     render_investment_decision(summary_df)
+    render_live_strategy_panel(ds, X, y, sample_dates, tickers, selected_tickers, masks, strategy, rf_series, max_weight)
 
     if tab == "Overview":
         render_overview(ds, tickers, summary_df, ablation_df)

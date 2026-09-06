@@ -158,6 +158,40 @@ Trong tài chính, baseline đơn giản như EqualWeight hoặc RiskParity rấ
 
 Dạ, baseline tốt nhất là `APT_3Factor`, với Sharpe = 1.626, Annual Return khoảng 26.10%, Annual Volatility khoảng 13.41% và Max Drawdown khoảng -13.67%.
 
+### Câu 17.1. APT_3Factor là gì?
+
+Dạ, `APT_3Factor` là mô hình dựa trên **Arbitrage Pricing Theory**, tức lý thuyết định giá tài sản theo nhiều nhân tố rủi ro. Ý tưởng chính là lợi suất của một tài sản không chỉ phụ thuộc vào thị trường chung, mà còn chịu tác động từ nhiều nhân tố như momentum, volatility hoặc các đặc điểm rủi ro khác.
+
+Trong dự án này, em xây dựng `APT_3Factor` bằng ba nhân tố:
+
+| Nhân tố | Ý nghĩa | Cách xây dựng trong dự án |
+|---|---|---|
+| `MKT` | Rủi ro thị trường | Lợi suất benchmark SPY trừ lãi suất phi rủi ro |
+| `MOM` | Momentum | Long nhóm tài sản có momentum 21 phiên cao, short nhóm momentum thấp |
+| `VOL` | Low-volatility | Long nhóm tài sản biến động thấp, short nhóm biến động cao |
+
+Tại mỗi ngày tái cân bằng, hệ thống lấy dữ liệu quá khứ theo rolling window, hồi quy lợi suất từng tài sản theo ba nhân tố này, dự báo lợi suất kỳ vọng 21 phiên tiếp theo, rồi đưa vector dự báo đó vào bộ tối ưu Markowitz Max-Sharpe để tạo trọng số danh mục.
+
+Nói ngắn gọn, `APT_3Factor` không phải mô hình deep learning, mà là một mô hình tài chính định lượng có cơ sở kinh tế rõ ràng: tài sản nào có độ nhạy tốt với các nhân tố thị trường, momentum và volatility sẽ được đánh giá hấp dẫn hơn trong bước tối ưu danh mục.
+
+### Câu 17.2. Vì sao APT_3Factor là lựa chọn tốt nhất để đầu tư?
+
+Dạ, em chọn `APT_3Factor` vì nó tốt nhất theo tiêu chí **lợi suất điều chỉnh rủi ro**, không phải chỉ vì lợi suất tuyệt đối.
+
+Kết quả trên test set ngoài mẫu:
+
+| Chiến lược/mô hình | Sharpe | Annual Return | Annual Volatility | MDD | Calmar |
+|---|---:|---:|---:|---:|---:|
+| `APT_3Factor` | **1.626** | **26.10%** | 13.41% | **-13.67%** | **1.910** |
+| `EqualWeight` | 1.171 | 19.23% | 12.75% | -16.02% | 1.200 |
+| `CAPM` | 1.032 | 26.05% | 21.08% | -33.59% | 0.775 |
+| `CNN` | 0.822 | 13.52% | 11.23% | -14.20% | 0.952 |
+| `Proposed-A+B+C` | 0.657 | 11.72% | 11.31% | -14.86% | 0.789 |
+
+So với `EqualWeight`, APT_3Factor có Sharpe cao hơn 0.455 điểm, Annual Return cao hơn khoảng 6.87 điểm phần trăm và MDD tốt hơn. So với `CAPM`, APT_3Factor có lợi suất gần tương đương nhưng volatility thấp hơn rất nhiều và MDD giảm từ -33.59% xuống -13.67%. So với nhóm deep learning như `CNN`, `Transformer` và nhóm Proposed, APT_3Factor cho Sharpe cao hơn rõ rệt.
+
+Vì vậy, nếu phải khẳng định lựa chọn đầu tư trong phạm vi nghiên cứu này, em chọn `APT_3Factor` vì nó cân bằng tốt nhất giữa sinh lợi và rủi ro. Đây là lựa chọn có bằng chứng định lượng mạnh nhất trên test set, không phải lựa chọn cảm tính.
+
 ### Câu 18. Vì sao APT_3Factor lại tốt hơn các mô hình deep learning?
 
 Dạ, nguyên nhân hợp lý là APT mang theo prior kinh tế tài chính. Trong khi đó returns tài chính có tỷ lệ tín hiệu/nhiễu thấp, số lượng tài sản chỉ 14 và số mẫu hữu ích không quá lớn. Deep learning có nhiều tham số hơn nên dễ overfit hoặc học nhiễu nếu dữ liệu không đủ rộng.
