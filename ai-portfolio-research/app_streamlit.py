@@ -194,6 +194,115 @@ def render_summary(summary_df):
     )
 
 
+def render_model_evaluation(summary_df):
+    st.header("Model Evaluation")
+    if summary_df is None:
+        st.error("Thiếu metrics_summary.csv.")
+        return
+
+    ranked = summary_df.copy()
+    ranked["Rank_Sharpe"] = ranked["Sharpe"].rank(ascending=False, method="min").astype(int)
+    ranked["AnnReturn_pct"] = ranked["AnnReturn"] * 100
+    ranked["AnnVol_pct"] = ranked["AnnVol"] * 100
+    ranked["MaxDrawdown_pct"] = ranked["MaxDrawdown"] * 100
+    ranked = ranked.sort_values("Sharpe", ascending=False)
+
+    best_sharpe = ranked.iloc[0]
+    best_return = ranked.sort_values("AnnReturn", ascending=False).iloc[0]
+    best_drawdown = ranked.sort_values("MaxDrawdown", ascending=False).iloc[0]
+    best_calmar = ranked.sort_values("Calmar", ascending=False).iloc[0]
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Best by Sharpe", best_sharpe.name, f"{best_sharpe['Sharpe']:.3f}")
+    c2.metric("Best by Return", best_return.name, pct(best_return["AnnReturn"]))
+    c3.metric("Best by MDD", best_drawdown.name, pct(best_drawdown["MaxDrawdown"]))
+    c4.metric("Best by Calmar", best_calmar.name, f"{best_calmar['Calmar']:.3f}")
+
+    st.subheader("Bảng xếp hạng theo Sharpe Ratio")
+    display_cols = [
+        "Rank_Sharpe",
+        "category",
+        "AnnReturn_pct",
+        "AnnVol_pct",
+        "Sharpe",
+        "Sortino",
+        "MaxDrawdown_pct",
+        "Calmar",
+        "InformationRatio",
+        "AvgTurnover",
+        "IC",
+        "HitRate",
+    ]
+    table = ranked[display_cols].rename(
+        columns={
+            "Rank_Sharpe": "Rank",
+            "category": "Nhóm",
+            "AnnReturn_pct": "AnnReturn (%)",
+            "AnnVol_pct": "AnnVol (%)",
+            "MaxDrawdown_pct": "MaxDrawdown (%)",
+            "InformationRatio": "Information Ratio",
+            "AvgTurnover": "Turnover",
+        }
+    )
+    st.dataframe(table.round(4), width="stretch")
+
+    st.subheader("Mô hình tốt nhất theo từng nhóm")
+    group_best = ranked.sort_values("Sharpe", ascending=False).groupby("category", sort=False).head(1)
+    group_table = group_best[["AnnReturn", "AnnVol", "Sharpe", "MaxDrawdown", "Calmar", "IC", "HitRate"]].copy()
+    group_table["AnnReturn"] = group_table["AnnReturn"] * 100
+    group_table["AnnVol"] = group_table["AnnVol"] * 100
+    group_table["MaxDrawdown"] = group_table["MaxDrawdown"] * 100
+    group_table = group_table.rename(
+        columns={
+            "AnnReturn": "AnnReturn (%)",
+            "AnnVol": "AnnVol (%)",
+            "MaxDrawdown": "MaxDrawdown (%)",
+        }
+    )
+    st.dataframe(group_table.round(4), width="stretch")
+
+    classical_best = ranked[ranked["category"].eq("Classical")].iloc[0]
+    dl_best = ranked[ranked["category"].eq("DL baseline")].iloc[0]
+    proposed_best = ranked[ranked["category"].eq("Proposed")].iloc[0]
+    rule_best = ranked[ranked["category"].eq("Rule-based")].iloc[0]
+
+    st.subheader("Kết luận trình bày")
+    st.markdown(
+        f"""
+        <div class="ok-box">
+        <b>Kết luận chính:</b> trên test set ngoài mẫu, chiến lược tốt nhất toàn bộ là
+        <b>{best_sharpe.name}</b> với Sharpe <b>{best_sharpe['Sharpe']:.3f}</b>,
+        lợi suất năm <b>{pct(best_sharpe['AnnReturn'])}</b> và Max Drawdown
+        <b>{pct(best_sharpe['MaxDrawdown'])}</b>. Vì vậy nếu chọn mô hình/chiến lược để vận hành,
+        nhóm chọn <b>{best_sharpe.name}</b> theo tiêu chí Sharpe Ratio.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <div class="section-card">
+        <b>Diễn giải theo nhóm phương pháp:</b><br>
+        Rule-based tốt nhất: <b>{rule_best.name}</b> (Sharpe {rule_best['Sharpe']:.3f}).<br>
+        Classical tốt nhất: <b>{classical_best.name}</b> (Sharpe {classical_best['Sharpe']:.3f}).<br>
+        Deep learning baseline tốt nhất: <b>{dl_best.name}</b> (Sharpe {dl_best['Sharpe']:.3f}).<br>
+        Mô hình đề xuất tốt nhất: <b>{proposed_best.name}</b> (Sharpe {proposed_best['Sharpe']:.3f}).
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <div class="warn-box">
+        <b>Lưu ý học thuật:</b> PA-Transformer/Proposed là mô hình nghiên cứu có ablation rõ ràng,
+        nhưng chưa vượt APT_3Factor trên test set. Điểm mạnh của dự án là quy trình so sánh minh bạch:
+        cùng dữ liệu, cùng split thời gian, cùng backtest và cùng thước đo Sharpe/MDD.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def render_chart(ds, ticker):
     st.header("Chart")
     price = ds["prices"][ticker]
@@ -448,6 +557,7 @@ def main():
             [
                 "Overview",
                 "Summary",
+                "Model Evaluation",
                 "Chart",
                 "Statistics",
                 "Financials",
@@ -472,6 +582,8 @@ def main():
         render_overview(ds, tickers, summary_df, ablation_df)
     elif tab == "Summary":
         render_summary(summary_df)
+    elif tab == "Model Evaluation":
+        render_model_evaluation(summary_df)
     elif tab == "Chart":
         render_chart(ds, ticker)
     elif tab == "Statistics":
