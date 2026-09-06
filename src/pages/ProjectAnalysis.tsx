@@ -13,6 +13,8 @@ import { ProjectExcelImporter } from "@/components/ProjectExcelImporter";
 import { FinancialStatementReader } from "@/components/FinancialStatementReader";
 import { StressTestingPanel } from "@/components/StressTestingPanel";
 import { ProjectAnalysisHistory } from "@/components/ProjectAnalysisHistory";
+import { IndustryAnalysisPanel } from "@/components/IndustryAnalysisPanel";
+
 import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
 import { ProjectParams, ProjectResults, defaultProjectParams } from "@/lib/projectModel";
@@ -292,9 +294,17 @@ const ProjectAnalysis = () => {
                       </Button>
                     </div>
                   </div>
-                  <ProjectResultsDisplay results={results} params={params} loading={isCalculating} />
+                  <div className="space-y-6">
+                    <IndustryAnalysisPanel
+                      params={params}
+                      results={results}
+                      onApplyPreset={(p) => { setParams(p); setResults(null); }}
+                    />
+                    <ProjectResultsDisplay results={results} params={params} loading={isCalculating} />
+                  </div>
                 </div>
               )}
+
 
               {activeTab === "sensitivity" && (
                 <>

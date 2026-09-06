@@ -137,7 +137,10 @@ function parseRSSItem(item: string, source: string, category: string, language: 
     
     // Clean up link
     if (link) {
-      link = link.replace(/\s+/g, '');
+      link = link
+        .replace(/<!\[CDATA\[/g, '')
+        .replace(/\]\]>/g, '')
+        .replace(/\s+/g, '');
     }
 
     if (!title || !link) return null;
