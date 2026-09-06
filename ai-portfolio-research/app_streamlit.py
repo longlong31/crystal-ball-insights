@@ -31,6 +31,27 @@ CUSTOM_CSS = """
 <style>
   .stApp { background: #0b0f17; color: #f8fafc; }
   [data-testid="stSidebar"] { background: #171b26; }
+  [data-testid="stSidebar"] label,
+  [data-testid="stSidebar"] p,
+  [data-testid="stSidebar"] span {
+    color: #e5e7eb !important;
+  }
+  [data-testid="stSidebar"] [data-baseweb="select"] > div,
+  [data-testid="stSidebar"] input {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+  }
+  [data-testid="stSidebar"] [data-baseweb="tag"] {
+    background: #2563eb !important;
+    border-radius: 6px !important;
+  }
+  [data-testid="stSidebar"] [data-baseweb="tag"] span {
+    color: #ffffff !important;
+  }
+  [data-testid="stSidebar"] [role="slider"] {
+    background: #38bdf8 !important;
+  }
   [data-testid="stMetric"] {
     background: #111827;
     border: 1px solid #263244;
@@ -58,6 +79,24 @@ CUSTOM_CSS = """
     border-radius: 10px;
     padding: 14px 18px;
   }
+  .decision-box {
+    background: linear-gradient(135deg, #052e2b, #111827 58%, #172554);
+    border: 1px solid #22c55e;
+    border-radius: 14px;
+    padding: 18px 22px;
+    margin: 8px 0 18px 0;
+  }
+  .decision-box .title {
+    color: #86efac;
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .decision-box .body {
+    color: #f8fafc;
+    font-size: 15px;
+    line-height: 1.55;
+  }
 </style>
 """
 
@@ -84,6 +123,32 @@ def load_result_tables():
 
 def pct(value: float) -> str:
     return f"{value * 100:.2f}%"
+
+
+def render_investment_decision(summary_df):
+    if summary_df is None or summary_df.empty:
+        return
+    ranked = summary_df.sort_values("Sharpe", ascending=False)
+    best = ranked.iloc[0]
+    second = ranked.iloc[1]
+    sharpe_gap = best["Sharpe"] - second["Sharpe"]
+    drawdown_gap = second["MaxDrawdown"] - best["MaxDrawdown"]
+    st.markdown(
+        f"""
+        <div class="decision-box">
+          <div class="title">Kết luận đầu tư: chọn {best.name}</div>
+          <div class="body">
+          {best.name} là mô hình/chiến lược tốt nhất trên tập test vì đạt Sharpe
+          <b>{best['Sharpe']:.3f}</b>, cao hơn mô hình xếp thứ 2 ({second.name}: {second['Sharpe']:.3f})
+          <b>{sharpe_gap:.3f}</b> điểm. Lợi suất năm đạt <b>{pct(best['AnnReturn'])}</b>,
+          Max Drawdown chỉ <b>{pct(best['MaxDrawdown'])}</b>, Calmar <b>{best['Calmar']:.3f}</b>.
+          Với mục tiêu đầu tư theo tỷ suất sinh lợi điều chỉnh rủi ro, nhóm khẳng định nên ưu tiên
+          <b>{best.name}</b> thay vì các mô hình còn lại.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def strategy_weight_fn(strategy: str, ds, X, y, sample_dates, tickers, masks, rf_series, max_weight):
@@ -217,6 +282,61 @@ def render_model_evaluation(summary_df):
     c2.metric("Best by Return", best_return.name, pct(best_return["AnnReturn"]))
     c3.metric("Best by MDD", best_drawdown.name, pct(best_drawdown["MaxDrawdown"]))
     c4.metric("Best by Calmar", best_calmar.name, f"{best_calmar['Calmar']:.3f}")
+
+    st.subheader("Vì sao mô hình này tốt nhất?")
+    compare_names = [
+        best_sharpe.name,
+        "EqualWeight",
+        "CAPM",
+        "CNN",
+        "Transformer",
+        "Proposed-A",
+        "Proposed-A+B+C",
+    ]
+    compare_names = [name for name in compare_names if name in ranked.index]
+    compare = ranked.loc[compare_names, ["category", "AnnReturn", "AnnVol", "Sharpe", "MaxDrawdown", "Calmar", "AvgTurnover"]].copy()
+    compare["Delta Sharpe vs Best"] = compare["Sharpe"] - best_sharpe["Sharpe"]
+    compare["AnnReturn"] = compare["AnnReturn"] * 100
+    compare["AnnVol"] = compare["AnnVol"] * 100
+    compare["MaxDrawdown"] = compare["MaxDrawdown"] * 100
+    compare = compare.rename(
+        columns={
+            "category": "Nhóm",
+            "AnnReturn": "AnnReturn (%)",
+            "AnnVol": "AnnVol (%)",
+            "MaxDrawdown": "MaxDrawdown (%)",
+            "AvgTurnover": "Turnover",
+        }
+    )
+    st.dataframe(compare.round(4), width="stretch")
+
+    c1, c2 = st.columns([1.1, 1])
+    with c1:
+        top7 = ranked.head(7)
+        fig, ax = plt.subplots(figsize=(8.6, 4.3))
+        colors = ["#22c55e" if name == best_sharpe.name else "#38bdf8" for name in top7.index]
+        ax.barh(top7.index[::-1], top7["Sharpe"].values[::-1], color=colors[::-1])
+        ax.axvline(best_sharpe["Sharpe"], color="#22c55e", linewidth=1.2, linestyle="--")
+        ax.set_xlabel("Sharpe Ratio")
+        ax.set_title("Top mô hình/chiến lược theo Sharpe trên test set")
+        ax.grid(axis="x", alpha=0.22)
+        st.pyplot(fig)
+    with c2:
+        st.markdown(
+            f"""
+            <div class="section-card">
+            <b>{best_sharpe.name} được chọn vì:</b><br>
+            1. Sharpe cao nhất toàn bộ: <b>{best_sharpe['Sharpe']:.3f}</b>.<br>
+            2. Lợi suất năm cao nhất/nhóm dẫn đầu: <b>{pct(best_sharpe['AnnReturn'])}</b>.<br>
+            3. Max Drawdown <b>{pct(best_sharpe['MaxDrawdown'])}</b>, thấp hơn nhiều so với CAPM
+            nếu xét rủi ro sụt giảm vốn.<br>
+            4. Calmar cao nhất: <b>{best_sharpe['Calmar']:.3f}</b>, nghĩa là lợi nhuận trên mỗi đơn vị
+            drawdown tốt nhất.<br>
+            5. Kết quả lấy trên test set ngoài mẫu, cùng điều kiện backtest với các model khác.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.subheader("Bảng xếp hạng theo Sharpe Ratio")
     display_cols = [
@@ -394,6 +514,17 @@ def render_analysis(summary_df, ablation_df):
             """,
             unsafe_allow_html=True,
         )
+        st.markdown(
+            """
+            <div class="warn-box">
+            <b>Lưu ý khi báo cáo:</b> kết quả chính thức chỉ gồm A, A+B và A+B+C vì đây là ba stage
+            có code, checkpoint và bảng số liệu. Nếu nhắc đến D, D chỉ nên được trình bày ở phần
+            future work, ví dụ transaction-cost/turnover-aware regularization để giảm chi phí giao dịch.
+            Không nên ghi A+B+C+D vào bảng kết quả nếu chưa chạy thực nghiệm D.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def render_monte_carlo(ds, selected_tickers, max_weight):
@@ -543,6 +674,9 @@ def main():
     with st.sidebar:
         st.title("Nhóm 4")
         st.subheader("Crystal Ball")
+        if summary_df is not None:
+            best_sidebar = summary_df.sort_values("Sharpe", ascending=False).iloc[0]
+            st.success(f"Best model: {best_sidebar.name} | Sharpe {best_sidebar['Sharpe']:.3f}")
         ticker = st.selectbox("Select a ticker", tickers, index=tickers.index("AAPL") if "AAPL" in tickers else 0)
         selected_tickers = st.multiselect("Portfolio universe", tickers, default=tickers)
         strategy = st.selectbox(
@@ -569,7 +703,7 @@ def main():
                 "AI Portfolio Optimization",
                 "Financial Chatbot",
             ],
-            index=0,
+            index=2,
         )
         st.caption("Local demo for academic presentation")
 
@@ -577,6 +711,7 @@ def main():
 
     st.title("Crystal Ball - AI Portfolio Research")
     header(ds, sample_dates, masks, meta)
+    render_investment_decision(summary_df)
 
     if tab == "Overview":
         render_overview(ds, tickers, summary_df, ablation_df)

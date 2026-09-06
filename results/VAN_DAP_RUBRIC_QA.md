@@ -35,6 +35,7 @@ Cụ thể, em dùng dữ liệu thật từ Yahoo Finance cho 14 tài sản, g�
 | Sharpe Proposed-A | 0.663 |
 | Sharpe Proposed-A+B | 0.557 |
 | Sharpe Proposed-A+B+C | 0.657 |
+| A+B+C+D | Không dùng trong kết quả chính vì chưa có stage D được chạy trong code/checkpoint hiện tại |
 
 ## 3. Câu hỏi tổng quan
 
@@ -231,6 +232,50 @@ Dạ, em cho rằng nguyên nhân là overfitting. Cross-asset attention làm m�
 Dạ có. Ablation không bắt buộc mọi thành phần thêm vào đều phải cải thiện. Giá trị của ablation là giúp hiểu mô hình. Trong dự án này, ablation chỉ ra rằng temporal attention có ích, cross-asset attention cần universe lớn hơn để phát huy, và Sharpe-aware loss có tác dụng regularization.
 
 Đây là kết luận nghiên cứu trung thực và có giá trị.
+
+### Câu 29.1. Nếu thầy/cô hỏi A+B+C+D là gì thì trả lời sao?
+
+Dạ, trong kết quả thực nghiệm chính thức của dự án, em **không báo cáo A+B+C+D như một kết quả đã chạy**, vì code và checkpoint hiện tại chỉ có ba stage ablation thật:
+
+- `A`: temporal self-attention.
+- `A+B`: thêm cross-asset attention.
+- `A+B+C`: thêm Sharpe-aware loss.
+
+Vì vậy khi trình bày, em sẽ nói rõ: **A+B+C là mô hình đề xuất đầy đủ trong phạm vi nghiên cứu hiện tại**. Nếu nhắc đến `D`, em chỉ xem `D` là **hướng mở rộng trong tương lai**, chưa đưa vào bảng kết quả chính để tránh báo cáo sai bằng chứng.
+
+Nếu cần định nghĩa hướng mở rộng `D`, em có thể trình bày là:
+
+- `D`: transaction-cost/turnover-aware regularization, tức là thêm ràng buộc hoặc penalty để mô hình không chỉ tối ưu Sharpe mà còn giảm turnover và chi phí giao dịch.
+
+Lý do chọn `D` theo hướng này là vì trong đầu tư thực tế, một mô hình có Sharpe cao nhưng thay đổi danh mục quá nhiều sẽ phát sinh chi phí giao dịch lớn. Do đó, hướng mở rộng hợp lý sau `A+B+C` là làm mô hình nhạy hơn với chi phí vận hành thực tế.
+
+Tuy nhiên, em sẽ nhấn mạnh rằng `D` **chưa được tính vào kết quả thực nghiệm hiện tại**. Kết quả được dùng để chấm và bảo vệ vẫn là `A`, `A+B`, `A+B+C` vì ba stage này có code, checkpoint và bảng `ablation_table.csv`.
+
+### Câu 29.2. Vậy trên slide nên ghi A+B+C hay A+B+C+D?
+
+Dạ, trên slide chính thức nên ghi **A / A+B / A+B+C**, không nên ghi `A+B+C+D` trong bảng kết quả nếu chưa chạy thí nghiệm D.
+
+Cách ghi chuẩn là:
+
+| Stage | Thành phần được thêm | Vai trò | Sharpe |
+|---|---|---|---:|
+| A | Temporal self-attention | Học quan hệ theo thời gian của từng tài sản | 0.663 |
+| A+B | Cross-asset attention | Học quan hệ giữa các tài sản trong danh mục | 0.557 |
+| A+B+C | Sharpe-aware loss | Gắn hàm mất mát với mục tiêu Sharpe của danh mục | 0.657 |
+
+Nếu muốn nhắc `D`, chỉ nên đặt ở phần **Future Work**:
+
+`D = transaction-cost/turnover-aware regularization`, hướng tới giảm chi phí giao dịch và tăng khả năng triển khai thực tế.
+
+Như vậy báo cáo vừa đủ mạnh, vừa đúng bằng chứng. Em không nên nói “đã có A+B+C+D” nếu chưa có file kết quả tương ứng.
+
+### Câu 29.3. Nếu thầy/cô hỏi vì sao mô hình đầy đủ A+B+C không phải tốt nhất thì trả lời sao?
+
+Dạ, đây là điểm em sẽ trả lời trung thực. Trong nhóm mô hình đề xuất, `Proposed-A` đạt Sharpe 0.663, còn `Proposed-A+B+C` đạt Sharpe 0.657, tức là gần tương đương nhưng thấp hơn một chút. Điều này cho thấy việc thêm cross-asset attention và Sharpe-aware loss không làm kết quả tăng tuyến tính trong setting dữ liệu hiện tại.
+
+Nguyên nhân hợp lý là số lượng tài sản chỉ có 14, nên cross-asset attention có thể chưa đủ dữ liệu để học quan hệ ổn định giữa các tài sản. Sharpe-aware loss giúp phục hồi hiệu suất từ 0.557 lên 0.657, chứng tỏ thành phần C có tác dụng regularization, nhưng chưa đủ để vượt stage A.
+
+Do đó, kết luận của em là: **mô hình đề xuất có giá trị nghiên cứu vì được phân tích bằng ablation rõ ràng, nhưng chiến lược đầu tư tốt nhất theo kết quả test hiện tại vẫn là APT_3Factor**.
 
 ## 9. Câu hỏi về backtest và metrics
 
