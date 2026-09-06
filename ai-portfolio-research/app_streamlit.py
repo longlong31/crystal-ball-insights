@@ -96,6 +96,12 @@ def main():
         st.caption(f"Dữ liệu: {ds['prices'].index.min().date()} → {ds['prices'].index.max().date()} "
                    f"({len(ds['prices'])} phiên)")
 
+    rf_series_for_strategy = pd.Series(
+        float(rf_override) / 100.0,
+        index=ds["rf"].index,
+        name="rf",
+    )
+
     if len(selected_tickers) < 2:
         st.warning("Chọn ít nhất 2 tài sản.")
         return
@@ -107,7 +113,7 @@ def main():
     # ---- Tab 1: current recommended weights ----
     with tab1:
         st.subheader(f"Trọng số danh mục đề xuất — {strategy}")
-        wfn = strategy_weight_fn(strategy, ds, X, y, sample_dates, tickers, masks, rf_override / 100, max_weight)
+        wfn = strategy_weight_fn(strategy, ds, X, y, sample_dates, tickers, masks, rf_series_for_strategy, max_weight)
         if wfn is None:
             st.error("Chưa có checkpoint đã huấn luyện cho mô hình đề xuất. Chạy `python -m src.evaluate` trước.")
         else:
