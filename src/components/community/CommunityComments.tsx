@@ -19,6 +19,13 @@ interface Comment {
   };
 }
 
+function parseSampleComment(content: string) {
+  const match = content.match(/^([^:]{2,40}):\s+([\s\S]+)$/);
+  if (!match) return null;
+
+  return { author: match[1], content: match[2] };
+}
+
 interface CommunityCommentsProps {
   postId: string;
   onCommentAdded?: () => void;
@@ -152,7 +159,7 @@ export function CommunityComments({ postId, onCommentAdded }: CommunityCommentsP
                   </Avatar>
                   <div className="flex-1 bg-muted rounded-lg px-3 py-2">
                     <p className="text-xs font-medium">
-                      {comment.profiles?.full_name || "Người dùng"}
+                      {parseSampleComment(comment.content)?.author || comment.profiles?.full_name || "Người dùng"}
                       <span className="text-muted-foreground font-normal ml-2">
                         {formatDistanceToNow(new Date(comment.created_at), { 
                           addSuffix: true, 
@@ -160,7 +167,9 @@ export function CommunityComments({ postId, onCommentAdded }: CommunityCommentsP
                         })}
                       </span>
                     </p>
-                    <p className="text-sm mt-1">{comment.content}</p>
+                    <p className="text-sm mt-1">
+                      {parseSampleComment(comment.content)?.content || comment.content}
+                    </p>
                   </div>
                 </div>
               ))}
