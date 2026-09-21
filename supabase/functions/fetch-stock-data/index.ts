@@ -19,15 +19,27 @@ function extractRaw(obj: any): number {
   return obj?.raw ?? obj ?? 0;
 }
 
+async function yahooChartFetch(symbol: string, qs: string) {
+  const hosts = [
+    "https://query1.finance.yahoo.com/v8/finance/chart",
+    "https://query2.finance.yahoo.com/v8/finance/chart",
+  ];
+  let lastStatus = 0;
+  for (const host of hosts) {
+    const resp = await fetch(`${host}/${encodeURIComponent(symbol)}?${qs}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (resp.ok) return await resp.json();
+    lastStatus = resp.status;
+  }
+  console.warn(`Yahoo chart unavailable for ${symbol} (${lastStatus})`);
+  return null;
+}
+
 async function fetchQuote(symbol: string) {
-  const chartResp = await fetch(
-    `${YAHOO_QUOTE_URL}/${symbol}?interval=1d&range=3mo&includePrePost=false`,
-    { headers: { "User-Agent": "Mozilla/5.0" } }
-  );
-  if (!chartResp.ok) throw new Error(`Yahoo Finance chart API error: ${chartResp.status}`);
-  const chartData = await chartResp.json();
-  const result = chartData.chart?.result?.[0];
-  if (!result) throw new Error(`No data for ${symbol}`);
+  const chartData = await yahooChartFetch(symbol, "interval=1d&range=3mo&includePrePost=false");
+  const result = chartData?.chart?.result?.[0];
+  if (!result) return { symbol, unavailable: true };
 
   const meta = result.meta;
   const closes = result.indicators?.quote?.[0]?.close || [];
@@ -116,17 +128,11 @@ async function fetchQuote(symbol: string) {
 
 async function fetchHistory(symbol: string, range: string = "1y") {
   const interval = range === "5d" ? "5m" : range === "1mo" ? "1h" : "1d";
-  const resp = await fetch(
-    `${YAHOO_QUOTE_URL}/${symbol}?interval=${interval}&range=${range}&includePrePost=false`,
-    { headers: { "User-Agent": "Mozilla/5.0" } }
-  );
   // Unknown/unsupported symbol (e.g. some index tickers): degrade gracefully
   // instead of failing the whole request with a 500.
   const EMPTY = { dates: [], closes: [], highs: [], lows: [], opens: [], volumes: [], unavailable: true };
-  if (resp.status === 404 || resp.status === 400) return EMPTY;
-  if (!resp.ok) throw new Error(`Yahoo Finance error: ${resp.status}`);
-  const data = await resp.json();
-  const result = data.chart?.result?.[0];
+  const data = await yahooChartFetch(symbol, `interval=${interval}&range=${range}&includePrePost=false`);
+  const result = data?.chart?.result?.[0];
   if (!result) return EMPTY;
 
   const timestamps = result.timestamp || [];
@@ -143,10 +149,6 @@ async function fetchHistory(symbol: string, range: string = "1y") {
 
 async function fetchFinancials(symbol: string) {
   const modules = "incomeStatementHistory,incomeStatementHistoryQuarterly,balanceSheetHistory,balanceSheetHistoryQuarterly,cashflowStatementHistory,cashflowStatementHistoryQuarterly,earnings";
-  const resp = await fetch(
-    `${YAHOO_QUOTE_URL}/${symbol}?interval=1d&range=5d&includePrePost=false`,
-    { headers: { "User-Agent": "Mozilla/5.0" } }
-  );
   // Try quoteSummary with a crumb/cookie approach
   let summaryResp: Response;
   try {
