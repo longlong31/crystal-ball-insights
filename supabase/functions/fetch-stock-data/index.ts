@@ -149,10 +149,6 @@ async function fetchHistory(symbol: string, range: string = "1y") {
 
 async function fetchFinancials(symbol: string) {
   const modules = "incomeStatementHistory,incomeStatementHistoryQuarterly,balanceSheetHistory,balanceSheetHistoryQuarterly,cashflowStatementHistory,cashflowStatementHistoryQuarterly,earnings";
-  const resp = await fetch(
-    `${YAHOO_QUOTE_URL}/${symbol}?interval=1d&range=5d&includePrePost=false`,
-    { headers: { "User-Agent": "Mozilla/5.0" } }
-  );
   // Try quoteSummary with a crumb/cookie approach
   let summaryResp: Response;
   try {
