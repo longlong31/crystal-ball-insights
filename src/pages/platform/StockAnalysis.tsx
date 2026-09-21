@@ -44,6 +44,7 @@ const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
     { symbol: "ACB.VN", name: "ACB" },
     { symbol: "VPB.VN", name: "VPBank" },
     { symbol: "SSI.VN", name: "SSI Securities" },
+    { symbol: "BVH.VN", name: "Tập đoàn Bảo Việt" },
     { symbol: "VRE.VN", name: "Vincom Retail" },
     { symbol: "MSN.VN", name: "Masan Group" },
     { symbol: "GAS.VN", name: "PV Gas" },
@@ -115,6 +116,18 @@ const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
     { symbol: "FTS.VN", name: "FPT Securities" },
     { symbol: "ORS.VN", name: "Tiên Phong SC" },
     { symbol: "AGR.VN", name: "Agriseco" },
+  ],
+  "🇻🇳 VN Tài chính & Bảo hiểm": [
+    { symbol: "BVH.VN", name: "Tập đoàn Bảo Việt" },
+    { symbol: "BMI.VN", name: "Bảo Minh" },
+    { symbol: "MIG.VN", name: "Bảo hiểm Quân đội" },
+    { symbol: "PGI.VN", name: "Bảo hiểm Petrolimex" },
+    { symbol: "PVI.VN", name: "PVI Holdings" },
+    { symbol: "BIC.VN", name: "Bảo hiểm BIDV" },
+    { symbol: "VNR.VN", name: "Tái bảo hiểm Quốc gia Việt Nam" },
+    { symbol: "IPA.VN", name: "Tập đoàn Đầu tư I.P.A" },
+    { symbol: "EVF.VN", name: "Tài chính Điện lực" },
+    { symbol: "OGC.VN", name: "Tập đoàn Đại Dương" },
   ],
   "🇻🇳 VN Công nghệ": [
     { symbol: "FPT.VN", name: "FPT Corp" },
@@ -720,11 +733,18 @@ function FinancialTable({ data, fields, title }: { data: any[]; fields: Record<s
 
 const CATEGORY_KEYS = Object.keys(STOCK_CATEGORIES);
 
+function categoryDisplayName(category: string): string {
+  const firstSpace = category.indexOf(' ');
+  const withoutFlag = firstSpace >= 0 ? category.slice(firstSpace + 1) : category;
+  return withoutFlag.startsWith('VN ') ? withoutFlag.slice(3) : withoutFlag;
+}
+
 const SECTOR_ICONS: Record<string, string> = {
   "🇻🇳 VN30 Blue-chips": "🏆",
   "🇻🇳 VN Ngân hàng": "🏦",
   "🇻🇳 VN Bất động sản": "🏗️",
   "🇻🇳 VN Chứng khoán": "📈",
+  "🇻🇳 VN Tài chính & Bảo hiểm": "🛡️",
   "🇻🇳 VN Công nghệ": "💻",
   "🇻🇳 VN Sản xuất & Vật liệu": "🏭",
   "🇻🇳 VN Năng lượng & Dầu khí": "⚡",
@@ -884,6 +904,12 @@ export default function StockAnalysis() {
     Object.values(filteredStocks).reduce((sum, arr) => sum + arr.length, 0),
     [filteredStocks]
   );
+
+  const directSymbol = useMemo(() => {
+    const raw = searchTerm.trim().toUpperCase();
+    if (!raw || totalFilteredCount > 0 || !/^[A-Z0-9.^-]{1,15}$/.test(raw)) return null;
+    return raw.includes('.') || raw.startsWith('^') ? raw : `${raw}.VN`;
+  }, [searchTerm, totalFilteredCount]);
 
   const bctcLinks = useMemo(() => getBCTCLinks(selected), [selected]);
   const isLoading = quoteLoading || historyLoading;
@@ -1134,7 +1160,7 @@ export default function StockAnalysis() {
                       : 'bg-muted/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                   }`}
                 >
-                  {SECTOR_ICONS[cat] || '📋'} {cat.replace(/^[🇻🇳🇺🇸🇪🇺🌏📈]\s?/, '').replace(/^VN\s/, '')}
+                  {SECTOR_ICONS[cat] || '📋'} {categoryDisplayName(cat)}
                 </button>
               ))}
             </div>
@@ -1164,10 +1190,21 @@ export default function StockAnalysis() {
                   </div>
                 </div>
               ))}
-              {totalFilteredCount === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  Không tìm thấy mã cổ phiếu nào phù hợp
-                </p>
+              {directSymbol && (
+                <div className="flex flex-col items-center gap-2 py-6 text-center">
+                  <p className="text-xs text-muted-foreground">Mã chưa có trong danh mục gợi ý, nhưng vẫn có thể phân tích trực tiếp.</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setSelected(directSymbol); setCustomSymbol(''); setShowScreener(false); }}
+                    className="font-mono"
+                  >
+                    <Search className="w-3.5 h-3.5 mr-2" /> Phân tích {directSymbol}
+                  </Button>
+                </div>
+              )}
+              {totalFilteredCount === 0 && !directSymbol && (
+                <p className="text-sm text-muted-foreground text-center py-8">Không tìm thấy mã cổ phiếu nào phù hợp</p>
               )}
             </div>
           </div>
