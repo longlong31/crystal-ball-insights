@@ -19,15 +19,27 @@ function extractRaw(obj: any): number {
   return obj?.raw ?? obj ?? 0;
 }
 
+async function yahooChartFetch(symbol: string, qs: string) {
+  const hosts = [
+    "https://query1.finance.yahoo.com/v8/finance/chart",
+    "https://query2.finance.yahoo.com/v8/finance/chart",
+  ];
+  let lastStatus = 0;
+  for (const host of hosts) {
+    const resp = await fetch(`${host}/${encodeURIComponent(symbol)}?${qs}`, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (resp.ok) return await resp.json();
+    lastStatus = resp.status;
+  }
+  console.warn(`Yahoo chart unavailable for ${symbol} (${lastStatus})`);
+  return null;
+}
+
 async function fetchQuote(symbol: string) {
-  const chartResp = await fetch(
-    `${YAHOO_QUOTE_URL}/${symbol}?interval=1d&range=3mo&includePrePost=false`,
-    { headers: { "User-Agent": "Mozilla/5.0" } }
-  );
-  if (!chartResp.ok) throw new Error(`Yahoo Finance chart API error: ${chartResp.status}`);
-  const chartData = await chartResp.json();
-  const result = chartData.chart?.result?.[0];
-  if (!result) throw new Error(`No data for ${symbol}`);
+  const chartData = await yahooChartFetch(symbol, "interval=1d&range=3mo&includePrePost=false");
+  const result = chartData?.chart?.result?.[0];
+  if (!result) return { symbol, unavailable: true };
 
   const meta = result.meta;
   const closes = result.indicators?.quote?.[0]?.close || [];
