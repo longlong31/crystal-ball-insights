@@ -291,7 +291,39 @@ const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
   ],
 };
 
+// Bổ sung toàn bộ mã trong kho dữ liệu toàn cầu chưa có trong danh mục thủ công
+const EXTRA_CATEGORY_BY_REGION: Record<string, string> = {
+  Vietnam: "🇻🇳 VN Mở rộng",
+  US: "🇺🇸 US Mở rộng",
+  Europe: "🇪🇺 Europe Mở rộng",
+  Asia: "🌏 Asia Mở rộng",
+};
+
+(() => {
+  const existing = new Set(
+    Object.values(STOCK_CATEGORIES).flat().map((s) => s.symbol.toUpperCase())
+  );
+  for (const g of GLOBAL_STOCKS) {
+    const sym = g.symbol.toUpperCase();
+    if (existing.has(sym)) continue;
+    existing.add(sym);
+    const cat = EXTRA_CATEGORY_BY_REGION[g.region] || "🌏 Asia Mở rộng";
+    (STOCK_CATEGORIES[cat] ||= []).push({ symbol: g.symbol, name: g.name });
+  }
+})();
+
 const ALL_STOCKS = Object.values(STOCK_CATEGORIES).flat();
+
+// So khớp không dấu, bỏ hậu tố sàn (BVH ~ BVH.VN ~ "bao viet")
+function normalizeText(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
 
 function isVNStock(symbol: string): boolean {
   return symbol.endsWith('.VN');
