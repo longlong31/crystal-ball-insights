@@ -950,12 +950,16 @@ export default function StockAnalysis() {
   }, [selected, quote, analysis, stats, financials]);
 
   const filteredStocks = useMemo(() => {
-    const term = searchTerm.toLowerCase();
+    const term = normalizeText(searchTerm);
     const result: typeof STOCK_CATEGORIES = {} as any;
     for (const [cat, stocks] of Object.entries(STOCK_CATEGORIES)) {
       if (selectedCategory !== 'all' && cat !== selectedCategory) continue;
       const filtered = term
-        ? stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term))
+        ? stocks.filter(s => {
+            const sym = normalizeText(s.symbol);
+            const base = sym.split('.')[0];
+            return sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term);
+          })
         : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
     }
