@@ -36,10 +36,34 @@ async function yahooChartFetch(symbol: string, qs: string) {
   return null;
 }
 
+function emptyQuote(symbol: string) {
+  const numericFields = [
+    "currentPrice", "previousClose", "open", "dayHigh", "dayLow", "volume", "avgVolume",
+    "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "pe", "forwardPe", "pb", "ps", "roe", "roa",
+    "deRatio", "currentRatio", "divYield", "eps", "revenueGrowth", "earningsGrowth",
+    "profitMargin", "operatingMargin", "grossMargin", "freeCashflow", "operatingCashflow",
+    "totalRevenue", "totalDebt", "totalCash", "bookValue", "employees",
+    "priceChange1d", "priceChange1w", "priceChange1m",
+  ];
+  const base: Record<string, unknown> = {
+    symbol,
+    name: symbol,
+    sector: "N/A",
+    industry: "N/A",
+    website: "",
+    description: "",
+    country: "N/A",
+    marketCap: "N/A",
+    unavailable: true,
+  };
+  for (const f of numericFields) base[f] = 0;
+  return base;
+}
+
 async function fetchQuote(symbol: string) {
   const chartData = await yahooChartFetch(symbol, "interval=1d&range=3mo&includePrePost=false");
   const result = chartData?.chart?.result?.[0];
-  if (!result) return { symbol, unavailable: true };
+  if (!result) return emptyQuote(symbol);
 
   const meta = result.meta;
   const closes = result.indicators?.quote?.[0]?.close || [];
