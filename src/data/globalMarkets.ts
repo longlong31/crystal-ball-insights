@@ -222,7 +222,6 @@ export const GLOBAL_STOCKS: GlobalStock[] = [
   { symbol: "CPALL.BK", name: "CP All", exchange: "SET", region: "Asia", sector: "Retail", cap: "Large" },
 
   // Vietnam — mở rộng (HOSE / HNX / UPCoM)
-  { symbol: "VNM.VN", name: "Vinamilk", exchange: "HOSE", region: "Vietnam", sector: "Consumer", cap: "Large" },
   { symbol: "FRT.VN", name: "FPT Retail", exchange: "HOSE", region: "Vietnam", sector: "Retail", cap: "Mid" },
   { symbol: "DGW.VN", name: "Digiworld", exchange: "HOSE", region: "Vietnam", sector: "Retail", cap: "Mid" },
   { symbol: "PET.VN", name: "Petrosetco", exchange: "HOSE", region: "Vietnam", sector: "Retail", cap: "Small" },
