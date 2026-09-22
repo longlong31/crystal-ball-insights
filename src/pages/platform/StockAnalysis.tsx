@@ -25,7 +25,7 @@ import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulas
 import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { TradingViewPanel } from "@/components/platform/stocks/TradingViewPanel";
 import { ComprehensiveMetricsPanel } from "@/components/platform/stocks/ComprehensiveMetricsPanel";
-import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
+import { filterStocks, GLOBAL_STOCKS, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
 const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
@@ -291,7 +291,39 @@ const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
   ],
 };
 
+// Bổ sung toàn bộ mã trong kho dữ liệu toàn cầu chưa có trong danh mục thủ công
+const EXTRA_CATEGORY_BY_REGION: Record<string, string> = {
+  Vietnam: "🇻🇳 VN Mở rộng",
+  US: "🇺🇸 US Mở rộng",
+  Europe: "🇪🇺 Europe Mở rộng",
+  Asia: "🌏 Asia Mở rộng",
+};
+
+(() => {
+  const existing = new Set(
+    Object.values(STOCK_CATEGORIES).flat().map((s) => s.symbol.toUpperCase())
+  );
+  for (const g of GLOBAL_STOCKS) {
+    const sym = g.symbol.toUpperCase();
+    if (existing.has(sym)) continue;
+    existing.add(sym);
+    const cat = EXTRA_CATEGORY_BY_REGION[g.region] || "🌏 Asia Mở rộng";
+    (STOCK_CATEGORIES[cat] ||= []).push({ symbol: g.symbol, name: g.name });
+  }
+})();
+
 const ALL_STOCKS = Object.values(STOCK_CATEGORIES).flat();
+
+// So khớp không dấu, bỏ hậu tố sàn (BVH ~ BVH.VN ~ "bao viet")
+function normalizeText(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
 
 function isVNStock(symbol: string): boolean {
   return symbol.endsWith('.VN');
@@ -918,12 +950,16 @@ export default function StockAnalysis() {
   }, [selected, quote, analysis, stats, financials]);
 
   const filteredStocks = useMemo(() => {
-    const term = searchTerm.toLowerCase();
+    const term = normalizeText(searchTerm);
     const result: typeof STOCK_CATEGORIES = {} as any;
     for (const [cat, stocks] of Object.entries(STOCK_CATEGORIES)) {
       if (selectedCategory !== 'all' && cat !== selectedCategory) continue;
       const filtered = term
-        ? stocks.filter(s => s.symbol.toLowerCase().includes(term) || s.name.toLowerCase().includes(term))
+        ? stocks.filter(s => {
+            const sym = normalizeText(s.symbol);
+            const base = sym.split('.')[0];
+            return sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term);
+          })
         : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
     }
