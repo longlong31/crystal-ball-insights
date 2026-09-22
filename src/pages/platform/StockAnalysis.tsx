@@ -25,7 +25,7 @@ import { PythonFormulasPanel } from "@/components/platform/stocks/PythonFormulas
 import { PythonRunnerPanel } from "@/components/platform/stocks/PythonRunnerPanel";
 import { TradingViewPanel } from "@/components/platform/stocks/TradingViewPanel";
 import { ComprehensiveMetricsPanel } from "@/components/platform/stocks/ComprehensiveMetricsPanel";
-import { filterStocks, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
+import { filterStocks, GLOBAL_STOCKS, type Region, type CapSize, type Sector } from "@/data/globalMarkets";
 
 // Global stock categories
 const STOCK_CATEGORIES: Record<string, { symbol: string; name: string }[]> = {
