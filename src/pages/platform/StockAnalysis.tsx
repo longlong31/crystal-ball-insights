@@ -958,7 +958,9 @@ export default function StockAnalysis() {
         ? stocks.filter(s => {
             const sym = normalizeText(s.symbol);
             const base = sym.split('.')[0];
-            return sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term);
+            if (sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term)) return true;
+            const aliases = SYMBOL_ALIASES[base] || [];
+            return aliases.some(a => normalizeText(a).includes(term));
           })
         : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
