@@ -315,6 +315,59 @@ const EXTRA_CATEGORY_BY_REGION: Record<string, string> = {
 const ALL_STOCKS = Object.values(STOCK_CATEGORIES).flat();
 
 // So khớp không dấu, bỏ hậu tố sàn (BVH ~ BVH.VN ~ "bao viet")
+// Bí danh phổ biến để tìm kiếm mã dễ hơn (gõ tên gọi thường dùng vẫn ra đúng mã)
+const SYMBOL_ALIASES: Record<string, string[]> = {
+  MBB: ["MB", "MB Bank", "Quan doi", "Ngan hang Quan doi"],
+  MSB: ["Maritime Bank", "Maritime", "MSBank", "Hang hai"],
+  EIB: ["Eximbank", "Exim", "Xuat nhap khau"],
+  BVH: ["Bao Viet", "BaoViet", "Tap doan Bao Viet"],
+  VCB: ["Vietcombank", "Ngoai thuong"],
+  BID: ["BIDV", "Dau tu phat trien"],
+  CTG: ["VietinBank", "Vietin", "Cong thuong"],
+  TCB: ["Techcombank", "Techcom", "Ky thuong"],
+  ACB: ["A Chau", "Asia Commercial Bank"],
+  VPB: ["VPBank", "VP Bank", "Viet Nam Thinh Vuong"],
+  STB: ["Sacombank", "Sacom", "Sai Gon Thuong Tin"],
+  TPB: ["TPBank", "TP Bank", "Tien Phong"],
+  HDB: ["HDBank", "HD Bank", "Phat trien TP HCM"],
+  SHB: ["SHBank", "SH Bank", "Sai Gon Ha Noi"],
+  SSB: ["SeABank", "SeA Bank", "Dong Nam A"],
+  LPB: ["LienVietPostBank", "Lien Viet", "Buu dien Lien Viet"],
+  OCB: ["OCBank", "Phuong Dong", "Orient Commercial"],
+  VIB: ["VIBank", "Quoc te"],
+  KLB: ["KienlongBank", "Kien Long"],
+  NAB: ["Nam A Bank", "NamA"],
+  BAB: ["Bac A Bank", "Bac A"],
+  ABB: ["ABBank", "An Binh"],
+  BVB: ["Viet Capital Bank", "Ban Viet"],
+  VBB: ["VietBank", "Viet Thuong Tin"],
+  PGB: ["PGBank", "Petrolimex Bank", "Thinh vuong phat trien"],
+  VNM: ["Vinamilk", "Sua Viet Nam"],
+  HPG: ["Hoa Phat", "Thep Hoa Phat"],
+  VHM: ["Vinhomes", "Vinhomes JSC"],
+  VIC: ["Vingroup", "Vin Group"],
+  VRE: ["Vincom Retail", "Vincom"],
+  MSN: ["Masan", "Masan Group"],
+  FPT: ["FPT Corp", "FPT Software"],
+  MWG: ["The Gioi Di Dong", "Mobile World"],
+  GAS: ["PV Gas", "Khi Viet Nam"],
+  PLX: ["Petrolimex", "Xang dau Viet Nam"],
+  SSI: ["SSI Securities", "Chung khoan SSI"],
+  VND: ["VNDirect", "Chung khoan VNDirect"],
+  HCM: ["HSC", "Chung khoan HSC", "Ho Chi Minh Securities"],
+  MBS: ["MB Securities", "Chung khoan MB"],
+  VJC: ["VietJet", "VietJet Air"],
+  HVN: ["Vietnam Airlines", "Hang khong Viet Nam"],
+  GMD: ["Gemadept", "Cang Gemadept"],
+  PVT: ["PVTrans", "Van tai dau khi"],
+  BMI: ["Bao Viet Ninh Binh", "Bao hiem Minh"],
+  MIG: ["Bao hiem Quan doi", "Military Insurance"],
+  PGI: ["Petrolimex Insurance", "Bao hiem Xang dau"],
+  PVI: ["PVI Insurance", "Bao hiem Dau khi"],
+  BIC: ["BIDV Insurance", "Bao hiem BIDV"],
+  VNR: ["VNR Insurance", "Bao hiem Quoc gia"],
+};
+
 function normalizeText(v: string): string {
   return v
     .normalize("NFD")
@@ -958,7 +1011,9 @@ export default function StockAnalysis() {
         ? stocks.filter(s => {
             const sym = normalizeText(s.symbol);
             const base = sym.split('.')[0];
-            return sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term);
+            if (sym.includes(term) || base.includes(term) || normalizeText(s.name).includes(term)) return true;
+            const aliases = SYMBOL_ALIASES[base] || [];
+            return aliases.some(a => normalizeText(a).includes(term));
           })
         : stocks;
       if (filtered.length > 0) (result as any)[cat] = filtered;
