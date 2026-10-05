@@ -32,6 +32,11 @@ async function yahooChartFetch(symbol: string, qs: string) {
     if (resp.ok) return await resp.json();
     lastStatus = resp.status;
   }
+  // Bare ticker not found (e.g. "EIB") → try Vietnam exchange suffix
+  if (!symbol.includes(".") && !symbol.startsWith("^") && /^[A-Z0-9]{2,5}$/.test(symbol)) {
+    const vn = await yahooChartFetch(`${symbol}.VN`, qs);
+    if (vn) return vn;
+  }
   console.warn(`Yahoo chart unavailable for ${symbol} (${lastStatus})`);
   return null;
 }
