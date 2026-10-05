@@ -314,6 +314,25 @@ const EXTRA_CATEGORY_BY_REGION: Record<string, string> = {
 
 const ALL_STOCKS = Object.values(STOCK_CATEGORIES).flat();
 
+// Chuẩn hoá mã người dùng gõ (EIB → EIB.VN, "MB" → MBB.VN) trước khi tải dữ liệu
+function resolveSymbol(input: string): string {
+  const raw = input.trim().toUpperCase();
+  if (!raw || raw.includes('.') || raw.startsWith('^')) return raw;
+  const exact = ALL_STOCKS.find((s: any) => s.symbol.toUpperCase() === raw);
+  if (exact) return (exact as any).symbol;
+  const byBase = ALL_STOCKS.find((s: any) => s.symbol.toUpperCase().split('.')[0] === raw);
+  if (byBase) return (byBase as any).symbol;
+  const norm = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  for (const [base, aliases] of Object.entries(SYMBOL_ALIASES_REF())) {
+    if (aliases.some((a) => a.toLowerCase() === norm)) {
+      const hit = ALL_STOCKS.find((s: any) => s.symbol.toUpperCase().split('.')[0] === base);
+      return hit ? (hit as any).symbol : `${base}.VN`;
+    }
+  }
+  return raw;
+}
+const SYMBOL_ALIASES_REF = () => SYMBOL_ALIASES;
+
 // So khớp không dấu, bỏ hậu tố sàn (BVH ~ BVH.VN ~ "bao viet")
 // Bí danh phổ biến để tìm kiếm mã dễ hơn (gõ tên gọi thường dùng vẫn ra đúng mã)
 const SYMBOL_ALIASES: Record<string, string[]> = {
