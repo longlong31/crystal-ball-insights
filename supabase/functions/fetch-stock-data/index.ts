@@ -32,6 +32,11 @@ async function yahooChartFetch(symbol: string, qs: string) {
     if (resp.ok) return await resp.json();
     lastStatus = resp.status;
   }
+  // Vietnam fallback (covers HNX/UPCoM tickers Yahoo lacks)
+  if (symbol.endsWith(".VN")) {
+    const vnData = await vnChartFetch(symbol.slice(0, -3), qs);
+    if (vnData) return vnData;
+  }
   // Bare ticker not found (e.g. "EIB") → try Vietnam exchange suffix
   if (!symbol.includes(".") && !symbol.startsWith("^") && /^[A-Z0-9]{2,5}$/.test(symbol)) {
     const vn = await yahooChartFetch(`${symbol}.VN`, qs);
@@ -39,6 +44,45 @@ async function yahooChartFetch(symbol: string, qs: string) {
   }
   console.warn(`Yahoo chart unavailable for ${symbol} (${lastStatus})`);
   return null;
+}
+
+const RANGE_DAYS: Record<string, number> = { "1d": 3, "5d": 7, "1mo": 32, "3mo": 95, "6mo": 185, "1y": 370, "2y": 735, "5y": 1830, "10y": 3660, "max": 7300, "ytd": 370 };
+
+async function vnChartFetch(base: string, qs: string) {
+  try {
+    const range = new URLSearchParams(qs).get("range") || "1y";
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - (RANGE_DAYS[range] ?? 370) * 86400;
+    const resp = await fetch(
+      `https://services.entrade.com.vn/chart-api/v2/ohlcs/stock?from=${from}&to=${to}&symbol=${encodeURIComponent(base)}&resolution=1D`,
+      { headers: { "User-Agent": "Mozilla/5.0" } },
+    );
+    if (!resp.ok) return null;
+    const d = await resp.json();
+    if (!Array.isArray(d?.t) || d.t.length === 0) return null;
+    const k = (a: number[]) => (a || []).map((v) => (v == null ? null : v * 1000));
+    const close = k(d.c), high = k(d.h), low = k(d.l), open = k(d.o);
+    const n = close.length;
+    const highs = high.filter((v) => v != null) as number[];
+    const lows = low.filter((v) => v != null) as number[];
+    return {
+      chart: { result: [{
+        meta: {
+          currency: "VND", symbol: `${base}.VN`,
+          regularMarketPrice: close[n - 1],
+          chartPreviousClose: close[n - 2] ?? close[n - 1],
+          regularMarketOpen: open[n - 1], regularMarketDayHigh: high[n - 1], regularMarketDayLow: low[n - 1],
+          regularMarketVolume: d.v?.[n - 1] ?? 0,
+          fiftyTwoWeekHigh: Math.max(...highs), fiftyTwoWeekLow: Math.min(...lows),
+        },
+        timestamp: d.t,
+        indicators: { quote: [{ close, high, low, open, volume: d.v || [] }] },
+      }] },
+    };
+  } catch (e) {
+    console.warn("VN fallback failed for", base, e);
+    return null;
+  }
 }
 
 function emptyQuote(symbol: string) {
