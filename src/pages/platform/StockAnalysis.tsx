@@ -1247,7 +1247,7 @@ export default function StockAnalysis() {
             <span className="text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full">{totalFilteredCount} mã</span>
             {showScreener ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
-          <form onSubmit={(e) => { e.preventDefault(); const sym = customSymbol.trim().toUpperCase(); if (sym) { setSelected(sym); setShowScreener(false); } }} className="flex items-center gap-1">
+          <form onSubmit={(e) => { e.preventDefault(); const sym = resolveSymbol(customSymbol); if (sym) { setSelected(sym); setShowScreener(false); } }} className="flex items-center gap-1">
             <Input
               placeholder="Nhập mã bất kỳ (VD: TSLA, SAB.VN)"
               value={customSymbol}
