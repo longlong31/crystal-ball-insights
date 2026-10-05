@@ -1336,7 +1336,7 @@ export default function StockAnalysis() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => { setSelected(directSymbol); setCustomSymbol(''); setShowScreener(false); }}
+                    onClick={() => { setSelected(resolveSymbol(directSymbol)); setCustomSymbol(''); setShowScreener(false); }}
                     className="font-mono"
                   >
                     <Search className="w-3.5 h-3.5 mr-2" /> Phân tích {directSymbol}
