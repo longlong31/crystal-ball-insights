@@ -162,7 +162,7 @@ async function fetchQuote(symbol: string) {
     description: fundamentals.profile?.longBusinessSummary || "",
     country: fundamentals.profile?.country || "N/A",
     employees: fundamentals.profile?.fullTimeEmployees || 0,
-    marketCap: formatMarketCap(extractRaw(price.marketCap) || meta.regularMarketPrice * (meta.regularMarketVolume || 1)),
+    marketCap: extractRaw(price.marketCap) ? formatMarketCap(extractRaw(price.marketCap)) : "N/A",
     currentPrice,
     previousClose,
     open: meta.regularMarketOpen || currentPrice,
